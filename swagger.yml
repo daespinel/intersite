@@ -4,66 +4,66 @@ info:
   version: "1.0.0"
   title: Swagger REST Article
 consumes:
-  - "application/json"
+  - application/json
 produces:
-  - "application/json"
+  - application/json
 
-basePath: "/api"
+basePath: /api
 
 # Paths supported by the server application
 paths:
   /intersite-vertical:
     get:
-      operationId: "intersite.read"
+      operationId: intersite.read
       tags:
-        - "Inter-Site service"
-      summary: "the inter-site Service mapping structure GET"
-      description: "Read the list of inter-site services"
+        - Inter-Site service
+      summary: the inter-site Service mapping structure GET
+      description: Read the list of inter-site services
       responses:
         200:
-          description: "Successful read inter-site service list operation"
+          description: Successful read inter-site service list operation
           schema:
-            type: "array"
+            type: array
             items:
               properties:
                 id:
-                  type: "string"
+                  type: string
                 type:
-                  type: "string"
+                  type: string
                 name:
-                  type: "string"
+                  type: string
                 resources:
-                  type: "array"
+                  type: array
                   items: 
-                    type: "string"  
+                    type: string  
                 interconnections:
-                  type: "array"
+                  type: array
                   items: 
-                    type: "string"
+                    type: string
     post:
-      operationId: "intersite.create"
+      operationId: intersite.create
       tags:
-        - "Inter-Site service"
-      summary: "Creates an inter-site Service POST"
-      description: "Create an inter-site service"
+        - Inter-Site service
+      summary: Creates an inter-site Service POST
+      description: Create an inter-site service
       parameters:
-        - name: "inter-site service"
-          in: "body"
-          description: "data for inter-service creation"
-          required: "True"
+        - name: inter-site service
+          in: body
+          description: data for inter-service creation
+          required: True
           schema:
-            type: "object"
+            type: object
             properties:
               type:
-                type: "string"
-                description: "Type of inter-site service"
+                type: string
+                description: Type of inter-site service
               name:
-                type: "string"
-                description: "Name of the inter-site service"
+                type: string
+                description: Name of the inter-site service
               resources:
-                type: "array"
+                type: array
                 items:
-                  type: "string"  
+                  type: string 
       responses:
         201:
-          description: "Successful create inter-site service operation"
+          description: Successful create inter-site service operation
