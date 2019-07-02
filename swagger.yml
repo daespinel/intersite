@@ -47,7 +47,7 @@ paths:
       summary: Creates an inter-site Service POST
       description: Create an inter-site service
       parameters:
-        - name: inter-site service
+        - name: service
           in: body
           description: data for inter-service creation
           required: True

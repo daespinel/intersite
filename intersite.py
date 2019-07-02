@@ -1,7 +1,4 @@
-from datetime import datetime
-
-def get_timestamp():
-    return datetime.now().strftime(("%Y-%m-%d %H:%M:%S"))
+import utils as service_utils
 
 # Data to serve with our API
 SERVICES = {
@@ -35,5 +32,48 @@ def read():
 
 
 def create(service):
-    service.get("name", None)
+    local_region = service_utils.get_region_name()
+    local_resource = ''
+    service_name = service.get("name", None)
+    service_type = service.get("type", None)
+    service_resources = service.get("resources", None)
+    service_resources_list = dict((k.strip(), v.strip()) for k,v in ((item.split(',')) for item in service_resources))
+    service_remote_auth_endpoints
     
+    for k,v in service_resources_list.items():
+        if v == local_region:
+            local_resource = k
+            print(local_resource)
+            break
+
+    neutron_client = service_utils.get_neutron_client(
+            interconnection_obj.remote_keystone,
+            interconnection_obj.remote_region
+        )
+
+
+        #remote_interconnection_data = copy.deepcopy(interconnection_data)
+        #remote_interconnection_data['remote_resource_id'] = interconnection_data['local_resource_id']
+        #remote_interconnection_data['local_resource_id'] = interconnection_data['remote_resource_id']
+        #remote_interconnection_data['name'] = interconnection_data['name'] + '_symmetric'
+        #remote_interconnection_data['remote_region'] = inter_utils.get_local_region_name()
+        #remote_interconnection_data['remote_keystone'] = inter_utils.get_local_keystone() + '/v3'
+        #LOG.debug('this is the local  interconnection object %s', interconnection_data)
+        #LOG.debug('this is the remote interconnection object %s', remote_interconnection_data)
+
+        #neutron_client = inter_utils.get_neutron_client(
+        #    interconnection_obj.remote_keystone,
+        #    interconnection_obj.remote_region
+        #)
+
+        #remote_interconnection_obj = {'interconnection': remote_interconnection_data}
+
+        #try:
+        #    remote_interconnection = (
+        #        neutron_client.create_interconnection(
+        #            remote_interconnection_obj)
+        #    )
+        #except neutronclient_exc.ConnectionFailed:
+        #    LOG.error("Can't connect to remote neutron")
+        #except neutronclient_exc.Unauthorized:
+        #    LOG.error("Connection refused to remote neutron")
