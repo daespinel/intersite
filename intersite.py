@@ -1,5 +1,5 @@
 import utils as service_utils
-
+import copy
 # Data to serve with our API
 SERVICES = {
     "Service1": {
@@ -32,25 +32,64 @@ def read():
 
 
 def create(service):
-    local_region = service_utils.get_region_name()
+    local_region_name = service_utils.get_region_name()
+    local_region_url = service_utils.get_local_keystone()
     local_resource = ''
     service_name = service.get("name", None)
     service_type = service.get("type", None)
     service_resources = service.get("resources", None)
     service_resources_list = dict((k.strip(), v.strip()) for k,v in ((item.split(',')) for item in service_resources))
-    service_remote_auth_endpoints
+    service_resources_list_search = copy.deepcopy(service_resources_list)
+    service_remote_auth_endpoints = {}
+    service_remote_inter_endpoints = {}
     
     for k,v in service_resources_list.items():
-        if v == local_region:
-            local_resource = k
+        if k == local_region_name:
+            local_resource = v
             print(local_resource)
             break
 
+    #keystone_client = service_utils.get_keystone_client(
+    #        local_region_url,
+    #        local_region_name
+    #    )
+
+    #remote_keystone_endpoints = keystone_client.endpoints.list()
+    #for obj in remote_keystone_endpoints:
+    #    print("this is a new object")
+    #    print(obj)
+    
+    catalog_endpoints = service_utils.get_keystone_catalog(local_region_url)
+    for obj in catalog_endpoints:
+        if obj['name']=='neutron':
+            for endpoint in obj['endpoints']:
+                for region_name in service_resources_list.keys():
+                    if endpoint['region'] == region_name:
+                        service_remote_inter_endpoints[region_name]=endpoint['url']
+                        service_resources_list_search.pop(region_name)
+                        print("Neutron_endpoints %s %s" %(region_name, service_remote_inter_endpoints[region_name]))
+                        break
+        if obj['name']=='keystone':
+            for endpoint in obj['endpoints']:
+                for region_name in service_resources_list.keys():
+                    if endpoint['region'] == region_name and endpoint['interface']== 'public':
+                        service_remote_auth_endpoints[region_name]=endpoint['url']+'/v3'
+                        print("keystone_endpoints %s %s" %(region_name, service_remote_auth_endpoints[region_name]))
+                        break
+
+    if bool(service_resources_list_search):
+        return "ERROR: Regions " + ("".join(str(key) for key in service_resources_list_search.keys())) + " are not found"
+
+    if service_type == 'L3':
+        print ("L3 routing service to be done among the resources: " + (" ".join(str(value) for value in service_resources_list.values())))
+
     neutron_client = service_utils.get_neutron_client(
-            interconnection_obj.remote_keystone,
-            interconnection_obj.remote_region
+            local_region_url,
+            local_region_name
         )
 
+    for item,value in service_resources_list.items():
+        print(value, item)
 
         #remote_interconnection_data = copy.deepcopy(interconnection_data)
         #remote_interconnection_data['remote_resource_id'] = interconnection_data['local_resource_id']
