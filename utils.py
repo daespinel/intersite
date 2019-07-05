@@ -17,14 +17,14 @@ def get_region_name():
 def get_neutron_client(keystone_endpoint, region):
     # Use keystone session because Neutron is not yet fully integrated with
     # Keystone v3 API
-    sess = get_auth_object(keystone_endpoint)
+    sess = get_session_object(get_auth_object(keystone_endpoint))
     return neutronclient.Client(
         session=sess,
         region_name=region
     )
 
 def get_keystone_client(keystone_endpoint, region):
-    sess = get_auth_object(keystone_endpoint)
+    sess = get_session_object(get_auth_object(keystone_endpoint))
     return keystoneclient.Client(
         session=sess,
         region_name=region

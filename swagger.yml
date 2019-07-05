@@ -14,7 +14,7 @@ basePath: /api
 paths:
   /intersite-vertical:
     get:
-      operationId: intersite.read
+      operationId: intersite.read_all
       tags:
         - Inter-Site service
       summary: the inter-site Service mapping structure GET
