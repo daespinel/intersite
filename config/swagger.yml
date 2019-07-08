@@ -69,3 +69,20 @@ paths:
       responses:
         201:
           description: Successful create inter-site service operation
+    
+  /intersite-vertical/{id}:
+    delete:
+      operationId: delete_service
+      tags:
+        - Inter-Site service
+      summary: Deletes an inter-site Service DELETE
+      description: Deletes an inter-site service
+      x-swagger-router-controller: controllers.intersite
+      parameters:
+        - name: id
+          in: path
+          type: string
+          required: True
+      responses:
+        200:
+          description: Successfully deleted a person from service list

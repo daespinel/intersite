@@ -6,7 +6,7 @@ from keystoneclient.v3 import client as keystoneclient
 from neutronclient.v2_0 import client as neutronclient
 
 config = configparser.ConfigParser()
-config.read('services.config')
+config.read('config/services.config')
 
 def get_local_keystone():
     return config['DEFAULT']['auth_url']
