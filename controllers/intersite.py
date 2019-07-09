@@ -18,7 +18,7 @@ SERVICES = {
         "name": "Service1",
         "type": "L3",
         "resources": ["id1,RegionOne", "id2,RegionTwo", "id3,RegionThree"],
-        "interconnections": ["z1","z2"]
+        "interconnections": ["z1", "z2"]
 
     },
     "4444": {
@@ -26,17 +26,18 @@ SERVICES = {
         "name": "Service2",
         "type": "L3",
         "resources": ["id10,RegionOne", "id15,RegionTen", "id16,RegionSixTen"],
-        "interconnections": ["Y1","Y2"]
+        "interconnections": ["Y1", "Y2"]
     },
     "1111": {
         "id": "1111",
         "name": "Service3",
         "type": "L3",
         "resources": ["id21,RegionOne", "id24,RegionFour", "id25,RegionFive", "id28,RegionTwentyEight"],
-        "interconnections": ["x1","x2","x3"]
+        "interconnections": ["x1", "x2", "x3"]
     }
 }
 
+# /intersite-vertical/
 # Create a handler for our read (GET) services
 
 
@@ -48,13 +49,15 @@ def read_all_service():
     :return:        sorted list of inter-site services
     """
     # Create the list of people from our data
+    print(SERVICES)
     return [SERVICES[key] for key in (SERVICES.keys())]
 
 # Create a handler for our read (GET) one service by ID
 # Possibility to add more information as ids of remote interconnection resources
 
+
 def read_one_service(id):
-    #print(SERVICES)
+    # print(SERVICES)
     if id in SERVICES:
         service = SERVICES.get(id)
 
@@ -210,7 +213,8 @@ def create_service(service):
         # Sending remote inter-site requests to the distant nodes
         for obj in service_resources_list.keys():
             if obj != service_utils.get_region_name():
-                remote_inter_instance = service_remote_inter_endpoints[obj].strip('9696/')
+                remote_inter_instance = service_remote_inter_endpoints[obj].strip(
+                    '9696/')
                 remote_inter_instance = remote_inter_instance + '7575/'
                 # remote_service = {'id':id, 'name':service_name, 'type':service_type, 'interconnected_resources':service_resources_list}
                 # send horizontal (service_remote_inter_endpoints[obj])
@@ -235,15 +239,15 @@ def delete_service(id):
                 service_utils.get_region_name()
             )
             try:
-                    inter_del = (
-                        neutron_client.delete_interconnection(inter))
+                inter_del = (
+                    neutron_client.delete_interconnection(inter))
 
             except neutronclient_exc.ConnectionFailed:
                 print("Can't connect to neutron %s" %
-                          service_remote_inter_endpoints[item])
+                      service_remote_inter_endpoints[item])
             except neutronclient_exc.Unauthorized:
                 print("Connection refused to neutron %s" %
-                          service_remote_inter_endpoints[item])
+                      service_remote_inter_endpoints[item])
         del SERVICES[id]
         return make_response("{id} successfully deleted".format(id=id), 200)
 
@@ -254,6 +258,9 @@ def delete_service(id):
 def check_existing_service(resource_list):
     print("ja")
 
+
+# /intersite-horizontal
+# Handler for inter-site service creation request
 
 def request_inter_service(service):
     local_region_name = service_utils.get_region_name()
@@ -295,34 +302,34 @@ def request_inter_service(service):
     for k, v in service_resources_list.items():
         if local_region_name != k:
             neutron_client = service_utils.get_neutron_client(
-                    local_region_url,
-                    local_region_name
-                )
+                local_region_url,
+                local_region_name
+            )
             interconnection_data = {'interconnection': {
-                    'name': service_name+str(id_temp),
-                    'remote_keystone': service_remote_auth_endpoints[k],
-                    'remote_region': k,
-                    'local_resource_id': local_resource,
-                    'type': SERVICE_TYPE[service_type],
-                    'remote_resource_id': v,
+                'name': service_name+str(id_temp),
+                'remote_keystone': service_remote_auth_endpoints[k],
+                'remote_region': k,
+                'local_resource_id': local_resource,
+                'type': SERVICE_TYPE[service_type],
+                'remote_resource_id': v,
 
-                }}
+            }}
             id_temp = id_temp+1
             try:
                 inter_temp = (
-                        neutron_client.create_interconnection(
-                            interconnection_data)
-                    )
-                    # print(inter_temp)
+                    neutron_client.create_interconnection(
+                        interconnection_data)
+                )
+                # print(inter_temp)
                 local_interconnections_ids.append(
                     inter_temp['interconnection']['id'])
 
             except neutronclient_exc.ConnectionFailed:
                 print("Can't connect to neutron %s" %
-                          service_remote_inter_endpoints[item])
+                      service_remote_inter_endpoints[item])
             except neutronclient_exc.Unauthorized:
-                    print("Connection refused to neutron %s" %
-                          service_remote_inter_endpoints[item])
+                print("Connection refused to neutron %s" %
+                      service_remote_inter_endpoints[item])
 
     service['local_interconnections'] = local_interconnections_ids
     SERVICES[id] = service
