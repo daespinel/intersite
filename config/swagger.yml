@@ -16,7 +16,7 @@ paths:
     get:
       operationId: read_all_service
       tags:
-        - Inter-Site service
+        - services
       summary: the inter-site Service mapping structure GET
       description: Read the list of inter-site services
       x-swagger-router-controller: controllers.intersite
@@ -44,7 +44,7 @@ paths:
     post:
       operationId: create_service
       tags:
-        - Inter-Site service
+        - services
       summary: Creates an inter-site Service POST
       description: Create an inter-site service
       x-swagger-router-controller: controllers.intersite
@@ -74,7 +74,7 @@ paths:
     delete:
       operationId: delete_service
       tags:
-        - Inter-Site service
+        - services
       summary: Deletes an inter-site Service DELETE
       description: Deletes an inter-site service
       x-swagger-router-controller: controllers.intersite
@@ -85,4 +85,72 @@ paths:
           required: True
       responses:
         200:
-          description: Successfully deleted a person from service list
+          description: Successfully deleted a service from service list
+
+    get:
+      operationId: read_one_service
+      tags:
+        - services
+      summary: Read one inter-site Service GET
+      description: Read one inter-site service
+      x-swagger-router-controller: controllers.intersite
+      parameters:
+        - name: id
+          in: path
+          type: string
+          required: True
+      responses:
+        200:
+          description: Successfully read service from service list 
+          schema:
+            properties:
+              id:
+                type: string
+                description: ID of inter-site service
+              type:
+                type: string
+                description: Type of inter-site service
+              name:
+                type: string
+                description: Name of the inter-site service
+              resources:
+                type: array
+                items:
+                  type: string
+              interconnections:
+                type: array
+                items:
+                  type: string
+
+  /intersite-horizontal:
+    post:
+      operationId: request_inter_service
+      tags:
+        - services
+      summary: Horizontal request to create an inter-site Service POST
+      description: Horizontal request to create an inter-site Service 
+      x-swagger-router-controller: controllers.intersite
+      parameters:
+        - name: service
+          in: body
+          description: data for inter-site creation
+          required: True
+          schema:
+            type: object
+            properties:
+              id:
+                type: string
+                description: Original ID of the service
+              type:
+                type: string
+                description: Type of inter-site service
+              name:
+                type: string
+                description: Name of the inter-site service
+              resources:
+                type: array
+                items:
+                  type: string 
+      responses:
+        201:
+          description: Successful create inter-site service operation

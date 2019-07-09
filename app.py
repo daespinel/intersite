@@ -16,14 +16,6 @@ def main():
 def home():
     return render_template("home.html")
 
-@app.route("/about/")
-def about():
-    return render_template("about.html")
-
-@app.route("/contact/")
-def contact():
-    return render_template("contact.html")
-
 # If we're running in stand alone mode, run the application
 if __name__ == '__main__':
     main()
