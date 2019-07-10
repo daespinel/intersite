@@ -2,6 +2,8 @@ from flask import make_response, abort
 from neutronclient.common import exceptions as neutronclient_exc
 from random import seed
 from random import randint
+from service import Service, ServiceSchema
+from config import db
 import common.utils as service_utils
 import copy
 import json
@@ -11,31 +13,6 @@ import itertools
 
 # Data to serve with our API
 SERVICE_TYPE = {'L2': 'network_l2', 'L3': 'network_l3'}
-
-SERVICES = {
-    "5555": {
-        "id": "5555",
-        "name": "Service1",
-        "type": "L3",
-        "resources": ["id1,RegionOne", "id2,RegionTwo", "id3,RegionThree"],
-        "interconnections": ["z1", "z2"]
-
-    },
-    "4444": {
-        "id": "4444",
-        "name": "Service2",
-        "type": "L3",
-        "resources": ["id10,RegionOne", "id15,RegionTen", "id16,RegionSixTen"],
-        "interconnections": ["Y1", "Y2"]
-    },
-    "1111": {
-        "id": "1111",
-        "name": "Service3",
-        "type": "L3",
-        "resources": ["id21,RegionOne", "id24,RegionFour", "id25,RegionFive", "id28,RegionTwentyEight"],
-        "interconnections": ["x1", "x2", "x3"]
-    }
-}
 
 # /intersite-vertical/
 # Create a handler for our read (GET) services
@@ -49,8 +26,12 @@ def read_all_service():
     :return:        sorted list of inter-site services
     """
     # Create the list of people from our data
-    print(SERVICES)
-    return [SERVICES[key] for key in (SERVICES.keys())]
+    services = Service.query.order_by(Service.service_name).all()
+
+    # Serialize the data for the response
+    service_schema = ServiceSchema(many=True)
+    data = service_schema.dump(services).data
+    return data
 
 # Create a handler for our read (GET) one service by ID
 # Possibility to add more information as ids of remote interconnection resources
@@ -58,8 +39,11 @@ def read_all_service():
 
 def read_one_service(id):
     # print(SERVICES)
-    if id in SERVICES:
-        service = SERVICES.get(id)
+    service = Service.query.filter(Service.service_id == id).one_or_none()
+
+    if service is not None:
+        service_schema = ServiceSchema
+        return service_schema.dump(service).data
 
     else:
         abort(404, "Service with ID {id} not found".format(id=id))
@@ -81,15 +65,15 @@ def create_service(service):
     service_remote_auth_endpoints = {}
     service_remote_inter_endpoints = {}
     local_interconnections_ids = []
-    seed(1)
-    id = str(randint(0, 10000))
+    #seed(1)
+    #id = str(randint(0, 10000))
 
     service = {
-        'id': id,
-        'name': service_name,
-        'type': service_type,
-        'resources': service_resources_list,
-        'interconnections': local_interconnections_ids
+        #'id': id,
+        'service_name': service_name,
+        'service_type': service_type,
+        'service_resources': service_resources_list,
+        'service_interconnections': local_interconnections_ids
     }
 
     for k, v in service_resources_list.items():
@@ -207,8 +191,16 @@ def create_service(service):
                     print("Connection refused to neutron %s" %
                           service_remote_inter_endpoints[item])
 
-        service['interconnections'] = local_interconnections_ids
-        SERVICES[id] = service
+        service['service_interconnections'] = local_interconnections_ids
+        #SERVICES[id] = service
+
+        # Create a service instance using the schema and the build service
+        service_schema = ServiceSchema()
+        new_service = service_schema.load(service, session=db.session).data
+
+        # Add the service to the database
+        db.session.add(new_service)
+        db.session.commit()
 
         # Sending remote inter-site requests to the distant nodes
         for obj in service_resources_list.keys():
@@ -219,7 +211,7 @@ def create_service(service):
                 # remote_service = {'id':id, 'name':service_name, 'type':service_type, 'interconnected_resources':service_resources_list}
                 # send horizontal (service_remote_inter_endpoints[obj])
 
-        return make_response(json.dumps(service), 201)
+        return service_schema.dump(new_service).data, 201
 
 # Handler to update an existing service
 
@@ -231,8 +223,12 @@ def update_service(id, service_resources_list):
 
 
 def delete_service(id):
-    if id in SERVICES.keys():
-        interconnections_delete = SERVICES[id]['local_interconnections']
+    service = Service.query.filter(Service.service_id == id).one_or_none()
+    if service is not None:
+        service_schema = ServiceSchema()
+        service_data = service_schema.dump(service).data
+        print(service_data)
+        interconnections_delete = service_data['lservice_interconnections']
         for inter in interconnections_delete:
             neutron_client = service_utils.get_neutron_client(
                 service_utils.get_local_keystone(),
@@ -249,6 +245,8 @@ def delete_service(id):
                 print("Connection refused to neutron %s" %
                       service_remote_inter_endpoints[item])
         del SERVICES[id]
+        db.session.delete(service)
+        db.session.commit()
         return make_response("{id} successfully deleted".format(id=id), 200)
 
     else:

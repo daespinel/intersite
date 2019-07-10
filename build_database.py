@@ -34,7 +34,6 @@ db.create_all()
 # Iterate over the service structure and populate the database
 for service in SERVICES:
     s = Service(service_name = service['name'], service_type = service['type'], service_resources = service['resources'], service_interconnections = service['interconnections'])
-    print(s)
     db.session.add(s)
 
 db.session.commit()

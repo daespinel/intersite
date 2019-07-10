@@ -29,16 +29,21 @@ paths:
               properties:
                 id:
                   type: string
+                  description: ID of the inter-site service
                 type:
                   type: string
+                  description: Inter-site service type (L2 or L3)
                 name:
                   type: string
+                  description: Name of the inter-site service
                 resources:
                   type: array
+                  description: Resources to federate
                   items: 
                     type: string  
                 interconnections:
                   type: array
+                  description: Locally created interconnections
                   items: 
                     type: string
     post:
@@ -69,6 +74,27 @@ paths:
       responses:
         201:
           description: Successful create inter-site service operation
+          schema:
+            properties:
+              id:
+                type: string
+                description: Id of the person
+              type:
+                type: string
+                description: Inter-site service type
+              name:
+                type: string
+                description: Name of the inter-site service
+              resources:
+                type: array
+                description: Resources to federate
+                items: 
+                  type: string  
+              interconnections:
+                type: array
+                description: Locally created interconnections
+                items: 
+                  type: string
     
   /intersite-vertical/{id}:
     delete:
@@ -83,6 +109,7 @@ paths:
           in: path
           type: string
           required: True
+          description: Id of the service to delete
       responses:
         200:
           description: Successfully deleted a service from service list
