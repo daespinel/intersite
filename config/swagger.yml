@@ -124,7 +124,7 @@ paths:
       parameters:
         - name: id
           in: path
-          type: string
+          type: integer
           required: True
       responses:
         200:

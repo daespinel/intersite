@@ -40,15 +40,16 @@ def read_all_service():
 def read_one_service(id):
     # print(SERVICES)
     service = Service.query.filter(Service.service_id == id).one_or_none()
-
+    print(service)
     if service is not None:
-        service_schema = ServiceSchema
-        return service_schema.dump(service).data
+        service_schema = ServiceSchema()
+        data = service_schema.dump(service).data
+        return data
 
     else:
         abort(404, "Service with ID {id} not found".format(id=id))
 
-    return service
+    
 
 
 def create_service(service):
