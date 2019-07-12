@@ -14,20 +14,23 @@ class Service(db.Model):
         backref='service',
         cascade='all, delete, delete-orphan',
         single_parent=True,
-        order_by='desc(Resource.id)'
+        order_by='desc(Resource.resource_id)'
     )
     service_interconnections = db.relationship(
         'Interconnexion',
         backref='service',
         cascade='all, delete, delete-orphan',
         single_parent=True,
-        order_by='desc(Interconnexion.id)'
+        order_by='desc(Interconnexion.interconnexion_id)'
     )
-    #_service_resources = db.Column(
+
+
+    # _service_resources = db.Column(
     #    'service_resources', db.String(600), default='',  server_default='')
-    #_service_interconnections = db.Column(
+    # _service_interconnections = db.Column(
     #    'service_interconnections', db.String(600), default='',  server_default='')
 
+'''
     def __init__(self,name,typo,resources,interconnections):
         self.service_name = name
         self.service_type = typo
@@ -50,26 +53,32 @@ class Service(db.Model):
     def get_service_interconnections(self):
         #return [x for x in self._service_interconnections.split(';')]
         return self.service_name
-
+    
     #@service_interconnections.setter
     def set_service_interconnections(self, value):
         text = ''
         for element in value:
             text = text + str(element) + ';'
         self._service_interconnections = text
+'''
+
 
 class Resource(db.Model):
     __tablename__ = "resource"
     resource_id = db.Column(db.Integer,
-                           primary_key=True)
+                            primary_key=True)
     resource_region = db.Column(db.String(32))
     resource_uuid = db.Column(db.String(32))
+    service_id = db.Column(db.Integer, db.ForeignKey('service.service_id'))
+
 
 class Interconnexion(db.Model):
     __tablename__ = "interconnexion"
     interconnexion_id = db.Column(db.Integer,
-                           primary_key=True)
+                                  primary_key=True)
     interconnexion_uuid = db.Column(db.String(32))
+    service_id = db.Column(db.Integer, db.ForeignKey('service.service_id'))
+
 
 class ServiceSchema(ma.ModelSchema):
     class Meta:
