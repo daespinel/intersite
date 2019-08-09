@@ -2,7 +2,7 @@ from flask import make_response, abort
 from neutronclient.common import exceptions as neutronclient_exc
 from random import seed
 from random import randint
-from service import Service, ServiceSchema, Resource, Interconnexion
+from service import Service, ServiceSchema, Resource, Interconnexion, ServiceResourcesSchema, ServiceInterconnectionsSchema
 from config import db
 import common.utils as service_utils
 import copy
@@ -71,9 +71,9 @@ def create_service(service):
     service = {
         #'id': id,
         'service_name': service_name,
-        'service_type': service_type,
-        'service_resources': service_resources_list,
-        'service_interconnections': local_interconnections_ids
+        'service_type': service_type
+        #'service_resources': service_resources_list,
+        #'service_interconnections': local_interconnections_ids
     }
 
     for k, v in service_resources_list.items():
@@ -180,7 +180,7 @@ def create_service(service):
                         neutron_client.create_interconnection(
                             interconnection_data)
                     )
-                    # print(inter_temp)
+                    #print(inter_temp)
                     local_interconnections_ids.append(
                         inter_temp['interconnection']['id'])
 
@@ -191,12 +191,29 @@ def create_service(service):
                     print("Connection refused to neutron %s" %
                           service_remote_inter_endpoints[item])
 
-        service['service_interconnections'] = local_interconnections_ids
-        #SERVICES[id] = service
-
         # Create a service instance using the schema and the build service
         service_schema = ServiceSchema()
         new_service = service_schema.load(service, session=db.session).data
+        
+        # Adding the resources to the service
+        for k,v in service_resources_list.items():
+            print(k,v)
+            resource = {
+                'resource_region': k,
+                'resource_uuid': v
+            }
+            service_resources_schema = ServiceResourcesSchema()
+            new_service_resources = service_resources_schema.load(resource,session=db.session).data
+            new_service.service_resources.append(new_service_resources)
+
+        # Adding the interconnections to the service
+        for element in local_interconnections_ids:
+            interconnexion = {
+                'interconnexion_uuid': element
+            }
+            service_interconnections_schema = ServiceInterconnectionsSchema()
+            new_service_interconnections = service_interconnections_schema.load(interconnexion,session=db.session).data
+            new_service.service_interconnections.append(new_service_interconnections)
 
         # Add the service to the database
         db.session.add(new_service)
@@ -245,7 +262,7 @@ def delete_service(id):
             except neutronclient_exc.Unauthorized:
                 print("Connection refused to neutron %s" %
                       service_remote_inter_endpoints[item])
-        del SERVICES[id]
+        #del SERVICES[id]
         db.session.delete(service)
         db.session.commit()
         return make_response("{id} successfully deleted".format(id=id), 200)

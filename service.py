@@ -29,8 +29,8 @@ class Resource(db.Model):
     __tablename__ = "resource"
     resource_id = db.Column(db.Integer,
                             primary_key=True)
-    resource_region = db.Column(db.String(32))
-    resource_uuid = db.Column(db.String(32))
+    resource_region = db.Column(db.String(64))
+    resource_uuid = db.Column(db.String(64))
     service_id = db.Column(db.Integer, db.ForeignKey('service.service_id'))
 
 
@@ -38,11 +38,14 @@ class Interconnexion(db.Model):
     __tablename__ = "interconnexion"
     interconnexion_id = db.Column(db.Integer,
                                   primary_key=True)
-    interconnexion_uuid = db.Column(db.String(32))
+    interconnexion_uuid = db.Column(db.String(64))
     service_id = db.Column(db.Integer, db.ForeignKey('service.service_id'))
 
 
 class ServiceSchema(ma.ModelSchema):
+    def __init__(self, **kwargs):
+        super().__init__(strict=True, **kwargs)
+    
     class Meta:
         model = Service
         sqla_session = db.session
@@ -59,6 +62,8 @@ class SServiceResourcesSchema(ma.ModelSchema):
     resource_uuid = fields.Str()
 
 class ServiceResourcesSchema(ma.ModelSchema):
+    def __init__(self, **kwargs):
+        super().__init__(strict=True, **kwargs)
     class Meta:
         model = Resource
         sqla_session = db.session
@@ -82,6 +87,9 @@ class SServiceInterconnectionsSchema(ma.ModelSchema):
     interconnexion_uuid = fields.Str()
 
 class ServiceInterconnectionsSchema(ma.ModelSchema):
+    def __init__(self, **kwargs):
+        super().__init__(strict=True, **kwargs)
+
     class Meta:
         model = Interconnexion
         sqla_session = db.session
