@@ -1,6 +1,7 @@
 from config import db, ma
 import json
 from sqlalchemy.ext.hybrid import hybrid_property
+from marshmallow import fields
 
 
 class Service(db.Model):
@@ -24,45 +25,6 @@ class Service(db.Model):
         order_by='desc(Interconnexion.interconnexion_id)'
     )
 
-
-    # _service_resources = db.Column(
-    #    'service_resources', db.String(600), default='',  server_default='')
-    # _service_interconnections = db.Column(
-    #    'service_interconnections', db.String(600), default='',  server_default='')
-
-'''
-    def __init__(self,name,typo,resources,interconnections):
-        self.service_name = name
-        self.service_type = typo
-        self.set_service_resources(resources)
-        self.set_service_interconnections(interconnections)
-
-    #@property
-    def get_service_resources(self):
-        response = [x for x in self._service_resources.split(';')]
-        return 'response'
-
-    #@service_resources.setter
-    def set_service_resources(self, value):
-        text = ''
-        for element in value:
-            text = text + str(element) + ';'
-        self._service_resources = text
-
-    #@property
-    def get_service_interconnections(self):
-        #return [x for x in self._service_interconnections.split(';')]
-        return self.service_name
-    
-    #@service_interconnections.setter
-    def set_service_interconnections(self, value):
-        text = ''
-        for element in value:
-            text = text + str(element) + ';'
-        self._service_interconnections = text
-'''
-
-
 class Resource(db.Model):
     __tablename__ = "resource"
     resource_id = db.Column(db.Integer,
@@ -84,3 +46,52 @@ class ServiceSchema(ma.ModelSchema):
     class Meta:
         model = Service
         sqla_session = db.session
+    service_resources = fields.Nested('SServiceResourcesSchema', default=[], many=True)
+    service_interconnections = fields.Nested('SServiceInterconnectionsSchema', default=[], many=True)
+
+class SServiceResourcesSchema(ma.ModelSchema):
+    """
+    This class exists to get around a recursion issue
+    """
+    resource_id = fields.Int()
+    service_id = fields.Int()
+    resource_region = fields.Str()
+    resource_uuid = fields.Str()
+
+class ServiceResourcesSchema(ma.ModelSchema):
+    class Meta:
+        model = Resource
+        sqla_session = db.session
+    service = fields.Nested('ServiceResourcesServiceSchema', default=None)
+
+
+class ServiceResourcesServiceSchema(ma.ModelSchema):
+    """
+    This class exists to get around a recursion issue
+    """
+    service_id = fields.Int()
+    service_name = fields.Str()
+    service_type = fields.Str()
+
+class SServiceInterconnectionsSchema(ma.ModelSchema):
+    """
+    This class exists to get around a recursion issue
+    """
+    interconnexion_id = fields.Int()
+    service_id = fields.Int()
+    interconnexion_uuid = fields.Str()
+
+class ServiceInterconnectionsSchema(ma.ModelSchema):
+    class Meta:
+        model = Interconnexion
+        sqla_session = db.session
+    service = fields.Nested('ServiceInterconnectionsServiceSchema', default=None)
+
+
+class ServiceInterconnectionsServiceSchema(ma.ModelSchema):
+    """
+    This class exists to get around a recursion issue
+    """
+    service_id = fields.Int()
+    service_name = fields.Str()
+    service_type = fields.Str()

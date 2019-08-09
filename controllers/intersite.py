@@ -2,7 +2,7 @@ from flask import make_response, abort
 from neutronclient.common import exceptions as neutronclient_exc
 from random import seed
 from random import randint
-from service import Service, ServiceSchema
+from service import Service, ServiceSchema, Resource, Interconnexion
 from config import db
 import common.utils as service_utils
 import copy
@@ -38,12 +38,11 @@ def read_all_service():
 
 
 def read_one_service(id):
-    # print(SERVICES)
-    service = Service.query.filter(Service.service_id == id).one_or_none()
-    print(service)
+    service = Service.query.filter(Service.service_id == id).outerjoin(Resource).outerjoin(Interconnexion).one_or_none()
     if service is not None:
         service_schema = ServiceSchema()
         data = service_schema.dump(service).data
+        print(data)
         return data
 
     else:
@@ -229,8 +228,9 @@ def delete_service(id):
         service_schema = ServiceSchema()
         service_data = service_schema.dump(service).data
         print(service_data)
-        interconnections_delete = service_data['lservice_interconnections']
+        interconnections_delete = service_data['service_interconnections']
         for inter in interconnections_delete:
+            print(inter)
             neutron_client = service_utils.get_neutron_client(
                 service_utils.get_local_keystone(),
                 service_utils.get_region_name()
