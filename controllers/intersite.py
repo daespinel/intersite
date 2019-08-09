@@ -197,7 +197,6 @@ def create_service(service):
         
         # Adding the resources to the service
         for k,v in service_resources_list.items():
-            print(k,v)
             resource = {
                 'resource_region': k,
                 'resource_uuid': v
@@ -219,7 +218,7 @@ def create_service(service):
         db.session.add(new_service)
         db.session.commit()
 
-        # Sending remote inter-site requests to the distant nodes
+        # Sending remote inter-site create requests to the distant nodes
         for obj in service_resources_list.keys():
             if obj != service_utils.get_region_name():
                 remote_inter_instance = service_remote_inter_endpoints[obj].strip(
@@ -240,14 +239,17 @@ def update_service(id, service_resources_list):
 
 
 def delete_service(id):
+    local_region_url = service_utils.get_local_keystone()
+    service_remote_inter_endpoints = {}
     service = Service.query.filter(Service.service_id == id).one_or_none()
     if service is not None:
         service_schema = ServiceSchema()
         service_data = service_schema.dump(service).data
-        print(service_data)
+        resources_list_to_delete = service_data['service_resources']
+        print(resources_list_to_delete)
         interconnections_delete = service_data['service_interconnections']
-        for inter in interconnections_delete:
-            print(inter)
+        for element in interconnections_delete:
+            inter = element['interconnexion_uuid']
             neutron_client = service_utils.get_neutron_client(
                 service_utils.get_local_keystone(),
                 service_utils.get_region_name()
@@ -262,9 +264,32 @@ def delete_service(id):
             except neutronclient_exc.Unauthorized:
                 print("Connection refused to neutron %s" %
                       service_remote_inter_endpoints[item])
-        #del SERVICES[id]
+
         db.session.delete(service)
         db.session.commit()
+
+        catalog_endpoints = service_utils.get_keystone_catalog(local_region_url)
+        for obj in catalog_endpoints:
+            if obj['name'] == 'neutron':
+                for endpoint in obj['endpoints']:
+                    #print(endpoint)
+                    for region_name in resources_list_to_delete:
+                        print(region_name)
+                        if endpoint['region'] == region_name['resource_region']:
+                            service_remote_inter_endpoints[region_name['resource_region']] = endpoint['url']
+                            break
+
+        print(service_remote_inter_endpoints)
+        # Sending remote inter-site delete requests to the distant nodes
+        for obj in resources_list_to_delete:
+            if obj['resource_region'] != service_utils.get_region_name():
+                remote_inter_instance = service_remote_inter_endpoints[obj['resource_region']].strip(
+                    '9696/')
+                remote_inter_instance = remote_inter_instance + '7575/'
+                print(remote_inter_instance)
+                # remote_delete = {'id':id}
+                # send horizontal delete (service_remote_inter_endpoints[obj])
+
         return make_response("{id} successfully deleted".format(id=id), 200)
 
     else:
