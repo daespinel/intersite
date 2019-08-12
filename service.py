@@ -10,6 +10,7 @@ class Service(db.Model):
                            primary_key=True)
     service_name = db.Column(db.String(32))
     service_type = db.Column(db.String(32))
+    service_global = db.Column(db.String(64))
     service_resources = db.relationship(
         'Resource',
         backref='service',
@@ -24,6 +25,7 @@ class Service(db.Model):
         single_parent=True,
         order_by='desc(Interconnexion.interconnexion_id)'
     )
+
 
 class Resource(db.Model):
     __tablename__ = "resource"
@@ -45,12 +47,15 @@ class Interconnexion(db.Model):
 class ServiceSchema(ma.ModelSchema):
     def __init__(self, **kwargs):
         super().__init__(strict=True, **kwargs)
-    
+
     class Meta:
         model = Service
         sqla_session = db.session
-    service_resources = fields.Nested('SServiceResourcesSchema', default=[], many=True)
-    service_interconnections = fields.Nested('SServiceInterconnectionsSchema', default=[], many=True)
+    service_resources = fields.Nested(
+        'SServiceResourcesSchema', default=[], many=True)
+    service_interconnections = fields.Nested(
+        'SServiceInterconnectionsSchema', default=[], many=True)
+
 
 class SServiceResourcesSchema(ma.ModelSchema):
     """
@@ -61,9 +66,11 @@ class SServiceResourcesSchema(ma.ModelSchema):
     resource_region = fields.Str()
     resource_uuid = fields.Str()
 
+
 class ServiceResourcesSchema(ma.ModelSchema):
     def __init__(self, **kwargs):
         super().__init__(strict=True, **kwargs)
+
     class Meta:
         model = Resource
         sqla_session = db.session
@@ -77,6 +84,8 @@ class ServiceResourcesServiceSchema(ma.ModelSchema):
     service_id = fields.Int()
     service_name = fields.Str()
     service_type = fields.Str()
+    service_global = fields.Str()
+
 
 class SServiceInterconnectionsSchema(ma.ModelSchema):
     """
@@ -86,6 +95,7 @@ class SServiceInterconnectionsSchema(ma.ModelSchema):
     service_id = fields.Int()
     interconnexion_uuid = fields.Str()
 
+
 class ServiceInterconnectionsSchema(ma.ModelSchema):
     def __init__(self, **kwargs):
         super().__init__(strict=True, **kwargs)
@@ -93,7 +103,8 @@ class ServiceInterconnectionsSchema(ma.ModelSchema):
     class Meta:
         model = Interconnexion
         sqla_session = db.session
-    service = fields.Nested('ServiceInterconnectionsServiceSchema', default=None)
+    service = fields.Nested(
+        'ServiceInterconnectionsServiceSchema', default=None)
 
 
 class ServiceInterconnectionsServiceSchema(ma.ModelSchema):
@@ -103,3 +114,4 @@ class ServiceInterconnectionsServiceSchema(ma.ModelSchema):
     service_id = fields.Int()
     service_name = fields.Str()
     service_type = fields.Str()
+    service_global = fields.Str()

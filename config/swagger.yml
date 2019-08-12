@@ -165,9 +165,9 @@ paths:
           schema:
             type: object
             properties:
-              id:
+              global:
                 type: string
-                description: Original ID of the service
+                description: First created ID of the service
               type:
                 type: string
                 description: Type of inter-site service
@@ -181,3 +181,21 @@ paths:
       responses:
         201:
           description: Successful create inter-site service operation
+
+  /intersite-horizontal/{id}:
+    delete:
+      operationId: delete_inter_service
+      tags:
+        - services
+      summary: Deletes an inter-site Service DELETE
+      description: Deletes an inter-site service
+      x-swagger-router-controller: controllers.intersite
+      parameters:
+        - name: id
+          in: path
+          type: string
+          required: True
+          description: Id of the service to delete
+      responses:
+        200:
+          description: Successfully deleted a service from service list

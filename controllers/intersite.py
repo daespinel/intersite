@@ -9,6 +9,9 @@ import copy
 import json
 import ipaddr
 import itertools
+import string
+import random
+import requests
 
 
 # Data to serve with our API
@@ -38,7 +41,8 @@ def read_all_service():
 
 
 def read_one_service(id):
-    service = Service.query.filter(Service.service_id == id).outerjoin(Resource).outerjoin(Interconnexion).one_or_none()
+    service = Service.query.filter(Service.service_id == id).outerjoin(
+        Resource).outerjoin(Interconnexion).one_or_none()
     if service is not None:
         service_schema = ServiceSchema()
         data = service_schema.dump(service).data
@@ -47,8 +51,6 @@ def read_one_service(id):
 
     else:
         abort(404, "Service with ID {id} not found".format(id=id))
-
-    
 
 
 def create_service(service):
@@ -65,15 +67,15 @@ def create_service(service):
     service_remote_auth_endpoints = {}
     service_remote_inter_endpoints = {}
     local_interconnections_ids = []
-    #seed(1)
-    #id = str(randint(0, 10000))
+    random_id = create_random_global_id(12)
 
-    service = {
-        #'id': id,
+    to_service = {
+        # 'id': id,
         'service_name': service_name,
-        'service_type': service_type
-        #'service_resources': service_resources_list,
-        #'service_interconnections': local_interconnections_ids
+        'service_type': service_type,
+        'service_global': random_id
+        # 'service_resources': service_resources_list,
+        # 'service_interconnections': local_interconnections_ids
     }
 
     for k, v in service_resources_list.items():
@@ -180,7 +182,7 @@ def create_service(service):
                         neutron_client.create_interconnection(
                             interconnection_data)
                     )
-                    #print(inter_temp)
+                    # print(inter_temp)
                     local_interconnections_ids.append(
                         inter_temp['interconnection']['id'])
 
@@ -193,16 +195,17 @@ def create_service(service):
 
         # Create a service instance using the schema and the build service
         service_schema = ServiceSchema()
-        new_service = service_schema.load(service, session=db.session).data
-        
+        new_service = service_schema.load(to_service, session=db.session).data
+
         # Adding the resources to the service
-        for k,v in service_resources_list.items():
+        for k, v in service_resources_list.items():
             resource = {
                 'resource_region': k,
                 'resource_uuid': v
             }
             service_resources_schema = ServiceResourcesSchema()
-            new_service_resources = service_resources_schema.load(resource,session=db.session).data
+            new_service_resources = service_resources_schema.load(
+                resource, session=db.session).data
             new_service.service_resources.append(new_service_resources)
 
         # Adding the interconnections to the service
@@ -211,8 +214,10 @@ def create_service(service):
                 'interconnexion_uuid': element
             }
             service_interconnections_schema = ServiceInterconnectionsSchema()
-            new_service_interconnections = service_interconnections_schema.load(interconnexion,session=db.session).data
-            new_service.service_interconnections.append(new_service_interconnections)
+            new_service_interconnections = service_interconnections_schema.load(
+                interconnexion, session=db.session).data
+            new_service.service_interconnections.append(
+                new_service_interconnections)
 
         # Add the service to the database
         db.session.add(new_service)
@@ -223,9 +228,13 @@ def create_service(service):
             if obj != service_utils.get_region_name():
                 remote_inter_instance = service_remote_inter_endpoints[obj].strip(
                     '9696/')
-                remote_inter_instance = remote_inter_instance + '7575/'
-                # remote_service = {'id':id, 'name':service_name, 'type':service_type, 'interconnected_resources':service_resources_list}
+                remote_inter_instance = remote_inter_instance + '7575/intersite-horizontal'
+                remote_service = {'name': service_name, 'type': service_type,
+                                  'global': random_id, 'resources': service.get("resources", None)}
                 # send horizontal (service_remote_inter_endpoints[obj])
+                headers = {'Content-Type': 'application/json','Accept': 'application/json'}
+                #r = requests.post(remote_inter_instance, data=remote_service, headers=headers)
+                print(remote_inter_instance)
 
         return service_schema.dump(new_service).data, 201
 
@@ -246,7 +255,7 @@ def delete_service(id):
         service_schema = ServiceSchema()
         service_data = service_schema.dump(service).data
         resources_list_to_delete = service_data['service_resources']
-        print(resources_list_to_delete)
+        # print(resources_list_to_delete)
         interconnections_delete = service_data['service_interconnections']
         for element in interconnections_delete:
             inter = element['interconnexion_uuid']
@@ -268,25 +277,27 @@ def delete_service(id):
         db.session.delete(service)
         db.session.commit()
 
-        catalog_endpoints = service_utils.get_keystone_catalog(local_region_url)
+        catalog_endpoints = service_utils.get_keystone_catalog(
+            local_region_url)
         for obj in catalog_endpoints:
             if obj['name'] == 'neutron':
                 for endpoint in obj['endpoints']:
-                    #print(endpoint)
+                    # print(endpoint)
                     for region_name in resources_list_to_delete:
-                        print(region_name)
+                        # print(region_name)
                         if endpoint['region'] == region_name['resource_region']:
-                            service_remote_inter_endpoints[region_name['resource_region']] = endpoint['url']
+                            service_remote_inter_endpoints[region_name['resource_region']
+                                                           ] = endpoint['url']
                             break
 
-        print(service_remote_inter_endpoints)
+        # print(service_remote_inter_endpoints)
         # Sending remote inter-site delete requests to the distant nodes
         for obj in resources_list_to_delete:
             if obj['resource_region'] != service_utils.get_region_name():
                 remote_inter_instance = service_remote_inter_endpoints[obj['resource_region']].strip(
                     '9696/')
                 remote_inter_instance = remote_inter_instance + '7575/'
-                print(remote_inter_instance)
+                # print(remote_inter_instance)
                 # remote_delete = {'id':id}
                 # send horizontal delete (service_remote_inter_endpoints[obj])
 
@@ -296,10 +307,6 @@ def delete_service(id):
         abort(404, "Service with ID {id} not found".format(id=id))
 
 
-def check_existing_service(resource_list):
-    print("ja")
-
-
 # /intersite-horizontal
 # Handler for inter-site service creation request
 
@@ -307,20 +314,19 @@ def request_inter_service(service):
     local_region_name = service_utils.get_region_name()
     local_region_url = service_utils.get_local_keystone()
     local_resource = ''
-    service_id = service.get("id", None)
     service_name = service.get("name", None)
     service_type = service.get("type", None)
+    service_global = service.get("global", None)
     #service_resources = service.get("resources", None)
     service_resources_list = dict((k.strip(), v.strip()) for k, v in (
         (item.split(',')) for item in service.get("resources", None)))
     service_remote_auth_endpoints = {}
+    local_interconnections_ids = []
 
-    service = {
-        'id': service_id,
-        'name': service_name,
-        'type': service_type,
-        'resources': service_resources_list,
-        'interconnections': ''
+    to_service = {
+        'service_name': service_name,
+        'service_type': service_type,
+        'service_global': service_global
     }
 
     for k, v in service_resources_list.items():
@@ -339,7 +345,6 @@ def request_inter_service(service):
                         break
 
     # calling the interconnection service plugin to create the necessary objects
-    id_temp = 1
     for k, v in service_resources_list.items():
         if local_region_name != k:
             neutron_client = service_utils.get_neutron_client(
@@ -347,7 +352,7 @@ def request_inter_service(service):
                 local_region_name
             )
             interconnection_data = {'interconnection': {
-                'name': service_name+str(id_temp),
+                'name': service_name,
                 'remote_keystone': service_remote_auth_endpoints[k],
                 'remote_region': k,
                 'local_resource_id': local_resource,
@@ -355,7 +360,6 @@ def request_inter_service(service):
                 'remote_resource_id': v,
 
             }}
-            id_temp = id_temp+1
             try:
                 inter_temp = (
                     neutron_client.create_interconnection(
@@ -372,7 +376,108 @@ def request_inter_service(service):
                 print("Connection refused to neutron %s" %
                       service_remote_inter_endpoints[item])
 
-    service['local_interconnections'] = local_interconnections_ids
-    SERVICES[id] = service
 
-    return make_response(json.dumps(service), 201)
+    # Create a service instance using the schema and the build service
+    service_schema = ServiceSchema()
+    new_service = service_schema.load(to_service, session=db.session).data
+
+    # Adding the resources to the service
+    for k, v in service_resources_list.items():
+        resource = {
+            'resource_region': k,
+            'resource_uuid': v
+        }
+        service_resources_schema = ServiceResourcesSchema()
+        new_service_resources = service_resources_schema.load(
+            resource, session=db.session).data
+        new_service.service_resources.append(new_service_resources)
+
+    # Adding the interconnections to the service
+    for element in local_interconnections_ids:
+        interconnexion = {
+            'interconnexion_uuid': element
+        }
+        service_interconnections_schema = ServiceInterconnectionsSchema()
+        new_service_interconnections = service_interconnections_schema.load(
+            interconnexion, session=db.session).data
+        new_service.service_interconnections.append(
+            new_service_interconnections)
+
+    # Add the service to the database
+    db.session.add(new_service)
+    db.session.commit()
+
+    return service_schema.dump(new_service).data, 201
+
+# Handler to delete a service
+
+
+def delete_inter_service(id):
+    local_region_url = service_utils.get_local_keystone()
+    service_remote_inter_endpoints = {}
+    service = Service.query.filter(Service.service_id == id).one_or_none()
+    if service is not None:
+        service_schema = ServiceSchema()
+        service_data = service_schema.dump(service).data
+        resources_list_to_delete = service_data['service_resources']
+        # print(resources_list_to_delete)
+        interconnections_delete = service_data['service_interconnections']
+        for element in interconnections_delete:
+            inter = element['interconnexion_uuid']
+            neutron_client = service_utils.get_neutron_client(
+                service_utils.get_local_keystone(),
+                service_utils.get_region_name()
+            )
+            try:
+                inter_del = (
+                    neutron_client.delete_interconnection(inter))
+
+            except neutronclient_exc.ConnectionFailed:
+                print("Can't connect to neutron %s" %
+                      service_remote_inter_endpoints[item])
+            except neutronclient_exc.Unauthorized:
+                print("Connection refused to neutron %s" %
+                      service_remote_inter_endpoints[item])
+
+        db.session.delete(service)
+        db.session.commit()
+
+        catalog_endpoints = service_utils.get_keystone_catalog(
+            local_region_url)
+        for obj in catalog_endpoints:
+            if obj['name'] == 'neutron':
+                for endpoint in obj['endpoints']:
+                    # print(endpoint)
+                    for region_name in resources_list_to_delete:
+                        # print(region_name)
+                        if endpoint['region'] == region_name['resource_region']:
+                            service_remote_inter_endpoints[region_name['resource_region']
+                                                           ] = endpoint['url']
+                            break
+
+        # print(service_remote_inter_endpoints)
+        # Sending remote inter-site delete requests to the distant nodes
+        for obj in resources_list_to_delete:
+            if obj['resource_region'] != service_utils.get_region_name():
+                remote_inter_instance = service_remote_inter_endpoints[obj['resource_region']].strip(
+                    '9696/')
+                remote_inter_instance = remote_inter_instance + '7575/'
+                # print(remote_inter_instance)
+                # remote_delete = {'id':id}
+                # send horizontal delete (service_remote_inter_endpoints[obj])
+
+        return make_response("{id} successfully deleted".format(id=id), 200)
+
+    else:
+        abort(404, "Service with ID {id} not found".format(id=id))
+
+# Utils
+
+
+def check_existing_service(resource_list):
+    print("ja")
+
+
+def create_random_global_id(stringLength=8):
+    lettersAndDigits = string.ascii_lowercase + string.digits
+    return ''.join(random.choice(lettersAndDigits) for i in range(stringLength))
