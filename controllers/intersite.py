@@ -40,8 +40,8 @@ def read_all_service():
 # Possibility to add more information as ids of remote interconnection resources
 
 
-def read_one_service(id):
-    service = Service.query.filter(Service.service_id == id).outerjoin(
+def read_one_service(global_id):
+    service = Service.query.filter(Service.service_global == global_id).outerjoin(
         Resource).outerjoin(Interconnexion).one_or_none()
     if service is not None:
         service_schema = ServiceSchema()
@@ -228,11 +228,12 @@ def create_service(service):
             if obj != service_utils.get_region_name():
                 remote_inter_instance = service_remote_inter_endpoints[obj].strip(
                     '9696/')
-                remote_inter_instance = remote_inter_instance + '7575/intersite-horizontal'
+                remote_inter_instance = remote_inter_instance + '7575/api/intersite-horizontal'
                 remote_service = {'name': service_name, 'type': service_type,
                                   'global': random_id, 'resources': service.get("resources", None)}
                 # send horizontal (service_remote_inter_endpoints[obj])
-                headers = {'Content-Type': 'application/json','Accept': 'application/json'}
+                headers = {'Content-Type': 'application/json',
+                           'Accept': 'application/json'}
                 #r = requests.post(remote_inter_instance, data=remote_service, headers=headers)
                 print(remote_inter_instance)
 
@@ -247,10 +248,11 @@ def update_service(id, service_resources_list):
 # Handler to delete a service
 
 
-def delete_service(id):
+def delete_service(global_id):
     local_region_url = service_utils.get_local_keystone()
     service_remote_inter_endpoints = {}
-    service = Service.query.filter(Service.service_id == id).one_or_none()
+    service = Service.query.filter(
+        Service.service_global == global_id).one_or_none()
     if service is not None:
         service_schema = ServiceSchema()
         service_data = service_schema.dump(service).data
@@ -293,18 +295,19 @@ def delete_service(id):
         # print(service_remote_inter_endpoints)
         # Sending remote inter-site delete requests to the distant nodes
         for obj in resources_list_to_delete:
+            remote_inter_instance = ''
             if obj['resource_region'] != service_utils.get_region_name():
                 remote_inter_instance = service_remote_inter_endpoints[obj['resource_region']].strip(
                     '9696/')
-                remote_inter_instance = remote_inter_instance + '7575/'
-                # print(remote_inter_instance)
-                # remote_delete = {'id':id}
+                remote_inter_instance = remote_inter_instance + \
+                    '7575/api/intersite-horizontal/' + global_id
                 # send horizontal delete (service_remote_inter_endpoints[obj])
-
-        return make_response("{id} successfully deleted".format(id=id), 200)
+                headers = {'Accept': 'text/html'}
+                #r = requests.delete(remote_inter_instance,headers=headers)
+        return make_response("{id} successfully deleted".format(id=global_id), 200)
 
     else:
-        abort(404, "Service with ID {id} not found".format(id=id))
+        abort(404, "Service with ID {id} not found".format(id=global_id))
 
 
 # /intersite-horizontal
@@ -376,7 +379,6 @@ def request_inter_service(service):
                 print("Connection refused to neutron %s" %
                       service_remote_inter_endpoints[item])
 
-
     # Create a service instance using the schema and the build service
     service_schema = ServiceSchema()
     new_service = service_schema.load(to_service, session=db.session).data
@@ -412,10 +414,11 @@ def request_inter_service(service):
 # Handler to delete a service
 
 
-def delete_inter_service(id):
+def delete_inter_service(global_id):
     local_region_url = service_utils.get_local_keystone()
     service_remote_inter_endpoints = {}
-    service = Service.query.filter(Service.service_id == id).one_or_none()
+    service = Service.query.filter(
+        Service.service_global == global_id).one_or_none()
     if service is not None:
         service_schema = ServiceSchema()
         service_data = service_schema.dump(service).data
@@ -466,10 +469,10 @@ def delete_inter_service(id):
                 # remote_delete = {'id':id}
                 # send horizontal delete (service_remote_inter_endpoints[obj])
 
-        return make_response("{id} successfully deleted".format(id=id), 200)
+        return make_response("{id} successfully deleted".format(id=global_id), 200)
 
     else:
-        abort(404, "Service with ID {id} not found".format(id=id))
+        abort(404, "Service with ID {id} not found".format(id=global_id))
 
 # Utils
 

@@ -96,7 +96,7 @@ paths:
                 items: 
                   type: string
     
-  /intersite-vertical/{id}:
+  /intersite-vertical/{global_id}:
     delete:
       operationId: delete_service
       tags:
@@ -105,7 +105,7 @@ paths:
       description: Deletes an inter-site service
       x-swagger-router-controller: controllers.intersite
       parameters:
-        - name: id
+        - name: global_id
           in: path
           type: string
           required: True
@@ -122,7 +122,7 @@ paths:
       description: Read one inter-site service
       x-swagger-router-controller: controllers.intersite
       parameters:
-        - name: id
+        - name: global_id
           in: path
           type: integer
           required: True
@@ -182,7 +182,7 @@ paths:
         201:
           description: Successful create inter-site service operation
 
-  /intersite-horizontal/{id}:
+  /intersite-horizontal/{global_id}:
     delete:
       operationId: delete_inter_service
       tags:
@@ -191,7 +191,7 @@ paths:
       description: Deletes an inter-site service
       x-swagger-router-controller: controllers.intersite
       parameters:
-        - name: id
+        - name: global_id
           in: path
           type: string
           required: True
