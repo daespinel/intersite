@@ -21,7 +21,7 @@ SERVICE_TYPE = {'L2': 'network_l2', 'L3': 'network_l3'}
 # Create a handler for our read (GET) services
 
 
-def read_all_service():
+def vertical_read_all_service():
     """
     This function responds to a request for /api/intersite
     with the complete lists of inter-site services
@@ -40,7 +40,7 @@ def read_all_service():
 # Possibility to add more information as ids of remote interconnection resources
 
 
-def read_one_service(global_id):
+def vertical_read_one_service(global_id):
     service = Service.query.filter(Service.service_global == global_id).outerjoin(
         Resource).outerjoin(Interconnexion).one_or_none()
     if service is not None:
@@ -53,7 +53,7 @@ def read_one_service(global_id):
         abort(404, "Service with ID {id} not found".format(id=id))
 
 
-def create_service(service):
+def vertical_create_service(service):
     # Taking information from the API http POST request
     local_region_name = service_utils.get_region_name()
     local_region_url = service_utils.get_local_keystone()
@@ -242,13 +242,13 @@ def create_service(service):
 # Handler to update an existing service
 
 
-def update_service(id, service_resources_list):
+def vertical_update_service(id, service_resources_list):
     print("TO BE DONE")
 
 # Handler to delete a service
 
 
-def delete_service(global_id):
+def vertical_delete_service(global_id):
     local_region_url = service_utils.get_local_keystone()
     service_remote_inter_endpoints = {}
     service = Service.query.filter(
@@ -313,7 +313,7 @@ def delete_service(global_id):
 # /intersite-horizontal
 # Handler for inter-site service creation request
 
-def request_inter_service(service):
+def horizontal_create_service(service):
     local_region_name = service_utils.get_region_name()
     local_region_url = service_utils.get_local_keystone()
     local_resource = ''
@@ -414,7 +414,7 @@ def request_inter_service(service):
 # Handler to delete a service
 
 
-def delete_inter_service(global_id):
+def horizontal_delete_service(global_id):
     local_region_url = service_utils.get_local_keystone()
     service_remote_inter_endpoints = {}
     service = Service.query.filter(

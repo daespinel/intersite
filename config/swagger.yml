@@ -14,7 +14,7 @@ basePath: /api
 paths:
   /intersite-vertical:
     get:
-      operationId: read_all_service
+      operationId: vertical_read_all_service
       tags:
         - services
       summary: the inter-site Service mapping structure GET
@@ -47,7 +47,7 @@ paths:
                   items: 
                     type: string
     post:
-      operationId: create_service
+      operationId: vertical_create_service
       tags:
         - services
       summary: Creates an inter-site Service POST
@@ -98,7 +98,7 @@ paths:
     
   /intersite-vertical/{global_id}:
     delete:
-      operationId: delete_service
+      operationId: vertical_delete_service
       tags:
         - services
       summary: Deletes an inter-site Service DELETE
@@ -115,7 +115,7 @@ paths:
           description: Successfully deleted a service from service list
 
     get:
-      operationId: read_one_service
+      operationId: vertical_read_one_service
       tags:
         - services
       summary: Read one inter-site Service GET
@@ -151,7 +151,7 @@ paths:
 
   /intersite-horizontal:
     post:
-      operationId: request_inter_service
+      operationId: horizontal_create_service
       tags:
         - services
       summary: Horizontal request to create an inter-site Service POST
@@ -184,7 +184,7 @@ paths:
 
   /intersite-horizontal/{global_id}:
     delete:
-      operationId: delete_inter_service
+      operationId: horizontal_delete_service
       tags:
         - services
       summary: Deletes an inter-site Service DELETE
