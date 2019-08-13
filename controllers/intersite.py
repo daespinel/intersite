@@ -445,30 +445,6 @@ def delete_inter_service(global_id):
         db.session.delete(service)
         db.session.commit()
 
-        catalog_endpoints = service_utils.get_keystone_catalog(
-            local_region_url)
-        for obj in catalog_endpoints:
-            if obj['name'] == 'neutron':
-                for endpoint in obj['endpoints']:
-                    # print(endpoint)
-                    for region_name in resources_list_to_delete:
-                        # print(region_name)
-                        if endpoint['region'] == region_name['resource_region']:
-                            service_remote_inter_endpoints[region_name['resource_region']
-                                                           ] = endpoint['url']
-                            break
-
-        # print(service_remote_inter_endpoints)
-        # Sending remote inter-site delete requests to the distant nodes
-        for obj in resources_list_to_delete:
-            if obj['resource_region'] != service_utils.get_region_name():
-                remote_inter_instance = service_remote_inter_endpoints[obj['resource_region']].strip(
-                    '9696/')
-                remote_inter_instance = remote_inter_instance + '7575/'
-                # print(remote_inter_instance)
-                # remote_delete = {'id':id}
-                # send horizontal delete (service_remote_inter_endpoints[obj])
-
         return make_response("{id} successfully deleted".format(id=global_id), 200)
 
     else:
