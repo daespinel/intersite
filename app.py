@@ -1,5 +1,6 @@
 from flask import Flask
 from flask import render_template
+import common.utils as service_utils
 import connexion
 import re
 
@@ -9,7 +10,8 @@ app = connexion.App(__name__, specification_dir='./config/')
 def main():
     # Read the swagger.yml file to configure the endpoints
     app.add_api('swagger.yml')
-    app.run(host='0.0.0.0', port=7575, debug=True)
+    host = service_utils.get_local_host()
+    app.run(host=host, port=7575, debug=True)
 
 @app.route("/")
 def home():

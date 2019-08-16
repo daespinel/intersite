@@ -8,6 +8,8 @@ from neutronclient.v2_0 import client as neutronclient
 config = configparser.ConfigParser()
 config.read('config/services.config')
 
+def get_local_host():
+    return config['DEFAULT']['host']
 
 def get_local_keystone():
     return config['DEFAULT']['auth_url']
