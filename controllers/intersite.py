@@ -34,7 +34,7 @@ def vertical_read_all_service():
     # Serialize the data for the response
     service_schema = ServiceSchema(many=True)
     data = service_schema.dump(services).data
-    print(data)
+    #print(data)
     return data
 
 # Create a handler for our read (GET) one service by ID
