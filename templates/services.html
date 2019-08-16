@@ -1,0 +1,65 @@
+{% extends "parent.html" %}
+{% block title %}Services{% endblock %}
+{% block head %}
+    {{ super() }}
+<link rel="stylesheet" href="/static/css/services.css">
+{% endblock %}
+{% block page_name %}Inter-site service Create/Update/Delete Page{% endblock %}
+
+{% block body %}
+    <div class="container">
+        <input id="url_service_id" type="hidden" value="{{ service_global }}" />
+        <div class="section editor">
+            <div>
+                <span>Service ID:</span>
+                <span id="service_global"></span>
+            </div>
+            <label for="name">Name
+                <input id="name" type="text" />
+            </label>
+            <br />
+            <label for="type">Type
+                <input id="type" type="text" />
+            </label>
+            <br />
+            <button id="create">Create</button>
+            <button id="update">Update</button>
+            <button id="delete">Delete</button>
+        </div>
+        <div class="services">
+            <table>
+                <caption>Inter-site services</caption>
+                <thead>
+                    <tr>
+                        <th>Creation/Update Timestamp</th>
+                        <th>Services</th>
+                    </tr>
+                </thead>
+            </table>
+        </div>
+        <div class="error">
+        </div>
+    </div>
+    <div class="error">
+    </div>
+
+<!-- Handlebars script tag entry -->
+{% raw %}
+<script id="services-table-template" type="text/x-handlebars-template">
+    <tbody>
+        {{#each service}}
+            <tr data-service_global="{{global_id}}" data-name="{{name}}" data-type="{{type}}">
+                <td class="type">{{type}}</td>
+                <td class="name">{{name}}</td>
+            </tr>
+        {{/each}}
+    </tbody>
+</script>
+{% endraw %}
+
+{% endblock %}
+
+{% block javascript %}
+{{ super() }}
+<script src="/static/js/people.js"></script>
+{% endblock %}

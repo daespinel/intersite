@@ -1,56 +1,50 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Inter-site deployment Home Page</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css">
-    <link rel="stylesheet" href="static/css/home.css">
-    <script
-      src="http://code.jquery.com/jquery-3.3.1.min.js"
-      integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
-      crossorigin="anonymous">
-    </script>
-</head>
-<body>
-    <div class="container">
-        <h1 class="banner">Network inter-site service deployment Application</h1>
-        <div class="section editor">
-            <label for="name">Service Name
-                <input id="name" type="text" />
-            </label>
-            <br />
-            <label for="type">Service type
-                <input id="type" type="text" />
-            </label>
-            <br />
-            <label for="resources">Resources to federate
-                <input id="resources" type="[text]" />
-            </label>
-            <br />
-            <button id="create">Create</button>
-            <button id="update">Update</button>
-            <button id="delete">Delete</button>
-            <button id="reset">Reset</button>
-        </div>
-        <div class="service">
-            <table>
-                <caption>Services</caption>
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Name</th>
-                        <th>Type</th>
-                        <th>Resources</th>
-                        <th>Local interconnections IDs</th>
-                    </tr>
-                </thead>
-                <tbody>
-                </tbody>
-            </table>
-        </div>
-        <div class="error">
-        </div>
-    </div>
-</body>
-<script src="static/js/home.js"></script>
-</html>
+{% extends "parent.html" %}
+{% block title %}Home Blog{% endblock %}
+{% block head %}
+    {{ super() }}
+    <link rel="stylesheet" href="/static/css/home.css">
+{% endblock %}
+
+{% block page_name %}Inter-site service deployment PoC{% endblock %}
+
+{% block body %}
+<div class="blog">
+    <table>
+        <caption>Inter-site services Blog Entries</caption>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Global</th>
+                <th>Type</th>
+                <th>Resources</th>
+                <th>Interconnections</th>
+            </tr>
+        </thead>
+    </table>
+</div>
+<div class="error">
+</div>
+
+<!-- Handlebars script tag entry -->
+{% raw %}
+<script id="blog-table-template" type="text/x-handlebars-template">
+    <tbody>
+        {{#each services}}
+        <tr data-service_global="{{service.service_global}}" >
+            <td class="name">{{service_name}}</td>
+            <td class="global">{{service_global}}</td>
+            <td class="type">{{service_type}}</td>
+            <td class="resources">{{service_resources}}</td>
+            <td class="interconnections">{{service_interconnections}}</td>
+        </tr>
+        {{/each}}
+    </tbody>
+</script>
+{% endraw %}
+
+{% endblock %}
+
+{% block javascript %}
+{{ super() }}
+<script src="/static/js/home.js"></script>
+{% endblock %}
