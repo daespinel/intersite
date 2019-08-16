@@ -235,8 +235,8 @@ def vertical_create_service(service):
                 # send horizontal (service_remote_inter_endpoints[obj])
                 headers = {'Content-Type': 'application/json',
                            'Accept': 'application/json'}
-                #r = requests.post(remote_inter_instance, data=remote_service, headers=headers)
-                print(remote_inter_instance)
+                r = requests.post(remote_inter_instance, data=json.dumps(remote_service), headers=headers)
+                print(r.json())
 
         return service_schema.dump(new_service).data, 201
 
@@ -304,7 +304,8 @@ def vertical_delete_service(global_id):
                     '7575/api/intersite-horizontal/' + global_id
                 # send horizontal delete (service_remote_inter_endpoints[obj])
                 headers = {'Accept': 'text/html'}
-                #r = requests.delete(remote_inter_instance,headers=headers)
+                r = requests.delete(remote_inter_instance,headers=headers)
+                
         return make_response("{id} successfully deleted".format(id=global_id), 200)
 
     else:
