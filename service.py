@@ -11,6 +11,7 @@ class Service(db.Model):
     service_name = db.Column(db.String(32))
     service_type = db.Column(db.String(32))
     service_global = db.Column(db.String(64))
+    service_params = db.Column(db.String(64))
     service_resources = db.relationship(
         'Resource',
         backref='service',
@@ -85,6 +86,7 @@ class ServiceResourcesServiceSchema(ma.ModelSchema):
     service_name = fields.Str()
     service_type = fields.Str()
     service_global = fields.Str()
+    service_params = fields.Str()
 
 
 class SServiceInterconnectionsSchema(ma.ModelSchema):
@@ -115,3 +117,4 @@ class ServiceInterconnectionsServiceSchema(ma.ModelSchema):
     service_name = fields.Str()
     service_type = fields.Str()
     service_global = fields.Str()
+    service_params = fields.Str()
