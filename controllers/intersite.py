@@ -34,7 +34,7 @@ def vertical_read_all_service():
     # Serialize the data for the response
     service_schema = ServiceSchema(many=True)
     data = service_schema.dump(services).data
-    #print(data)
+    # print(data)
     return data
 
 # Create a handler for our read (GET) one service by ID
@@ -105,59 +105,60 @@ def vertical_create_service(service):
     if bool(service_resources_list_search):
         return "ERROR: Regions " + ("".join(str(key) for key in service_resources_list_search.keys())) + " are not found"
 
-    # Validation for the L3 routing service
-    if service_type == 'L3':
-        print("L3 routing service to be done among the resources: " +
-              (" ".join(str(value) for value in service_resources_list.values())))
-        subnetworks = {}
-        CIDRs = []
+    subnetworks = {}
+    CIDRs = []
+    # Retrieving information for networks given the region name
+    for item, value in service_resources_list.items():
+        neutron_client = service_utils.get_neutron_client(
+            service_remote_auth_endpoints[item],
+            item
+        )
 
-        # Retrieving information for networks given the region name
-        for item, value in service_resources_list.items():
-            neutron_client = service_utils.get_neutron_client(
-                service_remote_auth_endpoints[item],
-                item
+        try:
+            network_temp = (
+                neutron_client.show_network(network=value
+                                            )
             )
+            subnet = network_temp['network']
+            subnetworks[item] = subnet['subnets'][0]
 
-            try:
-                network_temp = (
-                    neutron_client.show_network(network=value
-                                                )
-                )
-                subnet = network_temp['network']
-                subnetworks[item] = subnet['subnets'][0]
-
-            except neutronclient_exc.ConnectionFailed:
-                print("Can't connect to neutron %s" %
-                      service_remote_inter_endpoints[item])
-            except neutronclient_exc.Unauthorized:
-                print("Connection refused to neutron %s" %
-                      service_remote_inter_endpoints[item])
+        except neutronclient_exc.ConnectionFailed:
+            print("Can't connect to neutron %s" %
+                  service_remote_inter_endpoints[item])
+        except neutronclient_exc.Unauthorized:
+            print("Connection refused to neutron %s" %
+                  service_remote_inter_endpoints[item])
 
         # Retrieving the subnetwork information given the region name
-        for item, value in subnetworks.items():
-            neutron_client = service_utils.get_neutron_client(
-                service_remote_auth_endpoints[item],
-                item
+    for item, value in subnetworks.items():
+        neutron_client = service_utils.get_neutron_client(
+            service_remote_auth_endpoints[item],
+            item
+        )
+        try:
+            subnetwork_temp = (
+                neutron_client.show_subnet(subnet=value)
             )
-            try:
-                subnetwork_temp = (
-                    neutron_client.show_subnet(subnet=value)
-                )
-                subnet = subnetwork_temp['subnet']
-                CIDRs.append(ipaddr.IPNetwork(subnet['cidr']))
+            subnet = subnetwork_temp['subnet']
+            CIDRs.append(ipaddr.IPNetwork(subnet['cidr']))
 
-            except neutronclient_exc.ConnectionFailed:
-                print("Can't connect to neutron %s" %
-                      service_remote_inter_endpoints[item])
-            except neutronclient_exc.Unauthorized:
-                print("Connection refused to neutron %s" %
-                      service_remote_inter_endpoints[item])
+        except neutronclient_exc.ConnectionFailed:
+            print("Can't connect to neutron %s" %
+                  service_remote_inter_endpoints[item])
+        except neutronclient_exc.Unauthorized:
+            print("Connection refused to neutron %s" %
+                  service_remote_inter_endpoints[item])
+
+    # Validation for the L3 routing service
+    if service_type == 'L3':
+
+        print("L3 routing service to be done among the resources: " +
+              (" ".join(str(value) for value in service_resources_list.values())))
 
         # Doing the IP range validation to avoid overlapping problems
         for a, b in itertools.combinations(CIDRs, 2):
             if a.overlaps(b):
-                return "ERROR: networks " + " ".join(str(a)) + " ".join(str(b)) + " overlap"
+                return "ERROR: networks " + " " + (str(a)) + " and "+(str(b)) + " overlap"
 
         # calling the interconnection service plugin to create the necessary objects
         id_temp = 1
@@ -235,10 +236,34 @@ def vertical_create_service(service):
                 # send horizontal (service_remote_inter_endpoints[obj])
                 headers = {'Content-Type': 'application/json',
                            'Accept': 'application/json'}
-                r = requests.post(remote_inter_instance, data=json.dumps(remote_service), headers=headers)
+                r = requests.post(remote_inter_instance, data=json.dumps(
+                    remote_service), headers=headers)
                 print(r.json())
 
         return service_schema.dump(new_service).data, 201
+
+    # Validation for the Layer 2 network extension
+    if service_type == 'L2':
+
+        print("L2 extension service to be done among the resources: " +
+              (" ".join(str(value) for value in service_resources_list.values())))
+
+        # Validating if the networks have the same CIDR
+        if not check_equal_element(CIDRs):
+            return "ERROR: CIDR is not the same for all the resources"
+
+        cidr = CIDRs[0]
+        for adr in cidr:
+            print(adr+2)
+        print(cidr)
+        main_cidr = str(CIDRs[0])
+        main_cidr_base = ((str(CIDRs[0])).split("/",1)[0])
+        main_cidr_prefix = ((str(CIDRs[0])).split("/",1)[1])
+        print(str(main_cidr_base)+ " " + str(main_cidr_prefix) + " " + str(len(service_resources_list)))
+        cidr_ranges = []
+        ips_cidr_available = 2**(32-int(main_cidr_prefix))-2
+        print(ips_cidr_available)
+        return
 
 # Handler to update an existing service
 
@@ -304,8 +329,8 @@ def vertical_delete_service(global_id):
                     '7575/api/intersite-horizontal/' + global_id
                 # send horizontal delete (service_remote_inter_endpoints[obj])
                 headers = {'Accept': 'text/html'}
-                r = requests.delete(remote_inter_instance,headers=headers)
-                
+                r = requests.delete(remote_inter_instance, headers=headers)
+
         return make_response("{id} successfully deleted".format(id=global_id), 200)
 
     else:
@@ -453,6 +478,15 @@ def horizontal_delete_service(global_id):
         abort(404, "Service with ID {id} not found".format(id=global_id))
 
 # Utils
+
+
+def check_equal_element(iterator):
+    iterator = iter(iterator)
+    try:
+        first = next(iterator)
+    except StopIteration:
+        return True
+    return all(first == rest for rest in iterator)
 
 
 def check_existing_service(resource_list):

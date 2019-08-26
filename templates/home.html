@@ -16,6 +16,7 @@
                 <th>Name</th>
                 <th>Global</th>
                 <th>Type</th>
+                <th>Params</th>
                 <th>Resources</th>
                 <th>Interconnections</th>
             </tr>
@@ -34,7 +35,8 @@
             <td class="name">{{service_name}}</td>
             <td class="global">{{service_global}}</td>
             <td class="type">{{service_type}}</td>
-            <td class="resources">{{service_resources}}</td>
+            <td class="params">{{service_params}}</td>
+            <td class="resources">{{service_resources.resource_region}}</td>
             <td class="interconnections">{{service_interconnections}}</td>
         </tr>
         {{/each}}

@@ -124,7 +124,7 @@ paths:
       parameters:
         - name: global_id
           in: path
-          type: integer
+          type: string
           required: True
       responses:
         200:
@@ -140,6 +140,9 @@ paths:
               name:
                 type: string
                 description: Name of the inter-site service
+              params:
+                type: string
+                description: Additional params for the inter-site service
               resources:
                 type: array
                 items:
@@ -174,6 +177,9 @@ paths:
               name:
                 type: string
                 description: Name of the inter-site service
+              params:
+                type: string
+                description: Additional params for the inter-site service
               resources:
                 type: array
                 items:

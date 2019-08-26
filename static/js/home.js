@@ -85,18 +85,10 @@ ns.controller = (function (m, v) {
 
     // handle application events
     $('table').on('dblclick', 'tbody td.name', function (e) {
-        let $target = $(e.target).parent(),
-            person_id = $target.data('person_id');
-
-        window.location = `/people/${person_id}`;
+        let $target = $(e.target),
+            global_id = $target.parent().data('name');
+        window.location = `/api/intersite-vertical/${global_id}`;
 
     });
 
-    $('table').on('dblclick', 'tbody td.content', function (e) {
-        let $target = $(e.target).parent(),
-            person_id = $target.data('person_id'),
-            note_id = $target.data('note_id');
-
-        window.location = `people/${person_id}/notes/${note_id}`;
-    });
 }(ns.model, ns.view));

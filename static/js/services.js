@@ -132,6 +132,7 @@ ns.controller = (function (m, v) {
         $service_global = $('#global'),
         $service_name = $('#name'),
         $service_type = $('#type'),
+        $service_params = $('#params'),
         $service_resources = $('#resources'),
         $service_interconnections = $('#interconnections');
 
@@ -214,10 +215,11 @@ ns.controller = (function (m, v) {
             global = $target.data('global')
             name = $target.data('name'),
             type = $target.data('type'),
-            resources = $target.data('resources.resource_uuid'),
+            params = $target.data('params'),
+            resources = $target.data('resources'),
             interconnections = $target.data('interconnections');
 
-        view.update_editor({ service_id: service_id, global: global, name: name, type: type, resources: resources, interconnections: interconnections });
+        view.update_editor({ service_id: service_id, global: global, name: name, type: type, params: params, resources: resources, interconnections: interconnections });
     });
 
     // Handle the model events
