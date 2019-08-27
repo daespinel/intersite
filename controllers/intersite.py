@@ -6,6 +6,7 @@ from service import Service, ServiceSchema, Resource, Interconnexion, ServiceRes
 from config import db
 import common.utils as service_utils
 import copy
+import math
 import json
 import ipaddr
 import itertools
@@ -74,6 +75,7 @@ def vertical_create_service(service):
         # 'id': id,
         'service_name': service_name,
         'service_type': service_type,
+        'service_params': '',
         'service_global': random_id
         # 'service_resources': service_resources_list,
         # 'service_interconnections': local_interconnections_ids
@@ -160,87 +162,7 @@ def vertical_create_service(service):
             if a.overlaps(b):
                 return "ERROR: networks " + " " + (str(a)) + " and "+(str(b)) + " overlap"
 
-        # calling the interconnection service plugin to create the necessary objects
-        id_temp = 1
-        for k, v in service_resources_list.items():
-
-            if local_region_name != k:
-                neutron_client = service_utils.get_neutron_client(
-                    local_region_url,
-                    local_region_name
-                )
-                interconnection_data = {'interconnection': {
-                    'name': service_name+str(id_temp),
-                    'remote_keystone': service_remote_auth_endpoints[k],
-                    'remote_region': k,
-                    'local_resource_id': local_resource,
-                    'type': SERVICE_TYPE[service_type],
-                    'remote_resource_id': v,
-
-                }}
-                id_temp = id_temp+1
-                try:
-                    inter_temp = (
-                        neutron_client.create_interconnection(
-                            interconnection_data)
-                    )
-                    # print(inter_temp)
-                    local_interconnections_ids.append(
-                        inter_temp['interconnection']['id'])
-
-                except neutronclient_exc.ConnectionFailed:
-                    print("Can't connect to neutron %s" %
-                          service_remote_inter_endpoints[item])
-                except neutronclient_exc.Unauthorized:
-                    print("Connection refused to neutron %s" %
-                          service_remote_inter_endpoints[item])
-
-        # Create a service instance using the schema and the build service
-        service_schema = ServiceSchema()
-        new_service = service_schema.load(to_service, session=db.session).data
-
-        # Adding the resources to the service
-        for k, v in service_resources_list.items():
-            resource = {
-                'resource_region': k,
-                'resource_uuid': v
-            }
-            service_resources_schema = ServiceResourcesSchema()
-            new_service_resources = service_resources_schema.load(
-                resource, session=db.session).data
-            new_service.service_resources.append(new_service_resources)
-
-        # Adding the interconnections to the service
-        for element in local_interconnections_ids:
-            interconnexion = {
-                'interconnexion_uuid': element
-            }
-            service_interconnections_schema = ServiceInterconnectionsSchema()
-            new_service_interconnections = service_interconnections_schema.load(
-                interconnexion, session=db.session).data
-            new_service.service_interconnections.append(
-                new_service_interconnections)
-
-        # Add the service to the database
-        db.session.add(new_service)
-        db.session.commit()
-
-        # Sending remote inter-site create requests to the distant nodes
-        for obj in service_resources_list.keys():
-            if obj != service_utils.get_region_name():
-                remote_inter_instance = service_remote_inter_endpoints[obj].strip(
-                    '9696/')
-                remote_inter_instance = remote_inter_instance + '7575/api/intersite-horizontal'
-                remote_service = {'name': service_name, 'type': service_type,
-                                  'global': random_id, 'resources': service.get("resources", None)}
-                # send horizontal (service_remote_inter_endpoints[obj])
-                headers = {'Content-Type': 'application/json',
-                           'Accept': 'application/json'}
-                r = requests.post(remote_inter_instance, data=json.dumps(
-                    remote_service), headers=headers)
-                print(r.json())
-
-        return service_schema.dump(new_service).data, 201
+        
 
     # Validation for the Layer 2 network extension
     if service_type == 'L2':
@@ -252,18 +174,120 @@ def vertical_create_service(service):
         if not check_equal_element(CIDRs):
             return "ERROR: CIDR is not the same for all the resources"
 
+        ##### test
+        #CIDRs = [ipaddr.IPNetwork("20.0.0.0/23"),ipaddr.IPNetwork("20.0.0.0/24"),ipaddr.IPNetwork("20.0.0.0/24"),ipaddr.IPNetwork("20.0.0.0/24"),ipaddr.IPNetwork("20.0.0.0/24")]
+        #service_resources_list = [5,4,2,5,6,7,5,5,5,8,5,2,6,5,8,4,5,8]
         cidr = CIDRs[0]
-        for adr in cidr:
-            print(adr+2)
-        print(cidr)
         main_cidr = str(CIDRs[0])
         main_cidr_base = ((str(CIDRs[0])).split("/",1)[0])
         main_cidr_prefix = ((str(CIDRs[0])).split("/",1)[1])
-        print(str(main_cidr_base)+ " " + str(main_cidr_prefix) + " " + str(len(service_resources_list)))
         cidr_ranges = []
-        ips_cidr_available = 2**(32-int(main_cidr_prefix))-2
-        print(ips_cidr_available)
-        return
+        # Available IPs are without the network address, the broadcast address, and the first address (for globally known DHCP)
+        ips_cidr_available = 2**(32-int(main_cidr_prefix))-3
+        host_per_site = math.floor(ips_cidr_available/len(service_resources_list))
+        print("CIDR: "+ str(cidr) + ", total available IPs: " + str(ips_cidr_available) + " , Number of sites: " + str(len(service_resources_list)) +" , IPs per site:" + str(host_per_site))
+        base_index = 2
+        site_index = 1
+        while base_index <= ips_cidr_available and site_index <= len(service_resources_list):
+            cidr_ranges.append(str(cidr[base_index])+"-"+str(cidr[base_index+host_per_site-1]))
+            base_index = base_index + int(host_per_site)
+            site_index = site_index + 1
+            
+        to_service['service_params'] = cidr_ranges[0]
+        
+        for element in cidr_ranges:
+            print(element)
+
+    # calling the interconnection service plugin to create the necessary objects
+    id_temp = 1
+    for k, v in service_resources_list.items():
+
+        if local_region_name != k:
+            neutron_client = service_utils.get_neutron_client(
+                local_region_url,
+                local_region_name
+            )
+            interconnection_data = {'interconnection': {
+                'name': service_name+str(id_temp),
+                'remote_keystone': service_remote_auth_endpoints[k],
+                'remote_region': k,
+                'local_resource_id': local_resource,
+                'type': SERVICE_TYPE[service_type],
+                'remote_resource_id': v,
+
+            }}
+            id_temp = id_temp+1
+            try:
+                inter_temp = (
+                    neutron_client.create_interconnection(
+                        interconnection_data)
+                )
+                # print(inter_temp)
+                local_interconnections_ids.append(
+                    inter_temp['interconnection']['id'])
+
+            except neutronclient_exc.ConnectionFailed:
+                print("Can't connect to neutron %s" %
+                    service_remote_inter_endpoints[item])
+            except neutronclient_exc.Unauthorized:
+                print("Connection refused to neutron %s" %
+                    service_remote_inter_endpoints[item])
+
+    # Create a service instance using the schema and the build service
+    service_schema = ServiceSchema()
+    new_service = service_schema.load(to_service, session=db.session).data
+
+    # Adding the resources to the service
+    for k, v in service_resources_list.items():
+        resource = {
+            'resource_region': k,
+            'resource_uuid': v
+        }
+        service_resources_schema = ServiceResourcesSchema()
+        new_service_resources = service_resources_schema.load(
+            resource, session=db.session).data
+        new_service.service_resources.append(new_service_resources)
+
+    # Adding the interconnections to the service
+    for element in local_interconnections_ids:
+        interconnexion = {
+            'interconnexion_uuid': element
+        }
+        service_interconnections_schema = ServiceInterconnectionsSchema()
+        new_service_interconnections = service_interconnections_schema.load(
+            interconnexion, session=db.session).data
+        new_service.service_interconnections.append(
+            new_service_interconnections)
+
+    # Add the service to the database
+    db.session.add(new_service)
+    db.session.commit()
+
+    index_cidr = 1
+    # Sending remote inter-site create requests to the distant nodes
+    for obj in service_resources_list.keys():
+        if obj != service_utils.get_region_name():
+            remote_inter_instance = service_remote_inter_endpoints[obj].strip(
+                '9696/')
+            remote_inter_instance = remote_inter_instance + '7575/api/intersite-horizontal'
+
+            if service_type == 'L2':
+                remote_service = {'name': service_name, 'type': service_type, 'params': cidr_ranges[index_cidr],
+                                'global': random_id, 'resources': service.get("resources", None)}    
+                index_cidr = index_cidr + 1
+            else:
+                remote_service = {'name': service_name, 'type': service_type, 'params': '',
+                                'global': random_id, 'resources': service.get("resources", None)}
+            # send horizontal (service_remote_inter_endpoints[obj])
+            headers = {'Content-Type': 'application/json',
+                           'Accept': 'application/json'}
+            r = requests.post(remote_inter_instance, data=json.dumps(
+                    remote_service), headers=headers)
+            print(r.json())
+
+    return service_schema.dump(new_service).data, 201
+
+    
 
 # Handler to update an existing service
 
