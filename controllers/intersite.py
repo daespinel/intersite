@@ -162,8 +162,6 @@ def vertical_create_service(service):
             if a.overlaps(b):
                 return "ERROR: networks " + " " + (str(a)) + " and "+(str(b)) + " overlap"
 
-        
-
     # Validation for the Layer 2 network extension
     if service_type == 'L2':
 
@@ -174,27 +172,30 @@ def vertical_create_service(service):
         if not check_equal_element(CIDRs):
             return "ERROR: CIDR is not the same for all the resources"
 
-        ##### test
+        # test
         #CIDRs = [ipaddr.IPNetwork("20.0.0.0/23"),ipaddr.IPNetwork("20.0.0.0/24"),ipaddr.IPNetwork("20.0.0.0/24"),ipaddr.IPNetwork("20.0.0.0/24"),ipaddr.IPNetwork("20.0.0.0/24")]
         #service_resources_list = [5,4,2,5,6,7,5,5,5,8,5,2,6,5,8,4,5,8]
         cidr = CIDRs[0]
         main_cidr = str(CIDRs[0])
-        main_cidr_base = ((str(CIDRs[0])).split("/",1)[0])
-        main_cidr_prefix = ((str(CIDRs[0])).split("/",1)[1])
+        main_cidr_base = ((str(CIDRs[0])).split("/", 1)[0])
+        main_cidr_prefix = ((str(CIDRs[0])).split("/", 1)[1])
         cidr_ranges = []
         # Available IPs are without the network address, the broadcast address, and the first address (for globally known DHCP)
         ips_cidr_available = 2**(32-int(main_cidr_prefix))-3
-        host_per_site = math.floor(ips_cidr_available/len(service_resources_list))
-        print("CIDR: "+ str(cidr) + ", total available IPs: " + str(ips_cidr_available) + " , Number of sites: " + str(len(service_resources_list)) +" , IPs per site:" + str(host_per_site))
+        host_per_site = math.floor(
+            ips_cidr_available/len(service_resources_list))
+        print("CIDR: " + str(cidr) + ", total available IPs: " + str(ips_cidr_available) +
+              " , Number of sites: " + str(len(service_resources_list)) + " , IPs per site:" + str(host_per_site))
         base_index = 2
         site_index = 1
         while base_index <= ips_cidr_available and site_index <= len(service_resources_list):
-            cidr_ranges.append(str(cidr[base_index])+"-"+str(cidr[base_index+host_per_site-1]))
+            cidr_ranges.append(
+                str(cidr[base_index])+"-"+str(cidr[base_index+host_per_site-1]))
             base_index = base_index + int(host_per_site)
             site_index = site_index + 1
-            
+
         to_service['service_params'] = cidr_ranges[0]
-        
+
         for element in cidr_ranges:
             print(element)
 
@@ -228,10 +229,10 @@ def vertical_create_service(service):
 
             except neutronclient_exc.ConnectionFailed:
                 print("Can't connect to neutron %s" %
-                    service_remote_inter_endpoints[item])
+                      service_remote_inter_endpoints[item])
             except neutronclient_exc.Unauthorized:
                 print("Connection refused to neutron %s" %
-                    service_remote_inter_endpoints[item])
+                      service_remote_inter_endpoints[item])
 
     # Create a service instance using the schema and the build service
     service_schema = ServiceSchema()
@@ -263,6 +264,23 @@ def vertical_create_service(service):
     db.session.add(new_service)
     db.session.commit()
 
+    # Updating the DHCP pool ranges for the local deployment
+    if service_type == 'L2':
+        try:
+            body = {'subnet': {'allocation_pools': [{'start': cidr_ranges[0].split(
+                "-", 1)[0], 'end': cidr_ranges[0].split("-", 1)[1]}]}}
+            dhcp_change = (
+                neutron_client.update_subnet(
+                    subnetworks[local_region_name], body=body)
+            )
+            # print(inter_temp)
+        except neutronclient_exc.ConnectionFailed:
+            print("Can't connect to neutron %s" %
+                  service_remote_inter_endpoints[item])
+        except neutronclient_exc.Unauthorized:
+            print("Connection refused to neutron %s" %
+                  service_remote_inter_endpoints[item])
+
     index_cidr = 1
     # Sending remote inter-site create requests to the distant nodes
     for obj in service_resources_list.keys():
@@ -273,21 +291,20 @@ def vertical_create_service(service):
 
             if service_type == 'L2':
                 remote_service = {'name': service_name, 'type': service_type, 'params': cidr_ranges[index_cidr],
-                                'global': random_id, 'resources': service.get("resources", None)}    
+                                  'global': random_id, 'resources': service.get("resources", None)}
                 index_cidr = index_cidr + 1
             else:
                 remote_service = {'name': service_name, 'type': service_type, 'params': '',
-                                'global': random_id, 'resources': service.get("resources", None)}
+                                  'global': random_id, 'resources': service.get("resources", None)}
             # send horizontal (service_remote_inter_endpoints[obj])
             headers = {'Content-Type': 'application/json',
-                           'Accept': 'application/json'}
+                       'Accept': 'application/json'}
             r = requests.post(remote_inter_instance, data=json.dumps(
-                    remote_service), headers=headers)
+                remote_service), headers=headers)
             print(r.json())
 
     return service_schema.dump(new_service).data, 201
 
-    
 
 # Handler to update an existing service
 
@@ -370,6 +387,7 @@ def horizontal_create_service(service):
     local_resource = ''
     service_name = service.get("name", None)
     service_type = service.get("type", None)
+    service_params = service.get("params", None)
     service_global = service.get("global", None)
     #service_resources = service.get("resources", None)
     service_resources_list = dict((k.strip(), v.strip()) for k, v in (
@@ -380,6 +398,7 @@ def horizontal_create_service(service):
     to_service = {
         'service_name': service_name,
         'service_type': service_type,
+        'service_params': service_params,
         'service_global': service_global
     }
 
@@ -459,6 +478,24 @@ def horizontal_create_service(service):
     # Add the service to the database
     db.session.add(new_service)
     db.session.commit()
+
+    # If the service is from L2 type, do the local DHCP change
+
+    if service_type == 'L2':
+        try:
+            body = {'subnet': {'allocation_pools': [{'start': cidr_ranges[0].split(
+                "-", 1)[0], 'end': cidr_ranges[0].split("-", 1)[1]}]}}
+            dhcp_change = (
+                neutron_client.update_subnet(
+                    subnetworks[local_region_name], body=body)
+            )
+            # print(inter_temp)
+        except neutronclient_exc.ConnectionFailed:
+            print("Can't connect to neutron %s" %
+                  service_remote_inter_endpoints[item])
+        except neutronclient_exc.Unauthorized:
+            print("Connection refused to neutron %s" %
+                  service_remote_inter_endpoints[item])
 
     return service_schema.dump(new_service).data, 201
 
