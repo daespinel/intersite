@@ -27,25 +27,36 @@ paths:
             type: array
             items:
               properties:
-                id:
+                service_id:
                   type: string
                   description: ID of the inter-site service
-                type:
+                service_type:
                   type: string
                   description: Inter-site service type (L2 or L3)
-                name:
+                service_name:
                   type: string
                   description: Name of the inter-site service
-                resources:
+                service_params:
+                  type: string
+                  description: Additional params for the inter-site service
+                service_resources:
                   type: array
                   description: Resources to federate
                   items: 
-                    type: string  
-                interconnections:
+                    properties:
+                      service_id:
+                        type: integer
+                      resource_region:    
+                        type: string
+                      resource_uuid:    
+                        type: string  
+                service_interconnections:
                   type: array
                   description: Locally created interconnections
-                  items: 
-                    type: string
+                  items:
+                    properties:
+                      interconnexion_uuid:
+                        type: string
     post:
       operationId: vertical_create_service
       tags:

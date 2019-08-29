@@ -301,7 +301,7 @@ def vertical_create_service(service):
                        'Accept': 'application/json'}
             r = requests.post(remote_inter_instance, data=json.dumps(
                 remote_service), headers=headers)
-            print(r.json())
+            #print(r.json())
 
     return service_schema.dump(new_service).data, 201
 
@@ -483,11 +483,19 @@ def horizontal_create_service(service):
 
     if service_type == 'L2':
         try:
-            body = {'subnet': {'allocation_pools': [{'start': cidr_ranges[0].split(
-                "-", 1)[0], 'end': cidr_ranges[0].split("-", 1)[1]}]}}
+            body = {'subnet': {'allocation_pools': [{'start': service_params.split(
+                "-", 1)[0], 'end': service_params.split("-", 1)[1]}]}}
+
+            network_temp = (
+                neutron_client.show_network(network=local_resource
+                                            )
+            )
+            subnet = network_temp['network']['subnets'][0]
+            print(subnet)
+            
             dhcp_change = (
                 neutron_client.update_subnet(
-                    subnetworks[local_region_name], body=body)
+                    subnet, body=body)
             )
             # print(inter_temp)
         except neutronclient_exc.ConnectionFailed:

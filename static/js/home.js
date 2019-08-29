@@ -69,6 +69,7 @@ ns.controller = (function (m, v) {
         model.read()
             .done(function (data) {
                 view.build_table(data);
+                console.log(data);
             })
             .fail(function (xhr, textStatus, errorThrown) {
                 error_handler(xhr, textStatus, errorThrown);
@@ -85,9 +86,9 @@ ns.controller = (function (m, v) {
 
     // handle application events
     $('table').on('dblclick', 'tbody td.name', function (e) {
-        let $target = $(e.target),
-            global_id = $target.parent().data('name');
-        window.location = `/api/intersite-vertical/${global_id}`;
+        let $target = $(e.target).parent(),
+            global_id = $target.data('service_global');
+        window.location = `/services/${global_id}`;
 
     });
 

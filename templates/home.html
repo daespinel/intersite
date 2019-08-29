@@ -31,12 +31,14 @@
 <script id="blog-table-template" type="text/x-handlebars-template">
     <tbody>
         {{#each services}}
-        <tr data-service_global="{{service.service_global}}" >
+        <tr data-service_global="{{service_global}}" >
             <td class="name">{{service_name}}</td>
             <td class="global">{{service_global}}</td>
             <td class="type">{{service_type}}</td>
             <td class="params">{{service_params}}</td>
-            <td class="resources">{{service_resources.resource_region}}</td>
+            
+            <td class="resources">{{#each service_resources}}{{resource_region}} {{resource_uuid}} ,{{/each}}</td>
+            
             <td class="interconnections">{{service_interconnections}}</td>
         </tr>
         {{/each}}
