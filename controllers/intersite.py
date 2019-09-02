@@ -30,7 +30,7 @@ def vertical_read_all_service():
     :return:        sorted list of inter-site services
     """
     # Create the list of people from our data
-    services = Service.query.order_by(Service.service_name).all()
+    services = Service.query.order_by(Service.service_global).all()
 
     # Serialize the data for the response
     service_schema = ServiceSchema(many=True)
@@ -69,7 +69,7 @@ def vertical_create_service(service):
     service_remote_auth_endpoints = {}
     service_remote_inter_endpoints = {}
     local_interconnections_ids = []
-    random_id = create_random_global_id(12)
+    random_id = create_random_global_id()
 
     to_service = {
         # 'id': id,
@@ -186,7 +186,7 @@ def vertical_create_service(service):
             ips_cidr_available/len(service_resources_list))
         print("CIDR: " + str(cidr) + ", total available IPs: " + str(ips_cidr_available) +
               " , Number of sites: " + str(len(service_resources_list)) + " , IPs per site:" + str(host_per_site))
-        base_index = 2
+        base_index = 3
         site_index = 1
         while base_index <= ips_cidr_available and site_index <= len(service_resources_list):
             cidr_ranges.append(
@@ -301,7 +301,7 @@ def vertical_create_service(service):
                        'Accept': 'application/json'}
             r = requests.post(remote_inter_instance, data=json.dumps(
                 remote_service), headers=headers)
-            #print(r.json())
+            # print(r.json())
 
     return service_schema.dump(new_service).data, 201
 
@@ -492,7 +492,7 @@ def horizontal_create_service(service):
             )
             subnet = network_temp['network']['subnets'][0]
             print(subnet)
-            
+
             dhcp_change = (
                 neutron_client.update_subnet(
                     subnet, body=body)
@@ -562,6 +562,12 @@ def check_existing_service(resource_list):
     print("ja")
 
 
-def create_random_global_id(stringLength=8):
-    lettersAndDigits = string.ascii_lowercase + string.digits
-    return ''.join(random.choice(lettersAndDigits) for i in range(stringLength))
+def create_random_global_id(stringLength=28):
+    lettersAndDigits = string.ascii_lowercase[0:5] + string.digits
+    result = ''.join(random.choice(lettersAndDigits) for i in range(8))
+    result1 = ''.join(random.choice(lettersAndDigits) for i in range(4))
+    result2 = ''.join(random.choice(lettersAndDigits) for i in range(4))
+    result3 = ''.join(random.choice(lettersAndDigits) for i in range(12))
+    global_random_id = result + '-' + result1 + '-' +result2 + '-'+result3
+
+    return global_random_id

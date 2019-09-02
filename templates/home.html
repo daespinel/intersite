@@ -37,9 +37,9 @@
             <td class="type">{{service_type}}</td>
             <td class="params">{{service_params}}</td>
             
-            <td class="resources">{{#each service_resources}}{{resource_region}} {{resource_uuid}} ,{{/each}}</td>
+            <td class="resources">{{#each service_resources}}{{resource_region}} - {{resource_uuid}} <br> {{/each}}</td>
             
-            <td class="interconnections">{{service_interconnections}}</td>
+            <td class="interconnections">{{#each service_interconnections}}{{interconnexion_uuid}} <br> {{/each}}</td>
         </tr>
         {{/each}}
     </tbody>
