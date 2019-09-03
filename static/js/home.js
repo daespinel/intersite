@@ -85,10 +85,10 @@ ns.controller = (function (m, v) {
     }
 
     // handle application events
-    $('table').on('dblclick', 'tbody td.name', function (e) {
+    $('table').on('dblclick', 'tbody td.global', function (e) {
         let $target = $(e.target).parent(),
-            global_id = $target.data('service_global');
-        window.location = `/services/${global_id}`;
+            service_global = $target.data('service_global');
+        window.location = `/services/${service_global}`;
 
     });
 

@@ -18,14 +18,14 @@ def home():
     return render_template("home.html")
 
 @app.route("/services")
-@app.route("/services/<string:global_id>")
-def services(global_id=""):
+@app.route("/services/<string:service_global>")
+def services(service_global=""):
     """
     This function just responds to the browser URL
-    localhost:5000/people
-    :return:        the rendered template "people.html"
+    localhost:7575/services
+    :return:        the rendered template "services.html"
     """
-    return render_template("services.html", global_id=global_id)
+    return render_template("services.html", service_global=service_global)
 
 # If we're running in stand alone mode, run the application
 if __name__ == '__main__':

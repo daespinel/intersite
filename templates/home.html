@@ -13,8 +13,8 @@
         <caption>Inter-site services Blog Entries</caption>
         <thead>
             <tr>
+                <th>Global ID</th>
                 <th>Name</th>
-                <th>Global</th>
                 <th>Type</th>
                 <th>Params</th>
                 <th>Resources</th>
@@ -32,13 +32,11 @@
     <tbody>
         {{#each services}}
         <tr data-service_global="{{service_global}}" >
-            <td class="name">{{service_name}}</td>
             <td class="global">{{service_global}}</td>
+            <td class="name">{{service_name}}</td>
             <td class="type">{{service_type}}</td>
             <td class="params">{{service_params}}</td>
-            
             <td class="resources">{{#each service_resources}}{{resource_region}} - {{resource_uuid}} <br> {{/each}}</td>
-            
             <td class="interconnections">{{#each service_interconnections}}{{interconnexion_uuid}} <br> {{/each}}</td>
         </tr>
         {{/each}}

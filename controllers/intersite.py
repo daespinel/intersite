@@ -35,7 +35,7 @@ def vertical_read_all_service():
     # Serialize the data for the response
     service_schema = ServiceSchema(many=True)
     data = service_schema.dump(services).data
-    # print(data)
+    #print(data)
     return data
 
 # Create a handler for our read (GET) one service by ID
@@ -48,7 +48,6 @@ def vertical_read_one_service(global_id):
     if service is not None:
         service_schema = ServiceSchema()
         data = service_schema.dump(service).data
-        print(data)
         return data
 
     else:
@@ -66,10 +65,16 @@ def vertical_create_service(service):
     service_resources_list = dict((k.strip(), v.strip()) for k, v in (
         (item.split(',')) for item in service.get("resources", None)))
     service_resources_list_search = copy.deepcopy(service_resources_list)
+    print(service_resources_list)
     service_remote_auth_endpoints = {}
     service_remote_inter_endpoints = {}
     local_interconnections_ids = []
     random_id = create_random_global_id()
+
+    # Check if a service exists with the requested resources
+
+    if(check_existing_service(service_resources_list)):
+        abort(404, "Service with global ID already connect the resources")
 
     to_service = {
         # 'id': id,
@@ -559,7 +564,22 @@ def check_equal_element(iterator):
 
 
 def check_existing_service(resource_list):
-    print("ja")
+
+    services = Service.query.all()
+    service_schema = ServiceSchema(many=True)
+    data = service_schema.dump(services).data
+    search_list_dict = {}
+    for element in data:
+        temp_dict = {}
+        for next_resource in element['service_resources']:
+            temp_dict[next_resource['resource_region']
+                      ] = next_resource['resource_uuid']
+        search_list_dict[element['service_global']] = temp_dict
+    for key, value in search_list_dict.items():
+
+        if(value == resource_list):
+            return True
+    return False
 
 
 def create_random_global_id(stringLength=28):
@@ -568,6 +588,6 @@ def create_random_global_id(stringLength=28):
     result1 = ''.join(random.choice(lettersAndDigits) for i in range(4))
     result2 = ''.join(random.choice(lettersAndDigits) for i in range(4))
     result3 = ''.join(random.choice(lettersAndDigits) for i in range(12))
-    global_random_id = result + '-' + result1 + '-' +result2 + '-'+result3
+    global_random_id = result + '-' + result1 + '-' + result2 + '-'+result3
 
     return global_random_id
