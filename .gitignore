@@ -4,3 +4,8 @@ __pycache__/app.cpython-35.pyc
 __pycache__/intersite.cpython-35.pyc
 common/__pycache__/utils.cpython-35.pyc
 controllers/__pycache__/intersite.cpython-35.pyc
+.vscode/settings.json
+.vscode/launch.json
+common/__pycache__/utils.cpython-35.pyc
+controllers/__pycache__/intersite.cpython-35.pyc
+env/pip-selfcheck.json
