@@ -78,6 +78,7 @@ ns.view = (function () {
         $service_type = $('#service_type'),
         $service_params = $('#service_params'),
         $service_resources = $('#service_resources'),
+        $service_resources2 = $('#service_resources2'),
         $service_interconnections = $('#service_interconnections'),
         $create = $('#create'),
         $update = $('#update'),
@@ -92,12 +93,19 @@ ns.view = (function () {
             $service_global.text('');
             $service_name.val('');
             $service_params.val('');
+            $service_resources.val('');
+            $service_resources2.val('');
+            $service_interconnections.val('');
             $service_type.val('').focus();
         },
         update_editor: function (service) {
             $service_global.text(service.service_global);
             $service_name.val(service.service_name);
             $service_params.val(service.service_params);
+            var array_service= service.service_resources;
+            $service_resources.val(array_service);
+            //$service_resources2.val(service.service_resources2);
+            $service_interconnections.val(service.service_interconnections);
             $service_type.val(service.service_type).focus();
         },
         set_button_state: function (state) {
@@ -105,10 +113,16 @@ ns.view = (function () {
                 $create.prop('disabled', false);
                 $update.prop('disabled', true);
                 $delete.prop('disabled', true);
+                $service_type.prop('disabled', false);
+                $service_params.prop('disabled', false);
+                $service_interconnections.prop('disabled', false);
             } else if (state === EXISTING_RESOURCE) {
                 $create.prop('disabled', true);
                 $update.prop('disabled', false);
                 $delete.prop('disabled', false);
+                $service_type.prop('disabled', true);
+                $service_params.prop('disabled', true);
+                $service_interconnections.prop('disabled', true);
             }
         },
         build_table: function (data) {
@@ -147,6 +161,7 @@ ns.controller = (function (m, v) {
         $service_type = $('#service_type'),
         $service_params = $('#service_params'),
         $service_resources = $('#service_resources'),
+        $service_resources2 = $('#service_resources2'),
         $service_interconnections = $('#service_interconnections');
 
     // Get the data from the model after the controller is done initializing
@@ -163,6 +178,7 @@ ns.controller = (function (m, v) {
         if ($url_service_global.val() !== "") {
             model.read_one($url_service_global.val())
                 .done(function (data) {
+                    console.log(data);
                     view.update_editor(data);
                     view.set_button_state(view.EXISTING_RESOURCE);
                 })
@@ -233,16 +249,36 @@ ns.controller = (function (m, v) {
         view.set_button_state(view.NEW_RESOURCE);
     })
 
-    $('table').on('dblclick', 'tbody tr', function (e) {
+    $('table').on('click', 'tbody tr', function (e) {
         let $target = $(e.target).parent(),
-            service_global = $target.data('global')
-            service_name = $target.data('name'),
-            service_type = $target.data('type'),
-            service_params = $target.data('params'),
-            service_resources = $target.data('resources'),
-            service_interconnections = $target.data('interconnections');
+            service_global = $target.data('service_global')
+            service_name = $target.data('service_name'),
+            service_type = $target.data('service_type'),
+            service_params = $target.data('service_params'),
+            service_resources = $target.data('service_resources'),
+            service_interconnections = $target.data('service_interconnections');
+            //console.log(service_interconnections);
 
-        view.update_editor({  service_global: service_global, service_name: service_name, service_type: service_type, service_params: service_params, service_resources: service_resources, service_interconnections: service_interconnections });
+        function myFunction(value){
+            var temp = value.split('-');
+            if(temp!=''){
+                console.log(temp);
+            }
+        }
+        
+        var array = service_resources.split("*");
+        array.forEach(myFunction);
+        //console.log(array)
+
+        view.update_editor({  service_global: service_global, 
+            service_name: service_name, 
+            service_type: service_type, 
+            service_params: service_params, 
+            service_resources: array[0],
+            service_resources2: array[1],
+            service_interconnections: service_interconnections, 
+        });
+        view.set_button_state(view.EXISTING_RESOURCE);
     });
-
+    
 }(ns.model, ns.view));

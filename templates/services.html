@@ -26,6 +26,17 @@
                 <input id="service_params" type="text" />
             </label>
             <br />
+            <div class="container">
+                <label for="resources">Resources
+                    <input id="service_resources" type="text" maxlength="200" class="service_resources"/>
+                    <input id="service_resources2" type="text" maxlength="200" class="service_resources2"/>
+                </label>
+                <br />
+            </div>
+            <label for="interconnections">Interconnections
+                <input id="service_interconnections" type="text" maxlength="200" class="service_interconnections"/>
+            </label>
+            <br />
             <button id="create">Create</button>
             <button id="update">Update</button>
             <button id="delete">Delete</button>
@@ -57,7 +68,7 @@
 <script id="services-table-template" type="text/x-handlebars-template">
     <tbody>
         {{#each services}}
-        <tr data-service_global="{{service_global}}" data-service_type="{{service_type}}" >
+        <tr data-service_global="{{service_global}}" data-service_type="{{service_type}}" data-service_name="{{service_name}}" data-service_params="{{service_params}}" data-service_resources="{{#each service_resources}}{{resource_region}}-{{resource_uuid}}*{{/each}}" data-service_interconnections="{{#each service_interconnections}} {{interconnexion_uuid}} {{/each}}">
             <td class="global">{{service_global}}</td>
             <td class="name">{{service_name}}</td>
             <td class="type">{{service_type}}</td>
