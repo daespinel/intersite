@@ -7,7 +7,8 @@ SERVICES = [
     {
         "name": "Service1",
         "type": "L3",
-        "global": "x54rt",
+        "global": "a842c6f0-44a2-bc21-568a56c54de0",
+        "params": "",
         "resources": [("id1", "RegionOne"), ("id2", "RegionTwo"), ("id3", "RegionThree")],
         "interconnections": ["z1", "z2"]
 
@@ -15,14 +16,16 @@ SERVICES = [
     {
         "name": "Service2",
         "type": "L3",
-        "global": "y98df",
+        "global": "02b98df2-03a8-974c-d2569f7e44e0",
+        "params": "",
         "resources": [("id10", "RegionOne"), ("id15", "RegionTen"), ("id16", "RegionSixTen")],
         "interconnections": ["Y1", "Y2"]
     },
     {
         "name": "Service3",
         "type": "L3",
-        "global": "m20qs",
+        "global": "220ac9d3-58c9-d640-0369b6b58c71",
+        "params": "",
         "resources": [("id21", "RegionOne"), ("id24", "RegionFour"), ("id25", "RegionFive"), ("id28", "RegionTwentyEight")],
         "interconnections": ["x1", "x2", "x3"]
     }

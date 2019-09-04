@@ -57,15 +57,21 @@ tr:nth-child(even) {
     background-color: gainsboro;
 }
 
-td {
+td.name {
     text-align: center;
+    width: 175px;
+}
+
+td.type {
+    text-align: center;
+    width: 280px;
 }
 
 tbody td.type {
     width: 280px;
 }
 
-tbody td.name {
+tbody td.global {
     cursor: pointer;
     height: 33px;
 }
