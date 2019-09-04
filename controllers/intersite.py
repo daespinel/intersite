@@ -65,16 +65,16 @@ def vertical_create_service(service):
     service_resources_list = dict((k.strip(), v.strip()) for k, v in (
         (item.split(',')) for item in service.get("resources", None)))
     service_resources_list_search = copy.deepcopy(service_resources_list)
-    print(service_resources_list)
+    #print(service_resources_list)
     service_remote_auth_endpoints = {}
     service_remote_inter_endpoints = {}
     local_interconnections_ids = []
     random_id = create_random_global_id()
 
     # Check if a service exists with the requested resources
-
-    if(check_existing_service(service_resources_list)):
-        abort(404, "Service with global ID already connect the resources")
+    existing_service,check_service_id = check_existing_service(service_resources_list)
+    if(existing_service):
+        abort(404, "Service with global ID {global_check} already connects the resources".format(global_check=check_service_id))
 
     to_service = {
         # 'id': id,
@@ -576,10 +576,10 @@ def check_existing_service(resource_list):
                       ] = next_resource['resource_uuid']
         search_list_dict[element['service_global']] = temp_dict
     for key, value in search_list_dict.items():
-
+        print(key)
         if(value == resource_list):
-            return True
-    return False
+            return True,key
+    return False,''
 
 
 def create_random_global_id(stringLength=28):
