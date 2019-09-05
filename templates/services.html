@@ -1,48 +1,53 @@
 {% extends "parent.html" %}
 {% block title %}Services{% endblock %}
 {% block head %}
-    {{ super() }}
+{{ super() }}
 <link rel="stylesheet" href="/static/css/services.css">
 {% endblock %}
-{% block page_name %}Inter-site service Create/Update/Delete Page{% endblock %}
+{% block page_name %}Inter-site service Create{% endblock %}
 
 {% block body %}
-    <div class="container">
-        <input id="url_service_global" type="hidden" value="{{ service_global }}" />
-        <div class="section editor">
-            <div>
-                <span>Service Global ID:</span>
-                <span id="service_global"></span>
-            </div>
-            <label for="name">Name
-                <input id="service_name" type="text" />
-            </label>
+<div class="container">
+    <input id="url_service_global" type="hidden" value="{{ service_global }}" />
+    <div class="section editor">
+        <div>
+            <span>New Inter-site Service:</span>
+            <span id="service_global"></span>
             <br />
-            <label for="type">Type
-                <input id="service_type" type="text" />
-            </label>
-            <br />
-            <label for="params">Params
+        </div>
+        <label for="name">Name
+            <input id="service_name" type="text"/>
+        </label>
+        <br />
+        <label for="type">Type
+            <select id="service_type" name="type">
+                <option value="L2">Layer 2 network extension</option>
+                <option value="L3">Layer 3 routing</option>
+            </select>
+        </label>
+        <br />
+        <!--<label for="params">Params
                 <input id="service_params" type="text" />
             </label>
-            <br />
-            <div class="container">
-                <label for="resources">Resources
-                    <input id="service_resources" type="text" maxlength="200" class="service_resources"/>
-                    <input id="service_resources2" type="text" maxlength="200" class="service_resources2"/>
-                </label>
-                <br />
-            </div>
-            <label for="interconnections">Interconnections
-                <input id="service_interconnections" type="text" maxlength="200" class="service_interconnections"/>
+            <br />-->
+        <div class="container">
+            <label for="resources">Resources
+                <input id="service_resources" type="text" maxlength="200" class="service_resources" placeholder="Resource Region name"/>
+                <input id="service_resources2" type="text" maxlength="200" class="service_resources2" placeholder="Resource uuid"/>
             </label>
             <br />
-            <button id="create">Create</button>
-            <button id="update">Update</button>
-            <button id="delete">Delete</button>
-            <button id="reset">Reset</button>
         </div>
-        <div class="services">
+        <!--<label for="interconnections">Interconnections
+                <input id="service_interconnections" type="text" maxlength="200" class="service_interconnections"/>
+            </label>-->
+        <br />
+        <button id="create">Create</button>
+        <!--<button id="update">Update</button>-->
+        <!--<button id="delete">Delete</button>-->
+        <button id="reset">Reset</button>
+        <button id="new_resource">New resource element</button>
+    </div>
+    <!-- <div class="services">
             <table>
                 <caption>Inter-site services</caption>
                 <thead>
@@ -56,30 +61,30 @@
                     </tr>
                 </thead>
             </table>
-        </div>
-        <div class="error">
-        </div>
-    </div>
+        </div> -->
     <div class="error">
     </div>
+</div>
+<div class="error">
+</div>
 
-<!-- Handlebars script tag entry -->
+<!-- Handlebars script tag entry
 {% raw %}
 <script id="services-table-template" type="text/x-handlebars-template">
     <tbody>
         {{#each services}}
-        <tr data-service_global="{{service_global}}" data-service_type="{{service_type}}" data-service_name="{{service_name}}" data-service_params="{{service_params}}" data-service_resources="{{#each service_resources}}{{resource_region}}-{{resource_uuid}}*{{/each}}" data-service_interconnections="{{#each service_interconnections}} {{interconnexion_uuid}} {{/each}}">
+        <tr data-service_global="{{service_global}}" data-service_type="{{service_type}}" data-service_name="{{service_name}}" data-service_params="{{service_params}}" data-service_resources="{{#each service_resources}}{{resource_region}} {{resource_uuid}}*{{/each}}" data-service_interconnections="{{#each service_interconnections}} {{interconnexion_uuid}} {{/each}}">
             <td class="global">{{service_global}}</td>
             <td class="name">{{service_name}}</td>
             <td class="type">{{service_type}}</td>
             <td class="params">{{service_params}}</td>
-            <td class="resources">{{#each service_resources}}{{resource_region}} - {{resource_uuid}} <br> {{/each}}</td>
+            <td class="resources">{{#each service_resources}}{{resource_region}} {{resource_uuid}} <br> {{/each}}</td>
             <td class="interconnections">{{#each service_interconnections}}{{interconnexion_uuid}} <br> {{/each}}</td>
         </tr>
         {{/each}}
     </tbody>
 </script>
-{% endraw %}
+{% endraw %} -->
 
 {% endblock %}
 

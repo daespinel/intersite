@@ -85,11 +85,11 @@ ns.controller = (function (m, v) {
     }
 
     // handle application events
-    $('table').on('dblclick', 'tbody td.global', function (e) {
-        let $target = $(e.target).parent(),
-            service_global = $target.data('service_global');
-        window.location = `/services/${service_global}`;
+    //$('table').on('dblclick', 'tbody td.global', function (e) {
+    //    let $target = $(e.target).parent(),
+    //        service_global = $target.data('service_global');
+    //    window.location = `/services/${service_global}`;
 
-    });
+    //});
 
 }(ns.model, ns.view));

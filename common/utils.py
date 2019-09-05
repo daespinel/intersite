@@ -4,6 +4,7 @@ from keystoneauth1.identity import v3
 from keystoneauth1 import session
 from keystoneclient.v3 import client as keystoneclient
 from neutronclient.v2_0 import client as neutronclient
+from novaclient import client as novaclient
 
 config = configparser.ConfigParser()
 config.read('config/services.config')
@@ -18,6 +19,13 @@ def get_local_keystone():
 def get_region_name():
     return config['DEFAULT']['region_name']
 
+def get_nova_client(keystone_endpoint, region):
+    sess = get_session_object(get_auth_object(keystone_endpoint))
+    return novaclient.Client(
+        "2",
+        session=sess,
+        region_name=region
+    )
 
 def get_neutron_client(keystone_endpoint, region):
     # Use keystone session because Neutron is not yet fully integrated with

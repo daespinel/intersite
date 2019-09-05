@@ -35,7 +35,7 @@ def vertical_read_all_service():
     # Serialize the data for the response
     service_schema = ServiceSchema(many=True)
     data = service_schema.dump(services).data
-    #print(data)
+    # print(data)
     return data
 
 # Create a handler for our read (GET) one service by ID
@@ -65,16 +65,18 @@ def vertical_create_service(service):
     service_resources_list = dict((k.strip(), v.strip()) for k, v in (
         (item.split(',')) for item in service.get("resources", None)))
     service_resources_list_search = copy.deepcopy(service_resources_list)
-    #print(service_resources_list)
+    # print(service_resources_list)
     service_remote_auth_endpoints = {}
     service_remote_inter_endpoints = {}
     local_interconnections_ids = []
     random_id = create_random_global_id()
 
     # Check if a service exists with the requested resources
-    existing_service,check_service_id = check_existing_service(service_resources_list)
+    existing_service, check_service_id = check_existing_service(
+        service_resources_list)
     if(existing_service):
-        abort(404, "Service with global ID {global_check} already connects the resources".format(global_check=check_service_id))
+        abort(404, "Service with global ID {global_check} already connects the resources".format(
+            global_check=check_service_id))
 
     to_service = {
         # 'id': id,
@@ -284,6 +286,20 @@ def vertical_create_service(service):
                   service_remote_inter_endpoints[item])
         except neutronclient_exc.Unauthorized:
             print("Connection refused to neutron %s" %
+                  service_remote_inter_endpoints[item])
+
+        nova_client = service_utils.get_nova_client(service_utils.get_local_keystone(),
+                                                    service_utils.get_region_name())
+
+        try:
+            nova_list = nova_client.servers.list()
+            print(nova_list)
+
+        except novaclient.exceptions.NotFound:
+            print("Can't connect to nova %s" %
+                  service_remote_inter_endpoints[item])
+        except novaclient.exceptions.Unauthorized:
+            print("Connection refused to nova %s" %
                   service_remote_inter_endpoints[item])
 
     index_cidr = 1
@@ -578,8 +594,8 @@ def check_existing_service(resource_list):
     for key, value in search_list_dict.items():
         print(key)
         if(value == resource_list):
-            return True,key
-    return False,''
+            return True, key
+    return False, ''
 
 
 def create_random_global_id(stringLength=28):

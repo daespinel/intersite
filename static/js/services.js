@@ -103,6 +103,7 @@ ns.view = (function () {
             $service_name.val(service.service_name);
             $service_params.val(service.service_params);
             var array_service= service.service_resources;
+            console.log(array_service);
             $service_resources.val(array_service);
             //$service_resources2.val(service.service_resources2);
             $service_interconnections.val(service.service_interconnections);
@@ -259,23 +260,14 @@ ns.controller = (function (m, v) {
             service_interconnections = $target.data('service_interconnections');
             //console.log(service_interconnections);
 
-        function myFunction(value){
-            var temp = value.split('-');
-            if(temp!=''){
-                console.log(temp);
-            }
-        }
-        
         var array = service_resources.split("*");
-        array.forEach(myFunction);
-        //console.log(array)
+        array.pop();
 
         view.update_editor({  service_global: service_global, 
             service_name: service_name, 
             service_type: service_type, 
             service_params: service_params, 
-            service_resources: array[0],
-            service_resources2: array[1],
+            service_resources: array,
             service_interconnections: service_interconnections, 
         });
         view.set_button_state(view.EXISTING_RESOURCE);
