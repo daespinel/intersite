@@ -30,11 +30,17 @@
                 <input id="service_params" type="text" />
             </label>
             <br />-->
-        <div class="container">
+        <div class="resource_container" id="resource_container">
             <label for="resources">Resources
-                <input id="service_resources" type="text" maxlength="200" class="service_resources" placeholder="Resource Region name"/>
-                <input id="service_resources2" type="text" maxlength="200" class="service_resources2" placeholder="Resource uuid"/>
+                <br />
+                <input id="service_resources1" type="text" maxlength="200" class="service_resources" placeholder="Resource Region name #1"/>
+                <input id="service_resources2" type="text" maxlength="200" class="service_resources2" placeholder="Resource uuid #1"/>
+                <br />
+                <input id="service_resource3" type="text" maxlength="200" class="service_resources" placeholder="Resource Region name #2"/>
+                <input id="service_resources4" type="text" maxlength="200" class="service_resources2" placeholder="Resource uuid #2"/>
+                <br />
             </label>
+            <input type="hidden" value="1" id="total_chq">
             <br />
         </div>
         <!--<label for="interconnections">Interconnections
@@ -45,7 +51,7 @@
         <!--<button id="update">Update</button>-->
         <!--<button id="delete">Delete</button>-->
         <button id="reset">Reset</button>
-        <button id="new_resource">New resource element</button>
+        <button class="add_resource">New resource element</button>
     </div>
     <!-- <div class="services">
             <table>

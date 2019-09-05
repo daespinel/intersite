@@ -46,10 +46,10 @@ tbody tr:nth-child(odd) {
     background-color: gainsboro;
 }
 
-tbody td.global, tbody td.region, tbody td.uuid {
+/*tbody td.global, tbody td.region, tbody td.uuid {
     cursor: pointer;
     height: 33px;
-}
+}*/
 
 thead tr {
     height: 33px;

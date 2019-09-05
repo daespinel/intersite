@@ -83,10 +83,10 @@ tbody td.type {
     width: 280px;
 }
 
-tbody td.global {
+/*tbody td.global {
     cursor: pointer;
     height: 33px;
-}
+}*/
 
 thead tr {
     height: 33px;

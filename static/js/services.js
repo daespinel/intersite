@@ -3,6 +3,28 @@
  * using the API
  */
 
+$('.add_resource').on('click', add);
+//$('.remove').on('click', remove);
+
+function add() {
+  var new_chq_no = parseInt($('#total_chq').val()) + 1;
+  var new_input = "<input type='text' maxlength='200' id='service_resource_" + new_chq_no + "' class='service_resource_" + new_chq_no + "' placeholder='Resource Region name #'> <input type='text' maxlength='200' id='service_resource_" + new_chq_no + "' class='service_resource_" + new_chq_no + "' placeholder='Resource Region name #'> <br/>";
+
+
+  $('#resource_container').append(new_input);
+
+  $('#total_chq').val(new_chq_no);
+}
+
+/*function remove() {
+  var last_chq_no = $('#total_chq').val();
+
+  if (last_chq_no > 1) {
+    $('#new_' + last_chq_no).remove();
+    $('#total_chq').val(last_chq_no - 1);
+  }
+}*/
+
 // Create the namespace instance
 let ns = {};
 
