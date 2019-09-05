@@ -8,7 +8,7 @@ import common.utils as service_utils
 import copy
 import math
 import json
-import ipaddr
+import ipaddress
 import itertools
 import string
 import random
@@ -149,7 +149,7 @@ def vertical_create_service(service):
                 neutron_client.show_subnet(subnet=value)
             )
             subnet = subnetwork_temp['subnet']
-            CIDRs.append(ipaddr.IPNetwork(subnet['cidr']))
+            CIDRs.append(ipaddress.ip_network(subnet['cidr']))
 
         except neutronclient_exc.ConnectionFailed:
             print("Can't connect to neutron %s" %
@@ -202,9 +202,6 @@ def vertical_create_service(service):
             site_index = site_index + 1
 
         to_service['service_params'] = cidr_ranges[0]
-
-        for element in cidr_ranges:
-            print(element)
 
     # calling the interconnection service plugin to create the necessary objects
     id_temp = 1
@@ -273,9 +270,11 @@ def vertical_create_service(service):
 
     # Updating the DHCP pool ranges for the local deployment
     if service_type == 'L2':
+        allocation_start = cidr_ranges[0].split("-", 1)[0]
+        allocation_end = cidr_ranges[0].split("-", 1)[1]
         try:
-            body = {'subnet': {'allocation_pools': [{'start': cidr_ranges[0].split(
-                "-", 1)[0], 'end': cidr_ranges[0].split("-", 1)[1]}]}}
+            body = {'subnet': {'allocation_pools': [
+                {'start': allocation_start, 'end': allocation_end}]}}
             dhcp_change = (
                 neutron_client.update_subnet(
                     subnetworks[local_region_name], body=body)
@@ -291,16 +290,34 @@ def vertical_create_service(service):
         nova_client = service_utils.get_nova_client(service_utils.get_local_keystone(),
                                                     service_utils.get_region_name())
 
+        # Check if there are hot-plugged VMs with IPs outside the allocation pool
+
         try:
             nova_list = nova_client.servers.list()
-            print(nova_list)
-
+            
         except novaclient.exceptions.NotFound:
             print("Can't connect to nova %s" %
                   service_remote_inter_endpoints[item])
         except novaclient.exceptions.Unauthorized:
             print("Connection refused to nova %s" %
                   service_remote_inter_endpoints[item])
+
+        vms_with_ip_in_network = []
+        for element in nova_list:
+            vm_name = str(element).split(' ', 1)[1][0:-1]
+            answer = nova_client.servers.interface_list(element.id)
+            for element1 in answer:
+                list_with_meta = element1.to_dict()
+                if(list_with_meta['net_id'] == local_resource):
+                    vms_with_ip_in_network.append({'id': element.id, 'name': element.name, 'port_id': list_with_meta['port_id'], 'net_id': list_with_meta[
+                        'net_id'], 'ip': list_with_meta['fixed_ips'][0]['ip_address'], 'subnet_id': list_with_meta['fixed_ips'][0]['subnet_id']})
+
+        for machine_opts in vms_with_ip_in_network:
+            if((ipaddress.IPv4Address(machine_opts['ip']) < ipaddress.IPv4Address(allocation_start)) or (ipaddress.IPv4Address(machine_opts['ip']) > ipaddress.IPv4Address(allocation_end))):
+                print('Changing the IPs for VMs in the local deployment')
+                detach_interface = nova_client.servers.interface_detach(machine_opts['id'],machine_opts['port_id'])
+                attach_interface = nova_client.servers.interface_attach(machine_opts['id'],port_id='', net_id= machine_opts['net_id'],fixed_ip='')
+                restart_machine = nova_client.servers.reboot(machine_opts['id'])
 
     index_cidr = 1
     # Sending remote inter-site create requests to the distant nodes
@@ -592,7 +609,7 @@ def check_existing_service(resource_list):
                       ] = next_resource['resource_uuid']
         search_list_dict[element['service_global']] = temp_dict
     for key, value in search_list_dict.items():
-        print(key)
+        # print(key)
         if(value == resource_list):
             return True, key
     return False, ''
