@@ -30,19 +30,21 @@
                 <input id="service_params" type="text" />
             </label>
             <br />-->
-        <div class="resource_container" id="resource_container">
-            <label for="resources">Resources
+        <label for="resources">Resources
+            <div class="resource_container" id="resource_container">
+            
                 <br />
-                <input id="service_resources1" type="text" maxlength="200" class="service_resources" placeholder="Resource Region name #1"/>
-                <input id="service_resources2" type="text" maxlength="200" class="service_resources2" placeholder="Resource uuid #1"/>
+                <input id="service_resources1" type="text" maxlength="200" class="service_resources1 service_input" placeholder="Resource Region name #1"/>
+                <input id="service_resources2" type="text" maxlength="200" class="service_resources2 service_input" placeholder="Resource uuid #1"/>
                 <br />
-                <input id="service_resource3" type="text" maxlength="200" class="service_resources" placeholder="Resource Region name #2"/>
-                <input id="service_resources4" type="text" maxlength="200" class="service_resources2" placeholder="Resource uuid #2"/>
+                <input id="service_resources3" type="text" maxlength="200" class="service_resources3 service_input" placeholder="Resource Region name #2"/>
+                <input id="service_resources4" type="text" maxlength="200" class="service_resources4 service_input" placeholder="Resource uuid #2"/>
                 <br />
-            </label>
-            <input type="hidden" value="1" id="total_chq">
-            <br />
-        </div>
+            <input type="hidden" value="4" id="total_chq">
+            <input type="hidden" value="5" id="total_index_1">
+            <input type="hidden" value="6" id="total_index_2">
+            </div>
+        </label>
         <!--<label for="interconnections">Interconnections
                 <input id="service_interconnections" type="text" maxlength="200" class="service_interconnections"/>
             </label>-->

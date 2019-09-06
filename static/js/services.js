@@ -6,14 +6,23 @@
 $('.add_resource').on('click', add);
 //$('.remove').on('click', remove);
 
+$('#total_index_1').val(5);
+$('#total_index_2').val(6); 
+
 function add() {
-  var new_chq_no = parseInt($('#total_chq').val()) + 1;
-  var new_input = "<input type='text' maxlength='200' id='service_resource_" + new_chq_no + "' class='service_resource_" + new_chq_no + "' placeholder='Resource Region name #'> <input type='text' maxlength='200' id='service_resource_" + new_chq_no + "' class='service_resource_" + new_chq_no + "' placeholder='Resource Region name #'> <br/>";
+    var new_chq_no = parseInt($('#total_chq').val()) + 1;
+    var show_index = new_chq_no - 2;
+    var id_1 = parseInt($('#total_index_1').val());
+    var id_2 = parseInt($('#total_index_2').val());
+    var new_input = "<input type='text' maxlength='200' id='service_resources" + id_1 + "' class='service_resources" + new_chq_no + " service_input' placeholder='Resource Region name #"+ show_index +"'> <input type='text' maxlength='200' id='service_resources" + id_2 + "' class='service_resources" + new_chq_no + " service_input' placeholder='Resource uuid #"+ show_index +"'> <br/>";
+    var new_id_1 = id_1+2;
+    var new_id_2 = id_2+2;
 
+    $('#resource_container').append(new_input);
 
-  $('#resource_container').append(new_input);
-
-  $('#total_chq').val(new_chq_no);
+    $('#total_chq').val(new_chq_no);
+    $('#total_index_1').val(new_id_1);
+    $('#total_index_2').val(new_id_2); 
 }
 
 /*function remove() {
@@ -106,7 +115,7 @@ ns.view = (function () {
         $update = $('#update'),
         $delete = $('#delete'),
         $reset = $('#reset');
-        
+
     // return the API
     return {
         NEW_RESOURCE: NEW_RESOURCE,
@@ -124,7 +133,7 @@ ns.view = (function () {
             $service_global.text(service.service_global);
             $service_name.val(service.service_name);
             $service_params.val(service.service_params);
-            var array_service= service.service_resources;
+            var array_service = service.service_resources;
             console.log(array_service);
             $service_resources.val(array_service);
             //$service_resources2.val(service.service_resources2);
@@ -149,13 +158,13 @@ ns.view = (function () {
             }
         },
         build_table: function (data) {
-            
+
             let source = $('#services-table-template').html(),
                 template = Handlebars.compile(source),
                 html;
 
             // Create the HTML from the template and notes
-            html = template({services: data});
+            html = template({ services: data });
 
             // Append the rows to the table tbody
             $table.append(html);
@@ -228,12 +237,23 @@ ns.controller = (function (m, v) {
 
     // Create our event handlers
     $('#create').click(function (e) {
-        let name = $name.val(),
-            type = $type.val(),
-            resources = $resources.val();
+        let name = $service_name.val(),
+            type = $service_type.val();
+        //console.log(name);
+        var id_total_resources = parseInt($('#total_index_2').val())-2;
+        var i;
+        var resources_array= [];
+        for (i = 1; i < id_total_resources;i=i+2){
+            var resource_region_str = "#service_resources" + String(i);
+            var resource_uuid_str = "#service_resources" + String(i+1);
+            var resource_region_temp = $(resource_region_str).val();
+            var resource_uuid_temp = $(resource_uuid_str).val();
+            resources_array.push(resource_region_temp+"-"+resource_uuid_temp);
+
+        }
+        console.log(resources_array);
 
         e.preventDefault();
-
         if (validate(type, resources)) {
             model.create(name, type, resources)
         } else {
@@ -275,24 +295,25 @@ ns.controller = (function (m, v) {
     $('table').on('click', 'tbody tr', function (e) {
         let $target = $(e.target).parent(),
             service_global = $target.data('service_global')
-            service_name = $target.data('service_name'),
+        service_name = $target.data('service_name'),
             service_type = $target.data('service_type'),
             service_params = $target.data('service_params'),
             service_resources = $target.data('service_resources'),
             service_interconnections = $target.data('service_interconnections');
-            //console.log(service_interconnections);
+        //console.log(service_interconnections);
 
         var array = service_resources.split("*");
         array.pop();
 
-        view.update_editor({  service_global: service_global, 
-            service_name: service_name, 
-            service_type: service_type, 
-            service_params: service_params, 
+        view.update_editor({
+            service_global: service_global,
+            service_name: service_name,
+            service_type: service_type,
+            service_params: service_params,
             service_resources: array,
-            service_interconnections: service_interconnections, 
+            service_interconnections: service_interconnections,
         });
         view.set_button_state(view.EXISTING_RESOURCE);
     });
-    
+
 }(ns.model, ns.view));
