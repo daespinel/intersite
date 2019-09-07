@@ -2,99 +2,127 @@
 {% block title %}Services{% endblock %}
 {% block head %}
 {{ super() }}
-<link rel="stylesheet" href="/static/css/services.css">
+<!--
+<link rel="stylesheet" href="/static/css/services.css">-->
+<meta charset="UTF-8">
+    <title>AdminLTE 2 | Dashboard</title>
+    <meta content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no' name='viewport'>
+    <!-- Bootstrap 3.3.2 -->
+    <link href="/static/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+    <!-- Font Awesome Icons -->
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet" type="text/css" />
+    <!-- Ionicons -->
+    <link href="http://code.ionicframework.com/ionicons/2.0.0/css/ionicons.min.css" rel="stylesheet" type="text/css" />
+    <!-- Theme style -->
+    <link href="/static/dist/css/AdminLTE.min.css" rel="stylesheet" type="text/css" />
+    <!-- AdminLTE Skins. Choose a skin from the css/skins 
+         folder instead of downloading all of them to reduce the load. -->
+    <link href="/static/dist/css/skins/_all-skins.min.css" rel="stylesheet" type="text/css" />
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+    <![endif]-->
 {% endblock %}
+
 {% block page_name %}Inter-site service Create{% endblock %}
 
 {% block body %}
-<div class="container">
-    <input id="url_service_global" type="hidden" value="{{ service_global }}" />
-    <div class="section editor">
-        <div>
-            <span>New Inter-site Service:</span>
-            <span id="service_global"></span>
-            <br />
-        </div>
-        <label for="name">Name
-            <input id="service_name" type="text"/>
-        </label>
-        <br />
-        <label for="type">Type
-            <select id="service_type" name="type">
-                <option value="L2">Layer 2 network extension</option>
-                <option value="L3">Layer 3 routing</option>
-            </select>
-        </label>
-        <br />
-        <!--<label for="params">Params
-                <input id="service_params" type="text" />
-            </label>
-            <br />-->
-        <label for="resources">Resources
-            <div class="resource_container" id="resource_container">
-            
-                <br />
-                <input id="service_resources1" type="text" maxlength="200" class="service_resources1 service_input" placeholder="Resource Region name #1"/>
-                <input id="service_resources2" type="text" maxlength="200" class="service_resources2 service_input" placeholder="Resource uuid #1"/>
-                <br />
-                <input id="service_resources3" type="text" maxlength="200" class="service_resources3 service_input" placeholder="Resource Region name #2"/>
-                <input id="service_resources4" type="text" maxlength="200" class="service_resources4 service_input" placeholder="Resource uuid #2"/>
-                <br />
-            <input type="hidden" value="3" id="total_chq">
-            <input type="hidden" value="5" id="total_index_1">
-            <input type="hidden" value="6" id="total_index_2">
-            </div>
-        </label>
-        <!--<label for="interconnections">Interconnections
-                <input id="service_interconnections" type="text" maxlength="200" class="service_interconnections"/>
-            </label>-->
-        <br />
-        <button id="create">Create</button>
-        <!--<button id="update">Update</button>-->
-        <!--<button id="delete">Delete</button>-->
-        <button id="reset">Reset</button>
-        <button class="add_resource">New resource element</button>
-        <button class="remove">Delete resource</button>
-    </div>
-    <!-- <div class="services">
-            <table>
-                <caption>Inter-site services</caption>
-                <thead>
-                    <tr>
-                        <th>Global ID</th>
-                        <th>Name</th>
-                        <th>Type</th>
-                        <th>Params</th>
-                        <th>Resources</th>
-                        <th>Interconnections</th>
-                    </tr>
-                </thead>
-            </table>
-        </div> -->
-    <div class="error">
-    </div>
-</div>
-<div class="error">
-</div>
 
-<!-- Handlebars script tag entry
-{% raw %}
-<script id="services-table-template" type="text/x-handlebars-template">
-    <tbody>
-        {{#each services}}
-        <tr data-service_global="{{service_global}}" data-service_type="{{service_type}}" data-service_name="{{service_name}}" data-service_params="{{service_params}}" data-service_resources="{{#each service_resources}}{{resource_region}} {{resource_uuid}}*{{/each}}" data-service_interconnections="{{#each service_interconnections}} {{interconnexion_uuid}} {{/each}}">
-            <td class="global">{{service_global}}</td>
-            <td class="name">{{service_name}}</td>
-            <td class="type">{{service_type}}</td>
-            <td class="params">{{service_params}}</td>
-            <td class="resources">{{#each service_resources}}{{resource_region}} {{resource_uuid}} <br> {{/each}}</td>
-            <td class="interconnections">{{#each service_interconnections}}{{interconnexion_uuid}} <br> {{/each}}</td>
-        </tr>
-        {{/each}}
-    </tbody>
-</script>
-{% endraw %} -->
+<div class="content-wrapper">
 
+    <!-- Content Header (Page header) -->
+    <section class="content-header">
+        <h1>
+            Inter-site 
+        <small>Service create </small>
+        </h1>
+    </section>
+
+    <!-- Main content -->
+    <section class="content">
+      <div class="row">
+        <!-- left column -->
+        <div class="col-md-12">
+          <!-- general form elements -->
+          <div class="box box-primary">
+            <div class="box-header">
+                <h3 class="box-title">New Inter-site Service</h3>
+            </div><!-- /.box-header -->
+            <!-- form start -->
+            <form role="form">
+                <div class="box-body">
+                    <div class="form-group">
+                        <label class="col-md-6" for="service_name">Name</label>
+                        <input id="service_name" type="text" class="form-control" placeholder="Enter the name"/>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="col-md-6" for="service_type">Type</label>
+                        <select id="service_type" name="type" class="form-control"s>
+                            <option value="L2">Layer 2 network extension</option>
+                            <option value="L3">Layer 3 routing</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="col-md-6" for="resources_container">Resources</label>
+                        
+                        <div class="box-footer clearfix no-border col-md-6">
+                            <button class="btn btn-default pull-right"><i class="fa fa-plus"></i> Add resource </button>
+                        </div>
+
+                        <table id="resources_container" class="resources_container table table-condensed table-hover ">
+                            <tr>
+                              <td>
+                                  <label>1</label>
+                              </td>
+                              <td>
+                                <input id="service_resources1" type="text" class="service_resources1 form-control" placeholder="Resource Region name"/>
+                              </td>
+                              <td>
+                                <input id="service_resources2" type="text" class="service_resources2 form-control" placeholder="Resource uuid"/>
+                              </td>
+                              <td>
+                                <span>
+                                  <i class="fa fa-trash-o"></i>
+                                </span>
+                              </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <label>2</label>
+                                </td>
+                                <td>
+                                    <input id="service_resources3" type="text" class="service_resources3 form-control" placeholder="Resource Region name"/>
+                                </td>
+                                <td>
+                                    <input id="service_resources4" type="text" class="service_resources4 form-control" placeholder="Resource uuid"/>
+                                </td>
+                                <td>
+                                    <span>
+                                    <i class="fa fa-trash-o"></i>
+                                    </span>
+                                </td>
+                            </tr>
+                          </table>
+                    </div><!-- /div form-group resources -->
+
+                </div><!-- /.box-body -->
+
+                <div class="box-footer">
+                    <button id="create" type="submit" class="btn btn-primary">Create</button>
+                    <button id="reset" type="submit" class="btn btn-primary">Reset</button>
+                </div>
+
+            </form>
+          </div>
+        </div> 
+      </div>
+    </section>
+</div>
 {% endblock %}
 
 {% block javascript %}
