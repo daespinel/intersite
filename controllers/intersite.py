@@ -93,6 +93,9 @@ def vertical_create_service(service):
             local_resource = v
             break
 
+    # if(local_resource == ''):
+    #    abort(404, "There is no local resource for the service")
+
     # Saving info for Neutron and Keystone endpoints to be contacted based on keystone catalog
     catalog_endpoints = service_utils.get_keystone_catalog(local_region_url)
     for obj in catalog_endpoints:
@@ -112,7 +115,7 @@ def vertical_create_service(service):
 
     # If a provided Region Name doesn't exist, exit the method
     if bool(service_resources_list_search):
-        return "ERROR: Regions " + ("".join(str(key) for key in service_resources_list_search.keys())) + " are not found"
+        abort(404, "ERROR: Regions " + (" ".join(str(key) for key in service_resources_list_search.keys())) + " are not found")
 
     subnetworks = {}
     CIDRs = []
@@ -202,6 +205,10 @@ def vertical_create_service(service):
             site_index = site_index + 1
 
         to_service['service_params'] = cidr_ranges[0]
+
+        print('Next ranges will be used:')
+        for element in cidr_ranges:
+            print(element)
 
     # calling the interconnection service plugin to create the necessary objects
     id_temp = 1
@@ -294,7 +301,7 @@ def vertical_create_service(service):
 
         try:
             nova_list = nova_client.servers.list()
-            
+
         except novaclient.exceptions.NotFound:
             print("Can't connect to nova %s" %
                   service_remote_inter_endpoints[item])
@@ -312,12 +319,17 @@ def vertical_create_service(service):
                     vms_with_ip_in_network.append({'id': element.id, 'name': element.name, 'port_id': list_with_meta['port_id'], 'net_id': list_with_meta[
                         'net_id'], 'ip': list_with_meta['fixed_ips'][0]['ip_address'], 'subnet_id': list_with_meta['fixed_ips'][0]['subnet_id']})
 
+
         for machine_opts in vms_with_ip_in_network:
             if((ipaddress.IPv4Address(machine_opts['ip']) < ipaddress.IPv4Address(allocation_start)) or (ipaddress.IPv4Address(machine_opts['ip']) > ipaddress.IPv4Address(allocation_end))):
                 print('Changing the IPs for VMs in the local deployment')
-                detach_interface = nova_client.servers.interface_detach(machine_opts['id'],machine_opts['port_id'])
-                attach_interface = nova_client.servers.interface_attach(machine_opts['id'],port_id='', net_id= machine_opts['net_id'],fixed_ip='')
-                restart_machine = nova_client.servers.reboot(machine_opts['id'])
+                print(machine_opts['name'], machine_opts['ip'])
+                detach_interface = nova_client.servers.interface_detach(
+                    machine_opts['id'], machine_opts['port_id'])
+                attach_interface = nova_client.servers.interface_attach(
+                    machine_opts['id'], port_id='', net_id=machine_opts['net_id'], fixed_ip='')
+                restart_machine = nova_client.servers.reboot(
+                    machine_opts['id'])
 
     index_cidr = 1
     # Sending remote inter-site create requests to the distant nodes

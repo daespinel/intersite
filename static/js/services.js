@@ -236,7 +236,20 @@ ns.controller = (function (m, v) {
         let error_msg = `${textStatus}: ${errorThrown} - ${xhr.responseJSON.detail}`;
         view.error(error_msg);
         alert(error_msg);
+        $('#service_name').prop('disabled', false);
+        $('#service_type').prop('disabled', false);
+        $('#create').prop('disabled', false);
+        $('#update').prop('disabled', false);
+        $('#add_resource').prop('disabled', false);
+        $('#remove').prop('disabled', false);
+        var id_total_resources = parseInt($('#total_index_2').val())-2;
+        var i;
+        for (i = 1; i < id_total_resources;i=i+2){
+            $('#service_resources' + + String(i)).prop('disabled', false);
+            $('#service_resources' + + String(i+1)).prop('disabled', false);
+        }
         console.log(error_msg);
+
     }
     // initialize the button states
     view.set_button_state(view.NEW_RESOURCE);
