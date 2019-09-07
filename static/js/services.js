@@ -4,14 +4,14 @@
  */
 
 $('.add_resource').on('click', add);
-//$('.remove').on('click', remove);
+$('.remove').on('click', remove);
 
 $('#total_index_1').val(5);
 $('#total_index_2').val(6); 
 
 function add() {
-    var new_chq_no = parseInt($('#total_chq').val()) + 1;
-    var show_index = new_chq_no - 2;
+    var show_index = parseInt($('#total_chq').val());
+    var new_chq_no = show_index + 1;
     var id_1 = parseInt($('#total_index_1').val());
     var id_2 = parseInt($('#total_index_2').val());
     var new_input = "<input type='text' maxlength='200' id='service_resources" + id_1 + "' class='service_resources" + new_chq_no + " service_input' placeholder='Resource Region name #"+ show_index +"'> <input type='text' maxlength='200' id='service_resources" + id_2 + "' class='service_resources" + new_chq_no + " service_input' placeholder='Resource uuid #"+ show_index +"'> <br/>";
@@ -25,14 +25,23 @@ function add() {
     $('#total_index_2').val(new_id_2); 
 }
 
-/*function remove() {
+function remove() {
   var last_chq_no = $('#total_chq').val();
+  var last_index_1 = $('#total_index_1').val()-2;
+  var last_index_2 = $('#total_index_2').val()-2;
 
-  if (last_chq_no > 1) {
-    $('#new_' + last_chq_no).remove();
+  if (last_chq_no > 3) {
+    var identi = '#service_resources' + String(last_index_1); 
+    var valor = $('#service_resources' + last_index_1).val();
+    console.log(valor);
+    console.log(identi)
+    $('#service_resources' + last_index_1).remove();
+    $('#service_resources' + last_index_2).remove();
     $('#total_chq').val(last_chq_no - 1);
+    $('#total_index_1').val(last_index_1 - 2);
+    $('#total_index_2').val(last_index_2 - 2);
   }
-}*/
+}
 
 // Create the namespace instance
 let ns = {};
@@ -62,6 +71,7 @@ ns.model = (function () {
             return $.ajax(ajax_options);
         },
         create: function (service) {
+            //console.log(service);
             let ajax_options = {
                 type: 'POST',
                 url: '/api/intersite-vertical',
@@ -124,8 +134,9 @@ ns.view = (function () {
             $service_global.text('');
             $service_name.val('');
             $service_params.val('');
-            $service_resources.val('');
-            $service_resources2.val('');
+            $('#total_chq').val('3');
+            $('#total_index_1').val('5');
+            $('#total_index_2').val('6'); 
             $service_interconnections.val('');
             $service_type.val('').focus();
         },
@@ -223,24 +234,56 @@ ns.controller = (function (m, v) {
     // generic error handler
     function error_handler(xhr, textStatus, errorThrown) {
         let error_msg = `${textStatus}: ${errorThrown} - ${xhr.responseJSON.detail}`;
-
         view.error(error_msg);
+        alert(error_msg);
         console.log(error_msg);
     }
     // initialize the button states
     view.set_button_state(view.NEW_RESOURCE);
 
     // Validate input
-    function validate(type, resources) {
-        return type !== "" && resources !== "";
+    function validate(name, type, resources) {
+        var validate_name=name;
+        var validate_type = type;
+        var validate_resources = resources;
+        
+        if(validate_name.length > 32){
+            console.log('Problem with the name');
+            return false;
+        }
+        //console.log(validate_type);
+        if(validate_type != 'L2'){
+            if(validate_type != 'L3'){
+                console.log('problem with type');
+            return false;
+            }
+        }
+
+        if(validate_resources == ''){
+            console.log('problem with resources');
+            return false;
+        }
+
+        return true;
     }
 
     // Create our event handlers
     $('#create').click(function (e) {
+        $('#service_name').prop('disabled', true);
+        $('#service_type').prop('disabled', true);
+        $('#create').prop('disabled', true);
+        $('#update').prop('disabled', true);
+        $('#add_resource').prop('disabled', true);
+        $('#remove').prop('disabled', true);
+        var id_total_resources = parseInt($('#total_index_2').val())-2;
+        for (i = 1; i < id_total_resources;i=i+2){
+            $('#service_resources' + + String(i)).prop('disabled', true);
+            $('#service_resources' + + String(i+1)).prop('disabled', true);
+        }
         let name = $service_name.val(),
             type = $service_type.val();
         //console.log(name);
-        var id_total_resources = parseInt($('#total_index_2').val())-2;
+        
         var i;
         var resources_array= [];
         for (i = 1; i < id_total_resources;i=i+2){
@@ -248,16 +291,31 @@ ns.controller = (function (m, v) {
             var resource_uuid_str = "#service_resources" + String(i+1);
             var resource_region_temp = $(resource_region_str).val();
             var resource_uuid_temp = $(resource_uuid_str).val();
-            resources_array.push(resource_region_temp+"-"+resource_uuid_temp);
+            resources_array.push(resource_region_temp+","+resource_uuid_temp);
 
         }
-        console.log(resources_array);
+        //console.log(resources_array);
 
         e.preventDefault();
-        if (validate(type, resources)) {
-            model.create(name, type, resources)
+        if (validate(name, type, resources_array)) {
+            model.create({'name':name, 'type':type, 'resources':resources_array})
+            .done(function(data) {
+                var answer_global = data['service_global'];
+                var answer_name = data['service_name'];
+                var answer_type = data['service_type'];
+                var answer_params = data['service_params'];
+                var $output = "Service Created: \n Service global ID: "+ answer_global + "\n Service name: "+answer_name +"\n Service type: "+answer_type + "\n Service params: "+answer_params;
+                console.log($output);
+                alert($output);
+                window.location = '/';
+            })
+            .fail(function(xhr, textStatus, errorThrown) {
+                error_handler(xhr, textStatus, errorThrown);
+            });
+
+        view.reset();
         } else {
-            alert('Problem with type or resources');
+            alert('Problem with the validation');
         }
     });
 
