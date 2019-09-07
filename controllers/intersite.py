@@ -21,6 +21,10 @@ SERVICE_TYPE = {'L2': 'network_l2', 'L3': 'network_l3'}
 # /intersite-vertical/
 # Create a handler for our read (GET) services
 
+def read_region_name():
+    var_temp = service_utils.get_region_name()
+    print(var_temp)
+    return var_temp
 
 def vertical_read_all_service():
     """

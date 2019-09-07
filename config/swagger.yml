@@ -12,6 +12,22 @@ basePath: /api
 
 # Paths supported by the server application
 paths:
+  /region:
+    get:
+      operationId: read_region_name
+      tags:
+        - regions
+      summary: Get the local region name
+      description: Read the local region name
+      x-swagger-router-controller: controllers.intersite
+      responses:
+        200:
+          description: Successful read region name
+          schema:
+            properties:
+              name:
+                type: string
+                description: Name of the local region
   /intersite-vertical:
     get:
       operationId: vertical_read_all_service
