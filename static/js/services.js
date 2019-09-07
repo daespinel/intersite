@@ -9,6 +9,7 @@ $('.remove').on('click', remove);
 $('#total_index_1').val(5);
 $('#total_index_2').val(6); 
 
+
 function add() {
     var show_index = parseInt($('#total_chq').val());
     var new_chq_no = show_index + 1;
@@ -52,15 +53,7 @@ ns.model = (function () {
 
     // Return the API
     return {
-        read_one: function (service_global) {
-            let ajax_options = {
-                type: 'GET',
-                url: `/api/intersite-vertical/${service_global}`,
-                accepts: 'application/json',
-                dataType: 'json'
-            };
-            return $.ajax(ajax_options);
-        },
+
         read: function () {
             let ajax_options = {
                 type: 'GET',
@@ -81,35 +74,14 @@ ns.model = (function () {
                 data: JSON.stringify(service)
             };
             return $.ajax(ajax_options)
-        },
-        update: function (service) {
-            let ajax_options = {
-                type: 'PUT',
-                url: '/api/intersite-vertical/${service.service_global}',
-                accepts: 'application/json',
-                contentType: 'application/json',
-                dataType: 'json',
-                data: JSON.stringify(service)
-            };
-            return $.ajax(ajax_options)
-        },
-        'delete': function (service_global) {
-            let ajax_options = {
-                type: 'DELETE',
-                url: '/api/intersite-vertical/${service_global}',
-                accepts: 'application/json',
-                contentType: 'plain/text'
-            };
-            return $.ajax(ajax_options)
         }
+        
     };
 }());
 
 // Create the view instance
 ns.view = (function () {
     'use strict';
-
-    var $table = $(".services table");
 
     const NEW_RESOURCE = 0,
         EXISTING_RESOURCE = 1;
@@ -140,17 +112,6 @@ ns.view = (function () {
             $service_interconnections.val('');
             $service_type.val('').focus();
         },
-        update_editor: function (service) {
-            $service_global.text(service.service_global);
-            $service_name.val(service.service_name);
-            $service_params.val(service.service_params);
-            var array_service = service.service_resources;
-            console.log(array_service);
-            $service_resources.val(array_service);
-            //$service_resources2.val(service.service_resources2);
-            $service_interconnections.val(service.service_interconnections);
-            $service_type.val(service.service_type).focus();
-        },
         set_button_state: function (state) {
             if (state === NEW_RESOURCE) {
                 $create.prop('disabled', false);
@@ -167,19 +128,6 @@ ns.view = (function () {
                 $service_params.prop('disabled', true);
                 $service_interconnections.prop('disabled', true);
             }
-        },
-        build_table: function (data) {
-
-            let source = $('#services-table-template').html(),
-                template = Handlebars.compile(source),
-                html;
-
-            // Create the HTML from the template and notes
-            html = template({ services: data });
-
-            // Append the rows to the table tbody
-            $table.append(html);
-
         },
         error: function (error_msg) {
             $('.error')
@@ -209,26 +157,7 @@ ns.controller = (function (m, v) {
 
     // Get the data from the model after the controller is done initializing
     setTimeout(function () {
-        view.reset();
-        model.read()
-            .done(function (data) {
-                view.build_table(data);
-            })
-            .fail(function (xhr, textStatus, errorThrown) {
-                error_handler(xhr, textStatus, errorThrown);
-            })
-
-        if ($url_service_global.val() !== "") {
-            model.read_one($url_service_global.val())
-                .done(function (data) {
-                    console.log(data);
-                    view.update_editor(data);
-                    view.set_button_state(view.EXISTING_RESOURCE);
-                })
-                .fail(function (xhr, textStatus, errorThrown) {
-                    error_handler(xhr, textStatus, errorThrown);
-                });
-        }
+        view.reset();   
     }, 100)
 
     // generic error handler
@@ -295,7 +224,7 @@ ns.controller = (function (m, v) {
         }
         let name = $service_name.val(),
             type = $service_type.val();
-        //console.log(name);
+        console.log(name);
         
         var i;
         var resources_array= [];
@@ -307,7 +236,7 @@ ns.controller = (function (m, v) {
             resources_array.push(resource_region_temp+","+resource_uuid_temp);
 
         }
-        //console.log(resources_array);
+        console.log(resources_array);
 
         e.preventDefault();
         if (validate(name, type, resources_array)) {
@@ -332,19 +261,6 @@ ns.controller = (function (m, v) {
         }
     });
 
-    $('#update').click(function (e) {
-        let id = $id.val();
-
-        e.preventDefault();
-
-        if (validate(type, resources)) {
-            model.update(type, resources)
-        } else {
-            alert('Problem with type or resources input');
-        }
-        e.preventDefault();
-    });
-
     $('#delete').click(function (e) {
         let id = $id.val();
 
@@ -361,30 +277,7 @@ ns.controller = (function (m, v) {
     $('#reset').click(function () {
         view.reset();
         view.set_button_state(view.NEW_RESOURCE);
-    })
-
-    $('table').on('click', 'tbody tr', function (e) {
-        let $target = $(e.target).parent(),
-            service_global = $target.data('service_global')
-        service_name = $target.data('service_name'),
-            service_type = $target.data('service_type'),
-            service_params = $target.data('service_params'),
-            service_resources = $target.data('service_resources'),
-            service_interconnections = $target.data('service_interconnections');
-        //console.log(service_interconnections);
-
-        var array = service_resources.split("*");
-        array.pop();
-
-        view.update_editor({
-            service_global: service_global,
-            service_name: service_name,
-            service_type: service_type,
-            service_params: service_params,
-            service_resources: array,
-            service_interconnections: service_interconnections,
-        });
-        view.set_button_state(view.EXISTING_RESOURCE);
     });
+
 
 }(ns.model, ns.view));
