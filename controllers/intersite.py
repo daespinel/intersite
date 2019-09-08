@@ -559,6 +559,46 @@ def horizontal_create_service(service):
             print("Connection refused to neutron %s" %
                   service_remote_inter_endpoints[item])
 
+        # Check if there are hot-plugged VMs with IPs outside the allocation pool
+
+        nova_client = service_utils.get_nova_client(service_utils.get_local_keystone(),
+                                                    service_utils.get_region_name())
+
+        try:
+            nova_list = nova_client.servers.list()
+
+        except novaclient.exceptions.NotFound:
+            print("Can't connect to nova %s" %
+                  service_remote_inter_endpoints[item])
+        except novaclient.exceptions.Unauthorized:
+            print("Connection refused to nova %s" %
+                  service_remote_inter_endpoints[item])
+
+        vms_with_ip_in_network = []
+        for element in nova_list:
+            vm_name = str(element).split(' ', 1)[1][0:-1]
+            answer = nova_client.servers.interface_list(element.id)
+            for element1 in answer:
+                list_with_meta = element1.to_dict()
+                if(list_with_meta['net_id'] == local_resource):
+                    vms_with_ip_in_network.append({'id': element.id, 'name': element.name, 'port_id': list_with_meta['port_id'], 'net_id': list_with_meta[
+                        'net_id'], 'ip': list_with_meta['fixed_ips'][0]['ip_address'], 'subnet_id': list_with_meta['fixed_ips'][0]['subnet_id']})
+
+
+        for machine_opts in vms_with_ip_in_network:
+            if((ipaddress.IPv4Address(machine_opts['ip']) < ipaddress.IPv4Address(service_params.split(
+                "-", 1)[0])) or (ipaddress.IPv4Address(machine_opts['ip']) > ipaddress.IPv4Address(service_params.split(
+                "-", 1)[1]))):
+                print('Changing the IPs for VMs in the local deployment')
+                print(machine_opts['name'], machine_opts['ip'])
+                detach_interface = nova_client.servers.interface_detach(
+                    machine_opts['id'], machine_opts['port_id'])
+                attach_interface = nova_client.servers.interface_attach(
+                    machine_opts['id'], port_id='', net_id=machine_opts['net_id'], fixed_ip='')
+                restart_machine = nova_client.servers.reboot(
+                    machine_opts['id'])
+
+
     return service_schema.dump(new_service).data, 201
 
 # Handler to delete a service
