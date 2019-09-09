@@ -235,8 +235,7 @@ def vertical_create_service(service):
             id_temp = id_temp+1
             try:
                 inter_temp = (
-                    neutron_client.create_interconnection(
-                        interconnection_data)
+                    neutron_client.create_interconnection(interconnection_data)
                 )
                 # print(inter_temp)
                 local_interconnections_ids.append(

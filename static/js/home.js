@@ -19,6 +19,15 @@ ns.model = (function () {
                 dataType: 'json'
             };
             return $.ajax(ajax_options);
+        },
+        'delete': function (service_global) {
+            let ajax_options = {
+                type: 'DELETE',
+                url: `/api/intersite-vertical/${service_global}`,
+                accepts: 'application/json',
+                contentType: 'plain/text'
+            };
+            return $.ajax(ajax_options)
         }
     };
 }());
@@ -38,7 +47,7 @@ ns.view = (function () {
                 html;
 
             // Create the HTML from the template and notes
-            html = template({services: data});
+            html = template({ services: data });
 
             // Append the rows to the table tbody
             $table.append(html);
@@ -69,12 +78,33 @@ ns.controller = (function (m, v) {
         model.read()
             .done(function (data) {
                 view.build_table(data);
-                console.log(data);
+                //console.log(data);
             })
             .fail(function (xhr, textStatus, errorThrown) {
                 error_handler(xhr, textStatus, errorThrown);
             });
     }, 100);
+
+    $(document).on('click', '#tableservices tbody tr td button.service_delete',function (e) {
+        let $target = $(e.target).parent().parent().parent(),
+            service_global = $target.data('service_global');
+        //console.log(service_global);
+        model.delete(service_global)
+        .done(function(data){
+            window.location = '/';
+        });
+       
+        
+    });
+
+// handle application events
+    //$('table').on('dblclick', 'tbody td.global', function (e) {
+    //    let $target = $(e.target).parent(),
+    //        service_global = $target.data('service_global');
+    //    window.location = `/services/${service_global}`;
+
+    //});
+
 
     // generic error handler
     function error_handler(xhr, textStatus, errorThrown) {

@@ -1,5 +1,5 @@
 {% extends "parent.html" %}
-{% block title %}Home Blog{% endblock %}
+{% block title %}Home{% endblock %}
 {% block head %}
     {{ super() }}
     <!--
@@ -40,7 +40,7 @@
                 <div class="box-header">
                 </div><!-- /.box-header -->
                 <div class="blog box-body">
-                <table class="table table-bordered table-hover table-striped">
+                <table id="tableservices" class="table table-bordered table-hover table-striped">
                     <thead>
                         <tr>
                             <th>Global ID</th>
@@ -77,8 +77,8 @@
             <td class="resources">{{#each service_resources}}{{resource_region}} {{resource_uuid}} <br> {{/each}}</td>
             <td class="interconnections">{{#each service_interconnections}}{{interconnexion_uuid}} <br> {{/each}}</td>
             <td>
-                <button class="btn btn-info btn-xs" data-widget="update" data-toggle="tooltip" title="Update"><i class="fa fa-edit"></i></button>
-                <button class="btn btn-danger btn-xs" data-widget="delete" data-toggle="tooltip" title="Delete"><i class="fa fa-trash-o"></i></button>
+                <button id="service_update" class="btn btn-info btn-xs" data-widget="update" data-toggle="tooltip" title="Update"><i class="fa fa-edit"></i></button>
+                <button id="service_delete" class="service_delete btn btn-danger btn-xs" title="Delete"><i class="fa fa-trash-o"></i></button>
             </td>
         </tr>
         {{/each}}

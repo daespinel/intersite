@@ -3,7 +3,7 @@ read_name()
     // Here we put the data into the name of the PoC
     //$('#title_que').val(data);
     document.getElementById('title_que').innerHTML = data;
-    console.log(data);
+    //console.log(data);
 })
 
     // Return the API
