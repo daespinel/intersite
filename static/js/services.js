@@ -3,7 +3,7 @@
  * using the API
  */
 
-$('.add_resource').on('click', add);
+$('#add_resource').on('click', add);
 $('.remove').on('click', remove);
 
 $('#total_index_1').val(5);
@@ -16,10 +16,18 @@ function add() {
     var id_1 = parseInt($('#total_index_1').val());
     var id_2 = parseInt($('#total_index_2').val());
     var new_input = "<input type='text' maxlength='200' id='service_resources" + id_1 + "' class='service_resources" + new_chq_no + " service_input' placeholder='Resource Region name #"+ show_index +"'> <input type='text' maxlength='200' id='service_resources" + id_2 + "' class='service_resources" + new_chq_no + " service_input' placeholder='Resource uuid #"+ show_index +"'> <br/>";
+    var new_res_input = "<tr><td><label>"+show_index+"</label></td><td><input id='service_resources"  + id_1 +"' type='text' class='service_resources"  + new_chq_no + " form-control' placeholder='Resource Region name'/></td><td><input id='service_resources" +id_2+ "' type='text' class='service_resources" + new_chq_no + " form-control' placeholder='Resource uuid'/></td><td><span><i class='fa fa-trash-o'></i></span></td></tr>";
     var new_id_1 = id_1+2;
     var new_id_2 = id_2+2;
-
-    $('#resource_container').append(new_input);
+    console.log(new_res_input);
+    
+    //var table_resources = document.getElementById('resources_container');
+    //var new_row = table_resources.rows[0].cloneNode(true);
+    //var len = table_resources.rows.length;
+    //table_resources.appendChild(new_row);
+    //new_row.cells[0].innerHTML = new_res_input;
+    $('#resources_container').append(new_res_input);
+    
 
     $('#total_chq').val(new_chq_no);
     $('#total_index_1').val(new_id_1);
@@ -94,8 +102,6 @@ ns.view = (function () {
         $service_resources2 = $('#service_resources2'),
         $service_interconnections = $('#service_interconnections'),
         $create = $('#create'),
-        $update = $('#update'),
-        $delete = $('#delete'),
         $reset = $('#reset');
 
     // return the API
@@ -115,15 +121,11 @@ ns.view = (function () {
         set_button_state: function (state) {
             if (state === NEW_RESOURCE) {
                 $create.prop('disabled', false);
-                $update.prop('disabled', true);
-                $delete.prop('disabled', true);
                 $service_type.prop('disabled', false);
                 $service_params.prop('disabled', false);
                 $service_interconnections.prop('disabled', false);
             } else if (state === EXISTING_RESOURCE) {
                 $create.prop('disabled', true);
-                $update.prop('disabled', false);
-                $delete.prop('disabled', false);
                 $service_type.prop('disabled', true);
                 $service_params.prop('disabled', true);
                 $service_interconnections.prop('disabled', true);
@@ -168,7 +170,6 @@ ns.controller = (function (m, v) {
         $('#service_name').prop('disabled', false);
         $('#service_type').prop('disabled', false);
         $('#create').prop('disabled', false);
-        $('#update').prop('disabled', false);
         $('#add_resource').prop('disabled', false);
         $('#remove').prop('disabled', false);
         var id_total_resources = parseInt($('#total_index_2').val())-2;
@@ -214,7 +215,6 @@ ns.controller = (function (m, v) {
         $('#service_name').prop('disabled', true);
         $('#service_type').prop('disabled', true);
         $('#create').prop('disabled', true);
-        $('#update').prop('disabled', true);
         $('#add_resource').prop('disabled', true);
         $('#remove').prop('disabled', true);
         var id_total_resources = parseInt($('#total_index_2').val())-2;
@@ -274,7 +274,7 @@ ns.controller = (function (m, v) {
         e.preventDefault();
     });
 
-    $('#reset').click(function () {
+    $('#reset').click(function (e) {
         view.reset();
         view.set_button_state(view.NEW_RESOURCE);
     });

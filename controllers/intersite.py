@@ -23,7 +23,7 @@ SERVICE_TYPE = {'L2': 'network_l2', 'L3': 'network_l3'}
 
 def read_region_name():
     var_temp = service_utils.get_region_name()
-    print(var_temp)
+    #print(var_temp)
     return var_temp
 
 def vertical_read_all_service():
@@ -331,8 +331,10 @@ def vertical_create_service(service):
                     machine_opts['id'], machine_opts['port_id'])
                 attach_interface = nova_client.servers.interface_attach(
                     machine_opts['id'], port_id='', net_id=machine_opts['net_id'], fixed_ip='')
-                restart_machine = nova_client.servers.reboot(
-                    machine_opts['id'])
+                
+                # As for the test scenario, CirrOS can't renew its IP address, need to test this in another scenario
+                #restart_machine = nova_client.servers.reboot(
+                #    machine_opts['id'])
 
     index_cidr = 1
     # Sending remote inter-site create requests to the distant nodes
@@ -362,8 +364,10 @@ def vertical_create_service(service):
 # Handler to update an existing service
 
 
-def vertical_update_service(id, service_resources_list):
-    print("TO BE DONE")
+def vertical_update_service(global_id,action,resource):
+    service_data = vertical_read_one_service(global_id)
+
+    print("updating service" + service_data)
 
 # Handler to delete a service
 
