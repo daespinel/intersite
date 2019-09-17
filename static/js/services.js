@@ -214,13 +214,15 @@ ns.controller = (function (m, v) {
     $('#add_resource').click(function(e){
         var show_index = parseInt($('#total_chq').val());
         var new_chq_no = show_index + 1;
+        var actual = parseInt($('#actual_chq').val());
+        var new_actual = actual +1;
         var id_1 = parseInt($('#total_index_1').val());
         var id_2 = parseInt($('#total_index_2').val());
         //var new_input = "<input type='text' maxlength='200' id='service_resources" + id_1 + "' class='service_resources" + new_chq_no + " service_input' placeholder='Resource Region name #"+ show_index +"'> <input type='text' maxlength='200' id='service_resources" + id_2 + "' class='service_resources" + new_chq_no + " service_input' placeholder='Resource uuid #"+ show_index +"'> <br/>";
-        var new_res_input = "<tr><td><label>"+show_index+"</label></td><td><input id='service_resources"  + id_1 +"' type='text' class='service_resources"  + new_chq_no + " form-control' placeholder='Resource Region name'/></td><td><input id='service_resources" +id_2+ "' type='text' class='service_resources" + new_chq_no + " form-control' placeholder='Resource uuid'/></td><td><span><i class='fa fa-trash-o'></i></span></td></tr>";
+        var new_res_input = "<tr><td><label>"+show_index+"</label></td><td><input id='service_resources"  + id_1 +"' type='text' class='service_resources"  + new_chq_no + " form-control' placeholder='Resource Region name'/></td><td><input id='service_resources" +id_2+ "' type='text' class='service_resources" + new_chq_no + " form-control' placeholder='Resource uuid'/></td><td><span><button id='resource_delete' type='button' class='resource_delete btn btn-danger btn-xs' title='Delete'><i class='fa fa-trash-o'></i></button></span></td></tr>";
         var new_id_1 = id_1+2;
         var new_id_2 = id_2+2;
-        console.log(new_res_input);
+        //console.log(new_res_input);
         
         //var table_resources = document.getElementById('resources_container');
         //var new_row = table_resources.rows[0].cloneNode(true);
@@ -231,12 +233,15 @@ ns.controller = (function (m, v) {
         
 
         $('#total_chq').val(new_chq_no);
+        $('#actual_chq').val(new_chq_no);
         $('#total_index_1').val(new_id_1);
         $('#total_index_2').val(new_id_2);
         //return false;
     });
 
-    $('#remove_resource').click(function(e){
+    $(document).on('click', '#resources_container tbody tr td button.resource_delete',function (e) {
+        var target = $(e.target).parent().parent().parent().parent();
+        console.log(target)
         var last_chq_no = $('#total_chq').val();
         var last_index_1 = $('#total_index_1').val()-2;
         var last_index_2 = $('#total_index_2').val()-2;
@@ -244,14 +249,16 @@ ns.controller = (function (m, v) {
         if (last_chq_no > 3) {
             var identi = '#service_resources' + String(last_index_1); 
             var valor = $('#service_resources' + last_index_1).val();
-            console.log(valor);
-            console.log(identi)
-            $('#service_resources' + last_index_1).remove();
-            $('#service_resources' + last_index_2).remove();
+            //console.log(valor);
+            //console.log(identi)
+            target.remove()
+            //$('#service_resources' + last_index_1).remove();
+            //$('#service_resources' + last_index_2).remove();
             $('#total_chq').val(last_chq_no - 1);
             $('#total_index_1').val(last_index_1 - 2);
             $('#total_index_2').val(last_index_2 - 2);
         }
+        //return false;
     });
 
     // Create our event handlers
