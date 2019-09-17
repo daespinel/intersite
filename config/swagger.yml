@@ -179,6 +179,64 @@ paths:
                 items:
                   type: string
 
+    put:
+      operationId: vertical_update_service
+      tags:
+        - services
+      summary: Update an already deployed service
+      description: Update an already deployed service
+      x-swagger-router-controller: controllers.intersite
+      parameters:
+        - name: global_id
+          in: path
+          description: Global ID of the service to update
+          type: string
+          required: True
+        - name: add_site
+          in: query
+          description: add site if `query=true`
+          required: true
+          type: boolean
+        - name: remove_site
+          in: query
+          description: delete site if 'query=true'
+          required: true
+          type: boolean
+        - name: service
+          in: body
+          schema: 
+            type: object
+            properties: 
+              resources:
+                type: array
+                items:
+                  type: string 
+      responses:
+        200:
+          description: Successfully update service
+          schema:
+            properties:
+              id:
+                type: string
+                description: ID of inter-site service
+              type:
+                type: string
+                description: Type of inter-site service
+              name:
+                type: string
+                description: Name of the inter-site service
+              params:
+                type: string
+                description: Additional params for the inter-site service
+              resources:
+                type: array
+                items:
+                  type: string
+              interconnections:
+                type: array
+                items:
+                  type: string
+
   /intersite-horizontal:
     post:
       operationId: horizontal_create_service

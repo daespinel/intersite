@@ -21,10 +21,12 @@ SERVICE_TYPE = {'L2': 'network_l2', 'L3': 'network_l3'}
 # /intersite-vertical/
 # Create a handler for our read (GET) services
 
+
 def read_region_name():
     var_temp = service_utils.get_region_name()
-    #print(var_temp)
+    # print(var_temp)
     return var_temp
+
 
 def vertical_read_all_service():
     """
@@ -119,7 +121,8 @@ def vertical_create_service(service):
 
     # If a provided Region Name doesn't exist, exit the method
     if bool(service_resources_list_search):
-        abort(404, "ERROR: Regions " + (" ".join(str(key) for key in service_resources_list_search.keys())) + " are not found")
+        abort(404, "ERROR: Regions " + (" ".join(str(key)
+                                                 for key in service_resources_list_search.keys())) + " are not found")
 
     subnetworks = {}
     CIDRs = []
@@ -322,7 +325,6 @@ def vertical_create_service(service):
                     vms_with_ip_in_network.append({'id': element.id, 'name': element.name, 'port_id': list_with_meta['port_id'], 'net_id': list_with_meta[
                         'net_id'], 'ip': list_with_meta['fixed_ips'][0]['ip_address'], 'subnet_id': list_with_meta['fixed_ips'][0]['subnet_id']})
 
-
         for machine_opts in vms_with_ip_in_network:
             if((ipaddress.IPv4Address(machine_opts['ip']) < ipaddress.IPv4Address(allocation_start)) or (ipaddress.IPv4Address(machine_opts['ip']) > ipaddress.IPv4Address(allocation_end))):
                 print('Changing the IPs for VMs in the local deployment')
@@ -331,9 +333,9 @@ def vertical_create_service(service):
                     machine_opts['id'], machine_opts['port_id'])
                 attach_interface = nova_client.servers.interface_attach(
                     machine_opts['id'], port_id='', net_id=machine_opts['net_id'], fixed_ip='')
-                
+
                 # As for the test scenario, CirrOS can't renew its IP address, need to test this in another scenario
-                #restart_machine = nova_client.servers.reboot(
+                # restart_machine = nova_client.servers.reboot(
                 #    machine_opts['id'])
 
     index_cidr = 1
@@ -364,10 +366,68 @@ def vertical_create_service(service):
 # Handler to update an existing service
 
 
-def vertical_update_service(global_id,action,resource):
-    service_data = vertical_read_one_service(global_id)
+def vertical_update_service(global_id, add_site, remove_site, service):
 
-    print("updating service" + service_data)
+    service_update = Service.query.filter(
+        Service.service_global == global_id).one_or_none()
+
+    # Did we find a service?
+    if service_update is not None:
+        # turn the passed in service into a db object
+        service_schema = ServiceSchema()
+        to_update = service_schema.load(service, session=db.session).data
+
+        service_schema_temp = ServiceSchema()
+        data_from_db = service_schema_temp.dump(service_update).data
+
+        #print(data_from_db['service_resources'])
+
+        to_service_resources_list = dict((k.strip(), v.strip()) for k, v in (
+            (item.split(',')) for item in service.get("resources", None)))
+        service_resources_list_user = []
+        for key, value in to_service_resources_list.items():
+            service_resources_list_user.append(
+                {'resource_uuid': value, 'resource_region': key})
+        #print(service_resources_list_user)
+
+        service_resources_list_db = []
+        for element in data_from_db['service_resources']:
+            service_resources_list_db.append({'resource_uuid': element['resource_uuid'], 'resource_region': element['resource_region']})
+        #print(service_resources_list_db)
+        list_resources_remove = copy.deepcopy(service_resources_list_db)
+
+        list_resources_add = []
+        
+        for resource_component in service_resources_list_user:
+            contidion_temp = True
+            print('starting search with '+ str(resource_component))
+            for resource_component_2 in service_resources_list_db:
+                if resource_component == resource_component_2:
+                    #print(resource_component)
+                    list_resources_remove.remove(resource_component_2)
+                    contidion_temp = False
+                    break
+                print('log message')
+            if(contidion_temp == True):
+                list_resources_add.append(resource_component)
+
+        print(list_resources_add)
+        print(list_resources_remove)                
+
+        # Set the id to the person we want to update
+        to_update.service_id = service_update.service_id
+        to_update.service_global = service_update.service_global
+
+        # Merge the new object into the old and commit it into the DB
+        db.session.merge(to_update)
+        db.session.commit()
+
+        service_data = service_schema.dump(service_update)
+
+        return service_data, 200
+
+    else:
+        abort(404, "Service not found with global ID: {global_id}")
 
 # Handler to delete a service
 
@@ -587,11 +647,10 @@ def horizontal_create_service(service):
                     vms_with_ip_in_network.append({'id': element.id, 'name': element.name, 'port_id': list_with_meta['port_id'], 'net_id': list_with_meta[
                         'net_id'], 'ip': list_with_meta['fixed_ips'][0]['ip_address'], 'subnet_id': list_with_meta['fixed_ips'][0]['subnet_id']})
 
-
         for machine_opts in vms_with_ip_in_network:
             if((ipaddress.IPv4Address(machine_opts['ip']) < ipaddress.IPv4Address(service_params.split(
                 "-", 1)[0])) or (ipaddress.IPv4Address(machine_opts['ip']) > ipaddress.IPv4Address(service_params.split(
-                "-", 1)[1]))):
+                    "-", 1)[1]))):
                 print('Changing the IPs for VMs in the local deployment')
                 print(machine_opts['name'], machine_opts['ip'])
                 detach_interface = nova_client.servers.interface_detach(
@@ -600,7 +659,6 @@ def horizontal_create_service(service):
                     machine_opts['id'], port_id='', net_id=machine_opts['net_id'], fixed_ip='')
                 restart_machine = nova_client.servers.reboot(
                     machine_opts['id'])
-
 
     return service_schema.dump(new_service).data, 201
 
