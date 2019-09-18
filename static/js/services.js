@@ -213,9 +213,9 @@ ns.controller = (function (m, v) {
                 var answer_global = data['service_global'];
                 var answer_name = data['service_name'];
                 var answer_type = data['service_type'];
-                var answer_params = data['service_params'];
+                var answer_params = data['service_params'][0]['parameter_allocation_pool'];
                 var $output = "Service Created: \n Service global ID: "+ answer_global + "\n Service name: "+answer_name +"\n Service type: "+answer_type + "\n Service params: "+answer_params;
-                console.log($output);
+                console.log(answer_params);
                 alert($output);
                 window.location = '/';
             })

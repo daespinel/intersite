@@ -1,6 +1,6 @@
 /*
  * CSS stylesheet for home page
- */
+ 
 
  div.blog {
     margin: 10px 10px 10px 10px;
@@ -49,7 +49,7 @@ tbody tr:nth-child(odd) {
 /*tbody td.global, tbody td.region, tbody td.uuid {
     cursor: pointer;
     height: 33px;
-}*/
+}
 
 thead tr {
     height: 33px;
@@ -63,7 +63,7 @@ tbody tr:not(:last-child){
 tbody tr:hover {
     background-color: powderblue;
 }
-
+*/
 .fa-button-no-service {
     pointer-events:none;
 }

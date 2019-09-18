@@ -160,9 +160,11 @@ def vertical_create_service(service):
             subnetwork_temp = (
                 neutron_client.show_subnet(subnet=value)
             )
+
             subnet = subnetwork_temp['subnet']
             CIDRs.append(ipaddress.ip_network(subnet['cidr']))
-
+            if (item == local_region_name):
+                parameter_local_cidr = subnet['cidr']
         except neutronclient_exc.ConnectionFailed:
             print("Can't connect to neutron %s" %
                   service_remote_inter_endpoints[item])
@@ -175,7 +177,7 @@ def vertical_create_service(service):
 
         print("L3 routing service to be done among the resources: " +
               (" ".join(str(value) for value in service_resources_list.values())))
-
+        print(subnetworks)
         
 
         # Doing the IP range validation to avoid overlapping problems
@@ -363,11 +365,11 @@ def vertical_create_service(service):
             remote_inter_instance = remote_inter_instance + '7575/api/intersite-horizontal'
 
             if service_type == 'L2':
-                remote_service = {'name': service_name, 'type': service_type, 'params': cidr_ranges[index_cidr],
+                remote_service = {'name': service_name, 'type': service_type, 'params': [cidr_ranges[index_cidr],parameter_local_cidr,parameter_local_ipv],
                                   'global': random_id, 'resources': service.get("resources", None)}
                 index_cidr = index_cidr + 1
             else:
-                remote_service = {'name': service_name, 'type': service_type, 'params': '',
+                remote_service = {'name': service_name, 'type': service_type, 'params': ['','',parameter_local_ipv],
                                   'global': random_id, 'resources': service.get("resources", None)}
             # send horizontal (service_remote_inter_endpoints[obj])
             headers = {'Content-Type': 'application/json',
@@ -375,6 +377,7 @@ def vertical_create_service(service):
             r = requests.post(remote_inter_instance, data=json.dumps(
                 remote_service), headers=headers)
             # print(r.json())
+            print(service_schema.dump(new_service).data)
 
     return service_schema.dump(new_service).data, 201
 
@@ -531,7 +534,6 @@ def horizontal_create_service(service):
     to_service = {
         'service_name': service_name,
         'service_type': service_type,
-        'service_params': service_params,
         'service_global': service_global
     }
 

@@ -86,9 +86,8 @@ ns.controller = (function (m, v) {
     }, 100);
 
     $(document).on('click', '#tableservices tbody tr td button.service_delete',function (e) {
-        let $target = $(e.target).parent().parent().parent(),
+        let $target = $(e.target).parent().parent(),
             service_global = $target.data('service_global');
-        //console.log(service_global);
         model.delete(service_global)
         .done(function(data){
             window.location = '/';
@@ -96,6 +95,8 @@ ns.controller = (function (m, v) {
        
         
     });
+
+    
 
 // handle application events
     //$('table').on('dblclick', 'tbody td.global', function (e) {
