@@ -63,3 +63,7 @@ tbody tr:not(:last-child){
 tbody tr:hover {
     background-color: powderblue;
 }
+
+.fa-button-no-service {
+    pointer-events:none;
+}

@@ -2,8 +2,8 @@
 {% block title %}Services{% endblock %}
 {% block head %}
 {{ super() }}
-<!--
-<link rel="stylesheet" href="/static/css/services.css">-->
+
+<link rel="stylesheet" href="/static/css/services.css">
 <meta charset="UTF-8">
     <title>AdminLTE 2 | Dashboard</title>
     <meta content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no' name='viewport'>
@@ -66,48 +66,37 @@
                             <option value="L3">Layer 3 routing</option>
                         </select>
                     </div>
-
-                    <div class="form-group">
+                    <input type="hidden" value="3" id="total_chq">
+                    <div class="form-group" id="myForm">
                         <label class="col-md-6" for="resources_container">Resources</label>
                         
                         <div class="box-footer clearfix no-border col-md-6">
                             <button id="add_resource" type="button" class="add_resource btn btn-default pull-right"><i class="fa fa-plus"></i> Add resource </button>
                         </div>
-
-                        <input type="hidden" value="3" id="total_chq">
-                        <input type="hidden" value="3" id="actual_chq">
-                        <input type="hidden" value="5" id="total_index_1">
-                        <input type="hidden" value="6" id="total_index_2">
                         <table id="resources_container" class="resources_container table table-condensed  ">
                             <tr>
                               <td>
-                                  <label>1</label>
+                                <input id="service_resources1" type="text" class="service_resources form-control" placeholder="Resource Region name"/>
                               </td>
                               <td>
-                                <input id="service_resources1" type="text" class="service_resources1 form-control" placeholder="Resource Region name"/>
-                              </td>
-                              <td>
-                                <input id="service_resources2" type="text" class="service_resources2 form-control" placeholder="Resource uuid"/>
+                                <input id="service_resources2" type="text" class="service_resources form-control" placeholder="Resource uuid"/>
                               </td>
                               <td>
                                 <span>
-                                    <button id="resource_delete" type="button" class="resource_delete btn btn-danger btn-xs" title="Delete"><i class="fa fa-trash-o"></i></button>
+                                    <button id="resource_delete" type="button" class="resource_delete btn btn-danger btn-xs" title="Delete"><i class="fa fa-trash-o fa-button-no-service"></i></button>
                                 </span>
                               </td>
                             </tr>
                             <tr>
                                 <td>
-                                    <label>2</label>
+                                    <input id="service_resources1" type="text" class="service_resources form-control" placeholder="Resource Region name"/>
                                 </td>
                                 <td>
-                                    <input id="service_resources3" type="text" class="service_resources3 form-control" placeholder="Resource Region name"/>
-                                </td>
-                                <td>
-                                    <input id="service_resources4" type="text" class="service_resources4 form-control" placeholder="Resource uuid"/>
+                                    <input id="service_resources2" type="text" class="service_resources form-control" placeholder="Resource uuid"/>
                                 </td>
                                 <td>
                                     <span>
-                                        <button id="resource_delete" type="button" class="resource_delete btn btn-danger btn-xs" title="Delete"><i class="fa fa-trash-o"></i></button>
+                                        <button id="resource_delete" type="button" class="resource_delete btn btn-danger btn-xs" title="Delete"><i class="fa fa-trash-o fa-button-no-service"></i></button>
                                     </span>
                                 </td>
                             </tr>

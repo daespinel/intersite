@@ -1,6 +1,6 @@
 /*
  * This is the CSS stylesheet for the demo people application
- */
+
 
  .container {
     padding: 10px;
@@ -82,7 +82,7 @@ tbody td.type {
 /*tbody td.global {
     cursor: pointer;
     height: 33px;
-}*/
+}
 
 thead tr {
     height: 33px;
@@ -106,4 +106,8 @@ tbody tr:hover {
     border-radius: 3px;
     background-color: #fbb;
     visibility: hidden;
+}
+*/
+.fa-button-no-service {
+    pointer-events:none;
 }

@@ -1,58 +1,4 @@
-/*
- * JavaScript file for the application to demonstrate
- * using the API
- */
-$('#total_index_1').val(5);
-$('#total_index_2').val(6); 
- /*
-$('#add_resource').on('click', add_res);
-$('.remove').on('click', remove_res);
-
-
-
-
-function add_res() {
-    var show_index = parseInt($('#total_chq').val());
-    var new_chq_no = show_index + 1;
-    var id_1 = parseInt($('#total_index_1').val());
-    var id_2 = parseInt($('#total_index_2').val());
-    var new_input = "<input type='text' maxlength='200' id='service_resources" + id_1 + "' class='service_resources" + new_chq_no + " service_input' placeholder='Resource Region name #"+ show_index +"'> <input type='text' maxlength='200' id='service_resources" + id_2 + "' class='service_resources" + new_chq_no + " service_input' placeholder='Resource uuid #"+ show_index +"'> <br/>";
-    var new_res_input = "<tr><td><label>"+show_index+"</label></td><td><input id='service_resources"  + id_1 +"' type='text' class='service_resources"  + new_chq_no + " form-control' placeholder='Resource Region name'/></td><td><input id='service_resources" +id_2+ "' type='text' class='service_resources" + new_chq_no + " form-control' placeholder='Resource uuid'/></td><td><span><i class='fa fa-trash-o'></i></span></td></tr>";
-    var new_id_1 = id_1+2;
-    var new_id_2 = id_2+2;
-    //console.log(new_res_input);
-    
-    //var table_resources = document.getElementById('resources_container');
-    //var new_row = table_resources.rows[0].cloneNode(true);
-    //var len = table_resources.rows.length;
-    //table_resources.appendChild(new_row);
-    //new_row.cells[0].innerHTML = new_res_input;
-    $('#resources_container').append(new_res_input);
-    
-
-    $('#total_chq').val(new_chq_no);
-    $('#total_index_1').val(new_id_1);
-    $('#total_index_2').val(new_id_2); 
-}
-
-function remove_res() {
-  var last_chq_no = $('#total_chq').val();
-  var last_index_1 = $('#total_index_1').val()-2;
-  var last_index_2 = $('#total_index_2').val()-2;
-
-  if (last_chq_no > 3) {
-    var identi = '#service_resources' + String(last_index_1); 
-    var valor = $('#service_resources' + last_index_1).val();
-    console.log(valor);
-    console.log(identi)
-    $('#service_resources' + last_index_1).remove();
-    $('#service_resources' + last_index_2).remove();
-    $('#total_chq').val(last_chq_no - 1);
-    $('#total_index_1').val(last_index_1 - 2);
-    $('#total_index_2').val(last_index_2 - 2);
-  }
-}
-*/
+//$('#total_chq').val('3');
 // Create the namespace instance
 let ns = {};
 
@@ -114,10 +60,9 @@ ns.view = (function () {
             $service_name.val('');
             $service_params.val('');
             $('#total_chq').val('3');
-            $('#total_index_1').val('5');
-            $('#total_index_2').val('6'); 
             $service_interconnections.val('');
             $service_type.val('').focus();
+            $('#myForm :input').val('');
         },
         set_button_state: function (state) {
             if (state === NEW_RESOURCE) {
@@ -166,20 +111,9 @@ ns.controller = (function (m, v) {
     // generic error handler
     function error_handler(xhr, textStatus, errorThrown) {
         let error_msg = `${textStatus}: ${errorThrown} - ${xhr.responseJSON.detail}`;
-        view.error(error_msg);
+        console.log('entering the met');
         alert(error_msg);
-        $('#service_name').prop('disabled', false);
-        $('#service_type').prop('disabled', false);
-        $('#create').prop('disabled', false);
-        $('#add_resource').prop('disabled', false);
-        $('#remove').prop('disabled', false);
-        var id_total_resources = parseInt($('#total_index_2').val())-2;
-        var i;
-        for (i = 1; i < id_total_resources;i=i+2){
-            $('#service_resources' + + String(i)).prop('disabled', false);
-            $('#service_resources' + + String(i+1)).prop('disabled', false);
-        }
-        console.log(error_msg);
+        view.reset();
 
     }
     // initialize the button states
@@ -192,19 +126,19 @@ ns.controller = (function (m, v) {
         var validate_resources = resources;
         
         if(validate_name.length > 32){
-            console.log('Problem with the name');
+            //console.log('Problem with the name');
             return false;
         }
         //console.log(validate_type);
         if(validate_type != 'L2'){
             if(validate_type != 'L3'){
-                console.log('problem with type');
-            return false;
+                //console.log('problem with type');
+                return false;
             }
         }
 
         if(validate_resources == ''){
-            console.log('problem with resources');
+            //console.log('problem with resources');
             return false;
         }
 
@@ -214,80 +148,63 @@ ns.controller = (function (m, v) {
     $('#add_resource').click(function(e){
         var show_index = parseInt($('#total_chq').val());
         var new_chq_no = show_index + 1;
-        var actual = parseInt($('#actual_chq').val());
-        var new_actual = actual +1;
-        var id_1 = parseInt($('#total_index_1').val());
-        var id_2 = parseInt($('#total_index_2').val());
-        //var new_input = "<input type='text' maxlength='200' id='service_resources" + id_1 + "' class='service_resources" + new_chq_no + " service_input' placeholder='Resource Region name #"+ show_index +"'> <input type='text' maxlength='200' id='service_resources" + id_2 + "' class='service_resources" + new_chq_no + " service_input' placeholder='Resource uuid #"+ show_index +"'> <br/>";
-        var new_res_input = "<tr><td><label>"+show_index+"</label></td><td><input id='service_resources"  + id_1 +"' type='text' class='service_resources"  + new_chq_no + " form-control' placeholder='Resource Region name'/></td><td><input id='service_resources" +id_2+ "' type='text' class='service_resources" + new_chq_no + " form-control' placeholder='Resource uuid'/></td><td><span><button id='resource_delete' type='button' class='resource_delete btn btn-danger btn-xs' title='Delete'><i class='fa fa-trash-o'></i></button></span></td></tr>";
-        var new_id_1 = id_1+2;
-        var new_id_2 = id_2+2;
-        //console.log(new_res_input);
-        
-        //var table_resources = document.getElementById('resources_container');
-        //var new_row = table_resources.rows[0].cloneNode(true);
-        //var len = table_resources.rows.length;
-        //table_resources.appendChild(new_row);
-        //new_row.cells[0].innerHTML = new_res_input;
+        var new_res_input = "<tr><td><input id='service_resources1' type='text' class='service_resources form-control' placeholder='Resource Region name'/></td><td><input id='service_resources2' type='text' class='service_resources form-control' placeholder='Resource uuid'/></td><td><span><button id='resource_delete' type='button' class='resource_delete btn btn-danger btn-xs' title='Delete'><i class='fa fa-trash-o fa-button-no-service'></i></button></span></td></tr>";
         $('#resources_container').append(new_res_input);
-        
-
         $('#total_chq').val(new_chq_no);
-        $('#actual_chq').val(new_chq_no);
-        $('#total_index_1').val(new_id_1);
-        $('#total_index_2').val(new_id_2);
         //return false;
     });
 
     $(document).on('click', '#resources_container tbody tr td button.resource_delete',function (e) {
-        var target = $(e.target).parent().parent().parent().parent();
-        console.log(target)
+        var target = $(e.target).parent().parent().parent();
         var last_chq_no = $('#total_chq').val();
-        var last_index_1 = $('#total_index_1').val()-2;
-        var last_index_2 = $('#total_index_2').val()-2;
 
         if (last_chq_no > 3) {
-            var identi = '#service_resources' + String(last_index_1); 
-            var valor = $('#service_resources' + last_index_1).val();
             //console.log(valor);
             //console.log(identi)
             target.remove()
             //$('#service_resources' + last_index_1).remove();
             //$('#service_resources' + last_index_2).remove();
             $('#total_chq').val(last_chq_no - 1);
-            $('#total_index_1').val(last_index_1 - 2);
-            $('#total_index_2').val(last_index_2 - 2);
         }
         //return false;
     });
 
     // Create our event handlers
     $('#create').click(function (e) {
+        var last_chq_no = $('#total_chq').val();
         $('#service_name').prop('disabled', true);
         $('#service_type').prop('disabled', true);
         $('#create').prop('disabled', true);
         $('#add_resource').prop('disabled', true);
-        $('#remove').prop('disabled', true);
-        var id_total_resources = parseInt($('#total_index_2').val())-2;
-        for (i = 1; i < id_total_resources;i=i+2){
-            $('#service_resources' + + String(i)).prop('disabled', true);
-            $('#service_resources' + + String(i+1)).prop('disabled', true);
+        var table = document.getElementById('resources_container');
+        var i;
+        $('#myForm :input').prop('disabled', true);
+        var resources_array= [];
+        var resource_region_str = '';
+        var resource_uuid_str = '';
+        for (i = 0; i < table.rows.length;i++){
+            var row = table.rows[i];
+            var cells = row.cells;
+            var c;
+            for (c=0;c<cells.length;c++){
+                var cell = cells[c];
+                var inputElem = cell.children[0];
+                var isInput = inputElem instanceof HTMLInputElement;
+                if (isInput){
+                    //console.log(inputElem.value);
+                    if(inputElem.id=='service_resources1')
+                        resource_region_str = inputElem.value
+                    if(inputElem.id=='service_resources2')
+                        resource_uuid_str = inputElem.value
+                }            
+            }
+            resources_array.push(resource_region_str+","+resource_uuid_str);            
         }
+
         let name = $service_name.val(),
             type = $service_type.val();
-        console.log(name);
-        
-        var i;
-        var resources_array= [];
-        for (i = 1; i < id_total_resources;i=i+2){
-            var resource_region_str = "#service_resources" + String(i);
-            var resource_uuid_str = "#service_resources" + String(i+1);
-            var resource_region_temp = $(resource_region_str).val();
-            var resource_uuid_temp = $(resource_uuid_str).val();
-            resources_array.push(resource_region_temp+","+resource_uuid_temp);
 
-        }
-        console.log(resources_array);
+        //console.log(resources_array);
 
         e.preventDefault();
         if (validate(name, type, resources_array)) {
@@ -306,10 +223,21 @@ ns.controller = (function (m, v) {
                 error_handler(xhr, textStatus, errorThrown);
             });
 
-        view.reset();
+        
         } else {
             alert('Problem with the validation');
+            $('#service_name').prop('disabled',false);
+            $('#service_name').removeAttr('disabled');
+            $('#service_type').prop('disabled',false);
+            $('#service_type').removeAttr('disabled');
+            $('#create').prop('disabled',false);
+            $('#create').removeAttr('disabled');
+            $('#add_resource').prop('disabled',false);
+            $('#add_resource').removeAttr('disabled');
+            $('#myForm :input').prop('disabled', false);
+            $('#myForm :input').removeAttr('disabled');
         }
+
     });
 
     $('#reset').click(function (e) {
