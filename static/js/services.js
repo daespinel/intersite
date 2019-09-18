@@ -229,7 +229,7 @@ ns.controller = (function (m, v) {
             $('#service_name').prop('disabled',false);
             $('#service_name').removeAttr('disabled');
             $('#service_type').prop('disabled',false);
-            $('#service_type').removeAttr('disabled');
+            $('#service_type').disabled=false;
             $('#create').prop('disabled',false);
             $('#create').removeAttr('disabled');
             $('#add_resource').prop('disabled',false);

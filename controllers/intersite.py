@@ -2,7 +2,7 @@ from flask import make_response, abort
 from neutronclient.common import exceptions as neutronclient_exc
 from random import seed
 from random import randint
-from service import Service, ServiceSchema, Resource, Interconnexion, ServiceResourcesSchema, ServiceInterconnectionsSchema
+from service import Service, ServiceSchema, Resource, Interconnexion, Parameter, ServiceParamssSchema, ServiceResourcesSchema, ServiceInterconnectionsSchema
 from config import db
 import common.utils as service_utils
 import copy
@@ -74,6 +74,9 @@ def vertical_create_service(service):
     # print(service_resources_list)
     service_remote_auth_endpoints = {}
     service_remote_inter_endpoints = {}
+    parameter_local_allocation_pool=''
+    parameter_local_cidr=''
+    parameter_local_ipv='v4'
     local_interconnections_ids = []
     random_id = create_random_global_id()
 
@@ -88,7 +91,6 @@ def vertical_create_service(service):
         # 'id': id,
         'service_name': service_name,
         'service_type': service_type,
-        'service_params': '',
         'service_global': random_id
         # 'service_resources': service_resources_list,
         # 'service_interconnections': local_interconnections_ids
@@ -174,6 +176,8 @@ def vertical_create_service(service):
         print("L3 routing service to be done among the resources: " +
               (" ".join(str(value) for value in service_resources_list.values())))
 
+        
+
         # Doing the IP range validation to avoid overlapping problems
         for a, b in itertools.combinations(CIDRs, 2):
             if a.overlaps(b):
@@ -193,6 +197,7 @@ def vertical_create_service(service):
         #CIDRs = [ipaddr.IPNetwork("20.0.0.0/23"),ipaddr.IPNetwork("20.0.0.0/24"),ipaddr.IPNetwork("20.0.0.0/24"),ipaddr.IPNetwork("20.0.0.0/24"),ipaddr.IPNetwork("20.0.0.0/24")]
         #service_resources_list = [5,4,2,5,6,7,5,5,5,8,5,2,6,5,8,4,5,8]
         cidr = CIDRs[0]
+        parameter_local_cidr = str(cidr)
         main_cidr = str(CIDRs[0])
         main_cidr_base = ((str(CIDRs[0])).split("/", 1)[0])
         main_cidr_prefix = ((str(CIDRs[0])).split("/", 1)[1])
@@ -211,7 +216,8 @@ def vertical_create_service(service):
             base_index = base_index + int(host_per_site)
             site_index = site_index + 1
 
-        to_service['service_params'] = cidr_ranges[0]
+        parameter_local_allocation_pool = cidr_ranges[0]
+
 
         print('Next ranges will be used:')
         for element in cidr_ranges:
@@ -265,6 +271,16 @@ def vertical_create_service(service):
         new_service_resources = service_resources_schema.load(
             resource, session=db.session).data
         new_service.service_resources.append(new_service_resources)
+
+    # Adding the parameters to the service
+    parameters = {
+        'parameter_allocation_pool':parameter_local_allocation_pool,
+        'parameter_local_cidr':parameter_local_cidr,
+        'parameter_ipv':parameter_local_ipv
+        }
+    service_params_schema = ServiceParamssSchema()
+    new_service_params = service_params_schema.load(parameters, session=db.session).data
+    new_service.service_params.append(new_service_params)
 
     # Adding the interconnections to the service
     for element in local_interconnections_ids:
@@ -366,7 +382,7 @@ def vertical_create_service(service):
 # Handler to update an existing service
 
 
-def vertical_update_service(global_id, add_site, remove_site, service):
+def vertical_update_service(global_id, service):
 
     service_update = Service.query.filter(
         Service.service_global == global_id).one_or_none()

@@ -11,7 +11,13 @@ class Service(db.Model):
     service_name = db.Column(db.String(32))
     service_type = db.Column(db.String(32))
     service_global = db.Column(db.String(64))
-    service_params = db.Column(db.String(64))
+    service_params = db.relationship(
+        'Parameter',
+        backref='service',
+        cascade='all, delete, delete-orphan',
+        single_parent=True,
+        order_by='desc(Parameter.parameter_id)'
+    )
     service_resources = db.relationship(
         'Resource',
         backref='service',
@@ -26,6 +32,16 @@ class Service(db.Model):
         single_parent=True,
         order_by='desc(Interconnexion.interconnexion_id)'
     )
+
+
+class Parameter(db.Model):
+    __tablename__ = "parameter"
+    parameter_id = db.Column(db.Integer,
+                             primary_key=True)
+    parameter_allocation_pool = db.Column(db.String(64))
+    parameter_local_cidr = db.Column(db.String(64))
+    parameter_ipv = db.Column(db.String(64))
+    service_id = db.Column(db.Integer, db.ForeignKey('service.service_id'))
 
 
 class Resource(db.Model):
@@ -52,10 +68,43 @@ class ServiceSchema(ma.ModelSchema):
     class Meta:
         model = Service
         sqla_session = db.session
+    service_params = fields.Nested(
+        'SServiceParamsSchema', default=[], many=True)
     service_resources = fields.Nested(
         'SServiceResourcesSchema', default=[], many=True)
     service_interconnections = fields.Nested(
         'SServiceInterconnectionsSchema', default=[], many=True)
+
+
+class SServiceParamsSchema(ma.ModelSchema):
+    """
+    This class exists to get around a recursion issue
+    """
+    parameter_id = fields.Int()
+    service_id = fields.Int()
+    parameter_allocation_pool = fields.Str()
+    parameter_local_cidr = fields.Str()
+    parameter_ipv = fields.Str()
+
+
+class ServiceParamssSchema(ma.ModelSchema):
+    def __init__(self, **kwargs):
+        super().__init__(strict=True, **kwargs)
+
+    class Meta:
+        model = Parameter
+        sqla_session = db.session
+    service = fields.Nested('ServiceParamsServiceSchema', default=None)
+
+
+class ServiceParamsServiceSchema(ma.ModelSchema):
+    """
+    This class exists to get around a recursion issue
+    """
+    service_id = fields.Int()
+    service_name = fields.Str()
+    service_type = fields.Str()
+    service_global = fields.Str()
 
 
 class SServiceResourcesSchema(ma.ModelSchema):
@@ -86,7 +135,6 @@ class ServiceResourcesServiceSchema(ma.ModelSchema):
     service_name = fields.Str()
     service_type = fields.Str()
     service_global = fields.Str()
-    service_params = fields.Str()
 
 
 class SServiceInterconnectionsSchema(ma.ModelSchema):
@@ -117,4 +165,3 @@ class ServiceInterconnectionsServiceSchema(ma.ModelSchema):
     service_name = fields.Str()
     service_type = fields.Str()
     service_global = fields.Str()
-    service_params = fields.Str()
