@@ -253,7 +253,9 @@ paths:
                 type: string
                 description: Name of the inter-site service
               params:
-                type: string
+                type: array
+                items:
+                  type: string
                 description: Additional params for the inter-site service
               resources:
                 type: array
