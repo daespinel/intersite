@@ -17,7 +17,7 @@ import requests
 
 # Data to serve with our API
 SERVICE_TYPE = {'L2': 'network_l2', 'L3': 'network_l3'}
-
+local_region_name = service_utils.get_region_name()
 # /intersite-vertical/
 # Create a handler for our read (GET) services
 
@@ -62,7 +62,6 @@ def vertical_read_one_service(global_id):
 
 def vertical_create_service(service):
     # Taking information from the API http POST request
-    local_region_name = service_utils.get_region_name()
     local_region_url = service_utils.get_local_keystone()
     local_resource = ''
     service_name = service.get("name", None)
@@ -74,9 +73,9 @@ def vertical_create_service(service):
     # print(service_resources_list)
     service_remote_auth_endpoints = {}
     service_remote_inter_endpoints = {}
-    parameter_local_allocation_pool=''
-    parameter_local_cidr=''
-    parameter_local_ipv='v4'
+    parameter_local_allocation_pool = ''
+    parameter_local_cidr = ''
+    parameter_local_ipv = 'v4'
     local_interconnections_ids = []
     random_id = create_random_global_id()
 
@@ -178,7 +177,6 @@ def vertical_create_service(service):
         print("L3 routing service to be done among the resources: " +
               (" ".join(str(value) for value in service_resources_list.values())))
         print(subnetworks)
-        
 
         # Doing the IP range validation to avoid overlapping problems
         for a, b in itertools.combinations(CIDRs, 2):
@@ -219,7 +217,6 @@ def vertical_create_service(service):
             site_index = site_index + 1
 
         parameter_local_allocation_pool = cidr_ranges[0]
-
 
         print('Next ranges will be used:')
         for element in cidr_ranges:
@@ -276,12 +273,13 @@ def vertical_create_service(service):
 
     # Adding the parameters to the service
     parameters = {
-        'parameter_allocation_pool':parameter_local_allocation_pool,
-        'parameter_local_cidr':parameter_local_cidr,
-        'parameter_ipv':parameter_local_ipv
-        }
+        'parameter_allocation_pool': parameter_local_allocation_pool,
+        'parameter_local_cidr': parameter_local_cidr,
+        'parameter_ipv': parameter_local_ipv
+    }
     service_params_schema = ServiceParamssSchema()
-    new_service_params = service_params_schema.load(parameters, session=db.session).data
+    new_service_params = service_params_schema.load(
+        parameters, session=db.session).data
     new_service.service_params.append(new_service_params)
 
     # Adding the interconnections to the service
@@ -365,11 +363,11 @@ def vertical_create_service(service):
             remote_inter_instance = remote_inter_instance + '7575/api/intersite-horizontal'
 
             if service_type == 'L2':
-                remote_service = {'name': service_name, 'type': service_type, 'params': [cidr_ranges[index_cidr],parameter_local_cidr,parameter_local_ipv],
+                remote_service = {'name': service_name, 'type': service_type, 'params': [cidr_ranges[index_cidr], parameter_local_cidr, parameter_local_ipv],
                                   'global': random_id, 'resources': service.get("resources", None)}
                 index_cidr = index_cidr + 1
             else:
-                remote_service = {'name': service_name, 'type': service_type, 'params': ['','',parameter_local_ipv],
+                remote_service = {'name': service_name, 'type': service_type, 'params': ['', '', parameter_local_ipv],
                                   'global': random_id, 'resources': service.get("resources", None)}
             # send horizontal (service_remote_inter_endpoints[obj])
             headers = {'Content-Type': 'application/json',
@@ -399,7 +397,7 @@ def vertical_update_service(global_id, service):
         service_schema_temp = ServiceSchema()
         data_from_db = service_schema_temp.dump(service_update).data
 
-        #print(data_from_db['service_resources'])
+        # print(data_from_db['service_resources'])
 
         to_service_resources_list = dict((k.strip(), v.strip()) for k, v in (
             (item.split(',')) for item in service.get("resources", None)))
@@ -407,43 +405,81 @@ def vertical_update_service(global_id, service):
         for key, value in to_service_resources_list.items():
             service_resources_list_user.append(
                 {'resource_uuid': value, 'resource_region': key})
-        #print(service_resources_list_user)
+        # print(service_resources_list_user)
 
         service_resources_list_db = []
         for element in data_from_db['service_resources']:
-            service_resources_list_db.append({'resource_uuid': element['resource_uuid'], 'resource_region': element['resource_region']})
-        #print(service_resources_list_db)
+            service_resources_list_db.append(
+                {'resource_uuid': element['resource_uuid'], 'resource_region': element['resource_region']})
+        # print(service_resources_list_db)
         list_resources_remove = copy.deepcopy(service_resources_list_db)
-
         list_resources_add = []
-        
+
         for resource_component in service_resources_list_user:
             contidion_temp = True
-            print('starting search with '+ str(resource_component))
             for resource_component_2 in service_resources_list_db:
                 if resource_component == resource_component_2:
-                    #print(resource_component)
+                    # print(resource_component)
                     list_resources_remove.remove(resource_component_2)
                     contidion_temp = False
                     break
-                print('log message')
             if(contidion_temp == True):
                 list_resources_add.append(resource_component)
 
-        print(list_resources_add)
-        print(list_resources_remove)                
+        print('actual list of resources', service_resources_list_db)
+        print('resources to add', list_resources_add)
+        print('resources to delete', list_resources_remove)
+        search_local_resource_delete = False
+        search_local_resource_uuid = ''
 
-        # Set the id to the person we want to update
-        to_update.service_id = service_update.service_id
-        to_update.service_global = service_update.service_global
+        for element in service_resources_list_db:
+            if(local_region_name in element['resource_region']):
+                search_local_resource_uuid = element['resource_uuid']
+                break
+        # TODO change local_region_name for search_local_resource_uuid
+        for element in list_resources_remove:
+            if(local_region_name in element['resource_region']):
+                search_local_resource_delete = True
+
+        if(search_local_resource_delete):
+            print('local resource ' + search_local_resource_uuid + ' will be deleted and with it, the service '+ data_from_db['service_global'])
+            interconnections_delete = data_from_db['service_interconnections']
+            for element in interconnections_delete:
+                inter = element['interconnexion_uuid']
+                neutron_client = service_utils.get_neutron_client(
+                    service_utils.get_local_keystone(),
+                    service_utils.get_region_name()
+                )
+                try:
+                    inter_del = (
+                        neutron_client.delete_interconnection(inter))
+
+                except neutronclient_exc.ConnectionFailed:
+                    print("Can't connect to neutron %s" %
+                        service_remote_inter_endpoints[item])
+                except neutronclient_exc.Unauthorized:
+                    print("Connection refused to neutron %s" %
+                        service_remote_inter_endpoints[item])
+                except neutronclient_exc.NotFound:
+                    print("Element not found %s" % inter)
+
+            db.session.delete(service_update)
+            db.session.commit()
+
+        else:
+            print('TODO')
+
+        # Set the id to the service we want to update
+        #to_update.service_id = service_update.service_id
+        #to_update.service_global = service_update.service_global
 
         # Merge the new object into the old and commit it into the DB
-        db.session.merge(to_update)
-        db.session.commit()
+        #db.session.merge(to_update)
+        #db.session.commit()
 
-        service_data = service_schema.dump(service_update)
+        #service_data = service_schema.dump(service_update)
 
-        return service_data, 200
+        return make_response("{id} successfully updated".format(id=global_id), 200)
 
     else:
         abort(404, "Service not found with global ID: {global_id}")
