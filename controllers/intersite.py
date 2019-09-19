@@ -705,8 +705,8 @@ def horizontal_create_service(service):
 
     if service_type == 'L2':
         try:
-            body = {'subnet': {'allocation_pools': [{'start': service_params['parameter_allocation_pool'].split(
-                "-", 1)[0], 'end': service_params['parameter_allocation_pool'].split("-", 1)[1]}]}}
+            body = {'subnet': {'allocation_pools': [{'start': parameters['allocation_pool'].split(
+                "-", 1)[0], 'end': parameters['allocation_pool'].split("-", 1)[1]}]}}
 
             network_temp = (
                 neutron_client.show_network(network=local_resource
