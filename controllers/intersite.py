@@ -559,7 +559,7 @@ def horizontal_create_service(service):
     local_resource = ''
     service_name = service.get("name", None)
     service_type = service.get("type", None)
-    service_params = service.get("params", None)[0]
+    service_params = service.get("params", None)
     print(service_params)
     service_global = service.get("global", None)
     #service_resources = service.get("resources", None)
@@ -621,6 +621,8 @@ def horizontal_create_service(service):
                 print("Connection refused to neutron %s" %
                       service_remote_inter_endpoints[item])
 
+            
+
     # Create a service instance using the schema and the build service
     service_schema = ServiceSchema()
     new_service = service_schema.load(to_service, session=db.session).data
@@ -649,10 +651,47 @@ def horizontal_create_service(service):
 
     # Adding the parameters to the service
     parameters = {
-        'parameter_allocation_pool': service_params['parameter_allocation_pool'],
+        'parameter_allocation_pool': service_params[0],
         'parameter_local_cidr': '',
-        'parameter_ipv': service_params['parameter_ipv']
+        'parameter_ipv': service_params[2]
     }
+    if(service_type=='L2'):
+        parameters['parameter_local_cidr']=service_params[1]
+    else:
+        neutron_client = service_utils.get_neutron_client(
+            service_remote_auth_endpoints[item],
+            item
+        )
+
+        try:
+            network_temp = (
+                neutron_client.show_network(network=local_resource
+                                            )
+            )
+            subnet_id = network_temp['network']['subnets'][0]
+
+        except neutronclient_exc.ConnectionFailed:
+            print("Can't connect to neutron %s" %
+                  service_remote_inter_endpoints[item])
+        except neutronclient_exc.Unauthorized:
+            print("Connection refused to neutron %s" %
+                  service_remote_inter_endpoints[item])
+
+        try:
+            subnetwork_temp = (
+                neutron_client.show_subnet(subnet=subnet_id)
+            )
+
+            subnet = subnetwork_temp['subnet']
+            parameters['parameter_local_cidr'] = subnet['cidr']
+            
+        except neutronclient_exc.ConnectionFailed:
+            print("Can't connect to neutron %s" %
+                  service_remote_inter_endpoints[item])
+        except neutronclient_exc.Unauthorized:
+            print("Connection refused to neutron %s" %
+                  service_remote_inter_endpoints[item])
+
     service_params_schema = ServiceParamssSchema()
     new_service_params = service_params_schema.load(
         parameters, session=db.session).data
