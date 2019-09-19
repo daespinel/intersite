@@ -559,7 +559,8 @@ def horizontal_create_service(service):
     local_resource = ''
     service_name = service.get("name", None)
     service_type = service.get("type", None)
-    service_params = service.get("params", None)
+    service_params = service.get("params", None)[0]
+    print(service_params)
     service_global = service.get("global", None)
     #service_resources = service.get("resources", None)
     service_resources_list = dict((k.strip(), v.strip()) for k, v in (
@@ -646,6 +647,17 @@ def horizontal_create_service(service):
         new_service.service_interconnections.append(
             new_service_interconnections)
 
+    # Adding the parameters to the service
+    parameters = {
+        'parameter_allocation_pool': service_params['parameter_allocation_pool'],
+        'parameter_local_cidr': '',
+        'parameter_ipv': service_params['parameter_ipv']
+    }
+    service_params_schema = ServiceParamssSchema()
+    new_service_params = service_params_schema.load(
+        parameters, session=db.session).data
+    new_service.service_params.append(new_service_params)
+
     # Add the service to the database
     db.session.add(new_service)
     db.session.commit()
@@ -654,8 +666,8 @@ def horizontal_create_service(service):
 
     if service_type == 'L2':
         try:
-            body = {'subnet': {'allocation_pools': [{'start': service_params.split(
-                "-", 1)[0], 'end': service_params.split("-", 1)[1]}]}}
+            body = {'subnet': {'allocation_pools': [{'start': service_params['parameter_allocation_pool'].split(
+                "-", 1)[0], 'end': service_params['parameter_allocation_pool'].split("-", 1)[1]}]}}
 
             network_temp = (
                 neutron_client.show_network(network=local_resource
@@ -702,7 +714,7 @@ def horizontal_create_service(service):
                         'net_id'], 'ip': list_with_meta['fixed_ips'][0]['ip_address'], 'subnet_id': list_with_meta['fixed_ips'][0]['subnet_id']})
 
         for machine_opts in vms_with_ip_in_network:
-            if((ipaddress.IPv4Address(machine_opts['ip']) < ipaddress.IPv4Address(service_params.split(
+            if((ipaddress.IPv4Address(machine_opts['ip']) < ipaddress.IPv4Address(service_params['parameter_allocation_pool'].split(
                 "-", 1)[0])) or (ipaddress.IPv4Address(machine_opts['ip']) > ipaddress.IPv4Address(service_params.split(
                     "-", 1)[1]))):
                 print('Changing the IPs for VMs in the local deployment')
