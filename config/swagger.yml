@@ -282,3 +282,26 @@ paths:
       responses:
         200:
           description: Successfully deleted a service from service list
+
+    get:
+      operationId: horizontal_read_local_cidr
+      tags:
+        - services
+      summary: Read the local cidr of an inter-site Service 
+      description: Read one inter-site service
+      x-swagger-router-controller: controllers.intersite
+      parameters:
+        - name: global_id
+          in: path
+          type: string
+          required: True
+      responses:
+        200:
+          description: Successfully read remote cidr from service list 
+          schema:
+            properties:
+              params:
+                type: array
+                items:
+                  type: string
+              
