@@ -88,6 +88,7 @@ ns.controller = (function (m, v) {
     $(document).on('click', '#tableservices tbody tr td button.service_delete',function (e) {
         let $target = $(e.target).parent().parent(),
             service_global = $target.data('service_global');
+        console.log(service_global)
         model.delete(service_global)
         .done(function(data){
             window.location = '/';

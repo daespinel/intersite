@@ -9,8 +9,8 @@ SERVICES = [
         "type": "L2",
         "global": "a842c6f0-44a2-bc21-568a56c54de0",
         "params": ["10.0.0.3-10.0.0.98", "10.0.0.0/24", "v4"],
-        "resources": [("id1", "RegionOne"), ("id2", "RegionTwo"), ("id3", "RegionThree")],
-        "interconnections": ["z1", "z2"]
+        "resources": [("id1", "RegionOne"), ("id3", "RegionThree")],
+        "interconnections": ["z1",]
 
     },
     {
