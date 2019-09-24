@@ -619,19 +619,27 @@ def vertical_update_service(global_id, service):
                 # for remote_resource_to_add in list_resources_add:
 
                 service_resources_list = service_resources_list_db + list_resources_add
-
+                service_resources_list_params = []
                 for obj in service_resources_list:
-                    remote_inter_instance = service_remote_inter_endpoints[obj['resource_region']]
+                    remote_inter_instance = ''
                     if obj['resource_region'] != service_utils.get_region_name():
+                        remote_inter_instance = service_remote_inter_endpoints[obj['resource_region']].strip(
+                    '9696/')
                         remote_inter_instance = remote_inter_instance + \
                             '7575/api/intersite-horizontal/' + global_id
                         # send horizontal to get info (service_remote_inter_endpoints[obj])
                         headers = {'Accept': 'text/html'}
                         r = requests.get(
                             remote_inter_instance, headers=headers)
-                        print(r)
+                        if data_from_db['service_type'] == 'L2':
+                            service_resources_list_params.append({'resource_region':obj['resource_region'],'param':r.json()[0]['parameter_allocation_pool']})
+                        if data_from_db['service_type'] == 'L3':
+                            service_resources_list_params.append({'resource_region':obj['resource_region'],'param':r.json()[0]['parameter_local_cidr']})
+                
 
                 if(data_from_db['service_type'] == 'L2'):
+
+                    service_resources_list_params.append({'resource_region':local_region_name,'param':data_from_db['service_params'][0]['parameter_allocation_pool']})
                     check_cidrs = [key for key in new_CIDRs.values()]
                     check_cidrs.append(ipaddress.ip_network(
                         data_from_db['service_params'][0]['parameter_local_cidr']))
@@ -670,13 +678,15 @@ def vertical_update_service(global_id, service):
                     for element in cidr_ranges:
                         print(element)
 
+                    print(service_resources_list_params)
+                    check_cidrs = [key['param'] for key in service_resources_list_params]
+                    check_cidrs.sort() #Need to add a brute force sorting
+                    print(check_cidrs)
                 else:
                     if(data_from_db['service_type'] == 'L3'):
-                        print('the service is of type L3')
-                        # Ask the distant sites about their local cidr to do the validation
-                        print(horizontal_read_parameters(
-                            data_from_db['service_global']))
-                        for a, b in itertools.combinations(chech_cidrs, 2):
+                        service_resources_list_params.append({'resource_region':local_region_name,'param':data_from_db['resource_params'][0]['parameter_local_cidr']})
+                        check_cidrs = [key['param'] for key in service_resources_list_params]
+                        for a, b in itertools.combinations(check_cidrs, 2):
                             if a.overlaps(b):
                                 abort(404, "ERROR: networks " + " " +
                                       (str(a)) + " and "+(str(b)) + " overlap")
