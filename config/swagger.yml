@@ -231,7 +231,7 @@ paths:
     post:
       operationId: horizontal_create_service
       tags:
-        - services
+        - horizontal
       summary: Horizontal request to create an inter-site Service POST
       description: Horizontal request to create an inter-site Service 
       x-swagger-router-controller: controllers.intersite
@@ -269,7 +269,7 @@ paths:
     delete:
       operationId: horizontal_delete_service
       tags:
-        - services
+        - horizontal
       summary: Deletes an inter-site Service DELETE
       description: Deletes an inter-site service
       x-swagger-router-controller: controllers.intersite
@@ -284,9 +284,9 @@ paths:
           description: Successfully deleted a service from service list
 
     get:
-      operationId: horizontal_read_local_cidr
+      operationId: horizontal_read_parameters
       tags:
-        - services
+        - horizontal
       summary: Read the local cidr of an inter-site Service 
       description: Read one inter-site service
       x-swagger-router-controller: controllers.intersite
@@ -297,7 +297,7 @@ paths:
           required: True
       responses:
         200:
-          description: Successfully read remote cidr from service list 
+          description: Successfully read remote params from service list 
           schema:
             properties:
               params:
