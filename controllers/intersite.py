@@ -435,14 +435,19 @@ def vertical_update_service(global_id, service):
         search_local_resource_delete = False
         search_local_resource_uuid = ''
 
+        if(list_resources_remove == [] and list_resources_add == []):
+            abort(404, "No resources are added/deleted")
+
         for element in service_resources_list_db:
             if(local_region_name in element['resource_region']):
                 search_local_resource_uuid = element['resource_uuid']
                 break
+
         # TODO change local_region_name for search_local_resource_uuid
         for element in list_resources_remove:
             if(local_region_name in element['resource_region']):
                 search_local_resource_delete = True
+
 
         # If one of the resource is the local one, we only need to delete the entire service locally
         if(search_local_resource_delete):
@@ -466,237 +471,254 @@ def vertical_update_service(global_id, service):
                 except neutronclient_exc.NotFound:
                     print("Element not found %s" % inter)
 
+                for element in list_resources_remove:
+                    if(local_region_name in element['resource_region']):
+                        service_resources_list_db.remove(element)
+                        list_resources_remove.remove(element)
+                        break
+
             db.session.delete(service_update)
             db.session.commit()
 
-        else:
+        # First delete the interconnections between the local resource and the resources that are going to be deleted
+        if (list_resources_remove):
+            # Do this if the local resource is not being deleted from the service
+            if (search_local_resource_delete != True):
+                for remote_resource_to_delete in list_resources_remove:
 
-            # First delete the interconnections between the local resource and the resources that are going to be deleted
-            for remote_resource_to_delete in list_resources_remove:
+                    neutron_client = service_utils.get_neutron_client(
+                        service_utils.get_local_keystone(),
+                        service_utils.get_region_name()
+                    )
+                    try:
 
-                neutron_client = service_utils.get_neutron_client(
-                    service_utils.get_local_keystone(),
-                    service_utils.get_region_name()
-                )
-                try:
+                        filters = {'local_resource_id': search_local_resource_uuid,
+                                'remote_resource_id': remote_resource_to_delete['resource_uuid']}
+                        inter_del_list = (
+                            neutron_client.list_interconnections(**filters))['interconnections']
 
-                    filters = {'local_resource_id': search_local_resource_uuid,
-                               'remote_resource_id': remote_resource_to_delete['resource_uuid']}
-                    inter_del_list = (
-                        neutron_client.list_interconnections(**filters))['interconnections']
+                        if inter_del_list:
+                            interco_delete = inter_del_list.pop()
+                            interconnection_uuid_to_delete = interco_delete['id']
 
-                    inter_del_list = [{'id': 'z1'}]
-                    if inter_del_list:
-                        interco_delete = inter_del_list.pop()
-                        interconnection_uuid_to_delete = interco_delete['id']
+                            inter_del = (neutron_client.delete_interconnection(
+                                interconnection_uuid_to_delete))
 
-                        inter_del = (neutron_client.delete_interconnection(
-                            interconnection_uuid_to_delete))
+                            interconnection_delete = Interconnexion.query.outerjoin(Service, Interconnexion.service_id == Service.service_id).filter(
+                                Interconnexion.interconnexion_uuid == interconnection_uuid_to_delete).filter(Interconnexion.service_id == data_from_db['service_id']).one_or_none()
 
-                        interconnection_delete = Interconnexion.query.outerjoin(Service, Interconnexion.service_id == Service.service_id).filter(
-                            Interconnexion.interconnexion_uuid == interconnection_uuid_to_delete).filter(Interconnexion.service_id == data_from_db['service_id']).one_or_none()
+                            if interconnection_delete:
+                                db.session.delete(interconnection_delete)
+                                db.session.commit()
 
-                        if interconnection_delete:
-                            db.session.delete(interconnection_delete)
-                            db.session.commit()
+                    except neutronclient_exc.ConnectionFailed:
+                        print("Can't connect to neutron %s" %
+                            service_remote_inter_endpoints[item])
+                    except neutronclient_exc.Unauthorized:
+                        print("Connection refused to neutron %s" %
+                            service_remote_inter_endpoints[item])
+                    except neutronclient_exc.NotFound:
+                        print("Element not found %s" % inter_del_list)
 
-                except neutronclient_exc.ConnectionFailed:
-                    print("Can't connect to neutron %s" %
-                          service_remote_inter_endpoints[item])
-                except neutronclient_exc.Unauthorized:
-                    print("Connection refused to neutron %s" %
-                          service_remote_inter_endpoints[item])
-                except neutronclient_exc.NotFound:
-                    print("Element not found %s" % inter_del_list)
+                    # print(remote_resource_to_delete['resource_uuid'])
+                    resource_delete = Resource.query.outerjoin(Service, Resource.service_id == Service.service_id).filter(
+                        Service.service_id == data_from_db['service_id']).filter(Resource.resource_uuid == remote_resource_to_delete['resource_uuid']).one_or_none()
 
-                # print(remote_resource_to_delete['resource_uuid'])
-                resource_delete = Resource.query.outerjoin(Service, Resource.service_id == Service.service_id).filter(
-                    Service.service_id == data_from_db['service_id']).filter(Resource.resource_uuid == remote_resource_to_delete['resource_uuid']).one_or_none()
+                    service_resources_list_db.remove(remote_resource_to_delete)
 
-                service_resources_list_db.remove(remote_resource_to_delete)
-
-                if resource_delete:
-                    db.session.delete(resource_delete)
-                    db.session.commit()
+                    if resource_delete:
+                        db.session.delete(resource_delete)
+                        db.session.commit()
 
             # Do a new list with the actual resources that are going to be used in the following part of the service
             # then, verify the new resources to add to the service and add them
             # Depending on the service type, the validation will be different
-            if(list_resources_add):
-                service_remote_auth_endpoints = {}
-                service_remote_inter_endpoints = {}
-                service_resources_list_search = copy.deepcopy(
-                    list_resources_add)
-                service_resources_list_db_search = copy.deepcopy(
-                    service_resources_list_db)
-                catalog_endpoints = service_utils.get_keystone_catalog(
-                    local_region_url)
+        if(list_resources_add):
+            service_remote_auth_endpoints = {}
+            service_remote_inter_endpoints = {}
+            service_resources_list_search = copy.deepcopy(
+                list_resources_add)
+            service_resources_list_db_search = copy.deepcopy(
+                service_resources_list_db)
+            catalog_endpoints = service_utils.get_keystone_catalog(
+                local_region_url)
 
-                for obj in catalog_endpoints:
-                    if obj['name'] == 'neutron':
-                        for endpoint in obj['endpoints']:
-                            for existing_resource in service_resources_list_db:
-                                if endpoint['region'] == existing_resource['resource_region']:
-                                    service_remote_inter_endpoints[existing_resource['resource_region']
-                                                                   ] = endpoint['url']
-                                    service_resources_list_db_search.remove(
-                                        existing_resource)
-                                    break
-                            for resource_element in list_resources_add:
-                                if endpoint['region'] == resource_element['resource_region']:
-                                    service_remote_inter_endpoints[resource_element['resource_region']
-                                                                   ] = endpoint['url']
-                                    service_resources_list_search.remove(
-                                        resource_element)
-                                    break
-                    if obj['name'] == 'keystone':
-                        for endpoint in obj['endpoints']:
-                            for existing_resource in service_resources_list_db:
-                                if endpoint['region'] == existing_resource['resource_region']:
-                                    service_remote_auth_endpoints[existing_resource['resource_region']
-                                                                  ] = endpoint['url']+'/v3'
-                                    break
-                            for resource_element in list_resources_add:
-                                if endpoint['region'] == resource_element['resource_region'] and endpoint['interface'] == 'public':
-                                    service_remote_auth_endpoints[resource_element['resource_region']
-                                                                  ] = endpoint['url']+'/v3'
-                                    break
+            for obj in catalog_endpoints:
+                if obj['name'] == 'neutron':
+                    for endpoint in obj['endpoints']:
+                        for existing_resource in service_resources_list_db:
+                            if endpoint['region'] == existing_resource['resource_region']:
+                                service_remote_inter_endpoints[existing_resource['resource_region']
+                                                                ] = endpoint['url']
+                                service_resources_list_db_search.remove(
+                                    existing_resource)
+                                break
+                        for resource_element in list_resources_add:
+                            if endpoint['region'] == resource_element['resource_region']:
+                                service_remote_inter_endpoints[resource_element['resource_region']
+                                                                ] = endpoint['url']
+                                service_resources_list_search.remove(
+                                    resource_element)
+                                break
+                if obj['name'] == 'keystone':
+                    for endpoint in obj['endpoints']:
+                        for existing_resource in service_resources_list_db:
+                            if endpoint['region'] == existing_resource['resource_region']:
+                                service_remote_auth_endpoints[existing_resource['resource_region']
+                                                                ] = endpoint['url']+'/v3'
+                                break
+                        for resource_element in list_resources_add:
+                            if endpoint['region'] == resource_element['resource_region'] and endpoint['interface'] == 'public':
+                                service_remote_auth_endpoints[resource_element['resource_region']
+                                                                ] = endpoint['url']+'/v3'
+                                break
 
-                if bool(service_resources_list_search):
-                    abort(404, "ERROR: Regions " + (" ".join(str(key['resource_region'])
-                                                             for key in service_resources_list_search)) + " are not found")
+            if bool(service_resources_list_search):
+                abort(404, "ERROR: Regions " + (" ".join(str(key['resource_region'])
+                                                            for key in service_resources_list_search)) + " are not found")
 
-                if bool(service_resources_list_db_search):
-                    abort(404, "ERROR: Regions " + (" ".join(str(key['resource_region'])
-                                                             for key in service_resources_list_db_search)) + " are not found")
+            if bool(service_resources_list_db_search):
+                abort(404, "ERROR: Regions " + (" ".join(str(key['resource_region'])
+                                                            for key in service_resources_list_db_search)) + " are not found")
 
-                new_subnetworks = {}
-                new_CIDRs = {}
-                # Retrieving information for networks given the region name
-                for item in list_resources_add:
+            new_subnetworks = {}
+            new_CIDRs = {}
+            # Retrieving information for networks given the region name
+            for item in list_resources_add:
 
-                    neutron_client = service_utils.get_neutron_client(
-                        service_remote_auth_endpoints[item['resource_region']],
-                        item['resource_region']
+                neutron_client = service_utils.get_neutron_client(
+                    service_remote_auth_endpoints[item['resource_region']],
+                    item['resource_region']
+                )
+
+                try:
+                    network_temp = (
+                        neutron_client.show_network(network=item['resource_uuid']
+                                                    )
+                    )
+                    subnet = network_temp['network']
+                    new_subnetworks[item['resource_region']
+                                    ] = subnet['subnets'][0]
+
+                except neutronclient_exc.ConnectionFailed:
+                    print("Can't connect to neutron %s" %
+                            service_remote_inter_endpoints[item])
+                except neutronclient_exc.Unauthorized:
+                    print("Connection refused to neutron %s" %
+                            service_remote_inter_endpoints[item])
+
+                # Retrieving the subnetwork information given the region name
+            for item, value in new_subnetworks.items():
+                neutron_client = service_utils.get_neutron_client(
+                    service_remote_auth_endpoints[item],
+                    item
+                )
+                try:
+                    subnetwork_temp = (
+                        neutron_client.show_subnet(subnet=value)
                     )
 
-                    try:
-                        network_temp = (
-                            neutron_client.show_network(network=item['resource_uuid']
-                                                        )
-                        )
-                        subnet = network_temp['network']
-                        new_subnetworks[item['resource_region']
-                                        ] = subnet['subnets'][0]
+                    subnet = subnetwork_temp['subnet']
+                    new_CIDRs[item] = ipaddress.ip_network(subnet['cidr'])
+                except neutronclient_exc.ConnectionFailed:
+                    print("Can't connect to neutron %s" %
+                            service_remote_inter_endpoints[item])
+                except neutronclient_exc.Unauthorized:
+                    print("Connection refused to neutron %s" %
+                            service_remote_inter_endpoints[item])
 
-                    except neutronclient_exc.ConnectionFailed:
-                        print("Can't connect to neutron %s" %
-                              service_remote_inter_endpoints[item])
-                    except neutronclient_exc.Unauthorized:
-                        print("Connection refused to neutron %s" %
-                              service_remote_inter_endpoints[item])
+            # query distant sites composing the service to give their params
 
-                    # Retrieving the subnetwork information given the region name
-                for item, value in new_subnetworks.items():
-                    neutron_client = service_utils.get_neutron_client(
-                        service_remote_auth_endpoints[item],
-                        item
-                    )
-                    try:
-                        subnetwork_temp = (
-                            neutron_client.show_subnet(subnet=value)
-                        )
+            service_resources_list = service_resources_list_db + list_resources_add
+            service_resources_list_params = []
+            for obj in service_resources_list_db:
+                remote_inter_instance = ''
+                if obj['resource_region'] != service_utils.get_region_name():
+                    remote_inter_instance = service_remote_inter_endpoints[obj['resource_region']].strip(
+                '9696/')
+                    remote_inter_instance = remote_inter_instance + \
+                        '7575/api/intersite-horizontal/' + global_id
+                    # send horizontal to get info (service_remote_inter_endpoints[obj])
+                    headers = {'Accept': 'text/html'}
+                    r = requests.get(
+                        remote_inter_instance, headers=headers)
+                    if data_from_db['service_type'] == 'L2':
+                        service_resources_list_params.append({'resource_region':obj['resource_region'],'param':r.json()[0]['parameter_allocation_pool']})
+                    if data_from_db['service_type'] == 'L3':
+                        service_resources_list_params.append({'resource_region':obj['resource_region'],'param':r.json()[0]['parameter_local_cidr']})
+            
 
-                        subnet = subnetwork_temp['subnet']
-                        new_CIDRs[item] = ipaddress.ip_network(subnet['cidr'])
-                    except neutronclient_exc.ConnectionFailed:
-                        print("Can't connect to neutron %s" %
-                              service_remote_inter_endpoints[item])
-                    except neutronclient_exc.Unauthorized:
-                        print("Connection refused to neutron %s" %
-                              service_remote_inter_endpoints[item])
+            if(data_from_db['service_type'] == 'L2'):
+                if(search_local_resource_delete != True):
+                    service_resources_list_params.append({'resource_region':local_region_name,'param':data_from_db['service_params'][0]['parameter_allocation_pool']})
+                check_cidrs = [key for key in new_CIDRs.values()]
+                check_cidrs.append(ipaddress.ip_network(
+                    data_from_db['service_params'][0]['parameter_local_cidr']))
 
-                # for remote_resource_to_add in list_resources_add:
+                if not check_equal_element(check_cidrs):
+                    abort(
+                        404, "ERROR: CIDR is not the same for all the resources")
 
-                service_resources_list = service_resources_list_db + list_resources_add
-                service_resources_list_params = []
-                for obj in service_resources_list:
-                    remote_inter_instance = ''
-                    if obj['resource_region'] != service_utils.get_region_name():
-                        remote_inter_instance = service_remote_inter_endpoints[obj['resource_region']].strip(
-                    '9696/')
-                        remote_inter_instance = remote_inter_instance + \
-                            '7575/api/intersite-horizontal/' + global_id
-                        # send horizontal to get info (service_remote_inter_endpoints[obj])
-                        headers = {'Accept': 'text/html'}
-                        r = requests.get(
-                            remote_inter_instance, headers=headers)
-                        if data_from_db['service_type'] == 'L2':
-                            service_resources_list_params.append({'resource_region':obj['resource_region'],'param':r.json()[0]['parameter_allocation_pool']})
-                        if data_from_db['service_type'] == 'L3':
-                            service_resources_list_params.append({'resource_region':obj['resource_region'],'param':r.json()[0]['parameter_local_cidr']})
+                #print(service_remote_auth_endpoints)
+                #print(horizontal_read_parameters(
+                #    data_from_db['service_global']))
+
+                cidr = ipaddress.ip_network(
+                    data_from_db['service_params'][0]['parameter_local_cidr'])
+                main_cidr = str(cidr)
+                main_cidr_base = ((str(cidr)).split("/", 1)[0])
+                main_cidr_prefix = ((str(cidr)).split("/", 1)[1])
+                cidr_ranges = []
+                # Available IPs are without the network address, the broadcast address, and the first address (for globally known DHCP)
+                ips_cidr_available = 2**(32-int(main_cidr_prefix))-3
+                host_per_site = math.floor(
+                    ips_cidr_available/len(service_resources_list))
+                print("CIDR: " + str(cidr) + ", total available IPs: " + str(ips_cidr_available) +
+                        " , Number of sites: " + str(len(service_resources_list)) + " , IPs per site:" + str(host_per_site))
+                base_index = 3
+                site_index = 1
+                while base_index <= ips_cidr_available and site_index <= len(service_resources_list):
+                    cidr_ranges.append(
+                        str(cidr[base_index])+"-"+str(cidr[base_index+host_per_site-1]))
+                    base_index = base_index + int(host_per_site)
+                    site_index = site_index + 1
+
                 
 
-                if(data_from_db['service_type'] == 'L2'):
+                print('Next ranges will be used:')
+                for element in cidr_ranges:
+                    print(element)
 
-                    service_resources_list_params.append({'resource_region':local_region_name,'param':data_from_db['service_params'][0]['parameter_allocation_pool']})
-                    check_cidrs = [key for key in new_CIDRs.values()]
-                    check_cidrs.append(ipaddress.ip_network(
-                        data_from_db['service_params'][0]['parameter_local_cidr']))
+                check_cidrs = [key['param'] for key in service_resources_list_params]
+                reorder_cidrs(service_resources_list_params)
 
-                    if not check_equal_element(check_cidrs):
-                        abort(
-                            404, "ERROR: CIDR is not the same for all the resources")
+                for element in list_resources_add:
+                    service_resources_list_params.append({'resource_region':element['resource_region'],'param':''})
 
-                    #print(service_remote_auth_endpoints)
-                    #print(horizontal_read_parameters(
-                    #    data_from_db['service_global']))
+                if(search_local_resource_delete != True):
+                    #Search the most suitable range for the local resource
+                    for i in range(len(service_resources_list_params)):
+                        if(service_resources_list_params[i]['resource_region'] == local_region_name):
+                            new_local_param_index = i
+                            break
+                    
+            if(data_from_db['service_type'] == 'L3'):
+                if(search_local_resource_delete != True):
+                    service_resources_list_params.append({'resource_region':local_region_name,'param':data_from_db['resource_params'][0]['parameter_local_cidr']})
+                check_cidrs = [key['param'] for key in service_resources_list_params]
+                for a, b in itertools.combinations(check_cidrs, 2):
+                    if a.overlaps(b):
+                        abort(404, "ERROR: networks " + " " +
+                                (str(a)) + " and "+(str(b)) + " overlap")
 
-                    cidr = ipaddress.ip_network(
-                        data_from_db['service_params'][0]['parameter_local_cidr'])
-                    main_cidr = str(cidr)
-                    main_cidr_base = ((str(cidr)).split("/", 1)[0])
-                    main_cidr_prefix = ((str(cidr)).split("/", 1)[1])
-                    cidr_ranges = []
-                    # Available IPs are without the network address, the broadcast address, and the first address (for globally known DHCP)
-                    ips_cidr_available = 2**(32-int(main_cidr_prefix))-3
-                    host_per_site = math.floor(
-                        ips_cidr_available/len(service_resources_list))
-                    print("CIDR: " + str(cidr) + ", total available IPs: " + str(ips_cidr_available) +
-                          " , Number of sites: " + str(len(service_resources_list)) + " , IPs per site:" + str(host_per_site))
-                    base_index = 3
-                    site_index = 1
-                    while base_index <= ips_cidr_available and site_index <= len(service_resources_list):
-                        cidr_ranges.append(
-                            str(cidr[base_index])+"-"+str(cidr[base_index+host_per_site-1]))
-                        base_index = base_index + int(host_per_site)
-                        site_index = site_index + 1
+            for element in service_resources_list_db:
+                if(local_region_name in element['resource_region']):
+                    local_resource = element['resource_uuid']
+                    break
 
-                    parameter_local_allocation_pool = cidr_ranges[0]
-
-                    print('Next ranges will be used:')
-                    for element in cidr_ranges:
-                        print(element)
-
-                    print(service_resources_list_params)
-                    check_cidrs = [key['param'] for key in service_resources_list_params]
-                    check_cidrs.sort() #Need to add a brute force sorting
-                    print(check_cidrs)
-                else:
-                    if(data_from_db['service_type'] == 'L3'):
-                        service_resources_list_params.append({'resource_region':local_region_name,'param':data_from_db['resource_params'][0]['parameter_local_cidr']})
-                        check_cidrs = [key['param'] for key in service_resources_list_params]
-                        for a, b in itertools.combinations(check_cidrs, 2):
-                            if a.overlaps(b):
-                                abort(404, "ERROR: networks " + " " +
-                                      (str(a)) + " and "+(str(b)) + " overlap")
-
-                for element in service_resources_list_db:
-                    if(local_region_name in element['resource_region']):
-                        local_resource = element['resource_uuid']
-                        break
-
-                # Calling the interconnection plugin in both cases
+            # In case the local resource is not being deleted, we create the local resources
+            if(search_local_resource_delete != True):
+            # Calling the interconnection plugin in both cases
                 id_temp = 1
                 local_interconnections_ids = []
                 for element in list_resources_add:
@@ -727,10 +749,10 @@ def vertical_update_service(global_id, service):
 
                         except neutronclient_exc.ConnectionFailed:
                             print("Can't connect to neutron %s" %
-                                  service_remote_inter_endpoints[item])
+                                    service_remote_inter_endpoints[item])
                         except neutronclient_exc.Unauthorized:
                             print("Connection refused to neutron %s" %
-                                  service_remote_inter_endpoints[item])
+                                    service_remote_inter_endpoints[item])
 
                 for element in list_resources_add:
                     resource = {
@@ -743,16 +765,12 @@ def vertical_update_service(global_id, service):
                     service_update.service_resources.append(
                         new_service_resources)
 
-                # Adding the parameters to the service
-                # parameters = {
-                #    'parameter_allocation_pool': parameter_local_allocation_pool,
-                #    'parameter_local_cidr': parameter_local_cidr,
-                #    'parameter_ipv': parameter_local_ipv
-                # }
-                #service_params_schema = ServiceParamssSchema()
-                # new_service_params = service_params_schema.load(
-                #    parameters, session=db.session).data
-                # new_service.service_params.append(new_service_params)
+
+                param_update = Parameter.query.filter(
+                        Parameter.service_id == data_from_db['service_id']).one_or_none()
+                param_update_schema = ServiceParamssSchema()
+                data_from_param = param_update_schema.dump(param_update).data
+                param_update.parameter_allocation_pool = cidr_ranges[new_local_param_index]
 
                 # Adding the interconnections to the service
                 for element in local_interconnections_ids:
@@ -765,13 +783,118 @@ def vertical_update_service(global_id, service):
                     service_update.service_interconnections.append(
                         new_service_interconnections)
 
-                # Set the id to the service we want to update
-                #to_update.service_id = service_update.service_id
-                #to_update.service_global = service_update.service_global
+            # Set the id to the service we want to update
+            #to_update.service_id = service_update.service_id
+            #to_update.service_global = service_update.service_global
 
-                # Merge the new object into the old and commit it into the DB
-                # db.session.merge(to_update)
-                db.session.commit()
+            # Merge the new object into the old and commit it into the DB
+            # db.session.merge(to_update)
+            db.session.commit()
+
+            
+            # Updating the DHCP pool ranges for the local deployment
+            if(search_local_resource_delete != True):
+                if data_from_db['service_type'] == 'L2':
+
+                    neutron_client = service_utils.get_neutron_client(
+                    local_region_url,local_region_name
+                )
+
+                    try:
+                        network_temp = (
+                            neutron_client.show_network(network=local_resource
+                                                        )
+                        )
+                        subnet = network_temp['network']
+                        local_subnetwork_id=subnet['subnets'][0]
+
+                    except neutronclient_exc.ConnectionFailed:
+                        print("Can't connect to neutron %s" %
+                                service_remote_inter_endpoints[item])
+                    except neutronclient_exc.Unauthorized:
+                        print("Connection refused to neutron %s" %
+                                service_remote_inter_endpoints[item])
+
+                    
+                    new_local_range = cidr_ranges[new_local_param_index]
+                    allocation_start = new_local_range.split("-", 1)[0]
+                    allocation_end = new_local_range.split("-", 1)[1]
+                    try:
+                        body = {'subnet': {'allocation_pools': [
+                            {'start': allocation_start, 'end': allocation_end}]}}
+                        dhcp_change = (
+                            neutron_client.update_subnet(
+                                local_subnetwork_id, body=body)
+                        )
+                        # print(inter_temp)
+                    except neutronclient_exc.ConnectionFailed:
+                        print("Can't connect to neutron %s" %
+                            service_remote_inter_endpoints[item])
+                    except neutronclient_exc.Unauthorized:
+                        print("Connection refused to neutron %s" %
+                            service_remote_inter_endpoints[item])
+
+                    nova_client = service_utils.get_nova_client(local_region_url,
+                                                                local_region_name)
+
+                    # Check if there are hot-plugged VMs with IPs outside the allocation pool
+
+                    try:
+                        nova_list = nova_client.servers.list()
+
+                    except novaclient.exceptions.NotFound:
+                        print("Can't connect to nova %s" %
+                            service_remote_inter_endpoints[item])
+                    except novaclient.exceptions.Unauthorized:
+                        print("Connection refused to nova %s" %
+                            service_remote_inter_endpoints[item])
+
+                    vms_with_ip_in_network = []
+                    for element in nova_list:
+                        vm_name = str(element).split(' ', 1)[1][0:-1]
+                        answer = nova_client.servers.interface_list(element.id)
+                        for element1 in answer:
+                            list_with_meta = element1.to_dict()
+                            if(list_with_meta['net_id'] == local_resource):
+                                vms_with_ip_in_network.append({'id': element.id, 'name': element.name, 'port_id': list_with_meta['port_id'], 'net_id': list_with_meta[
+                                    'net_id'], 'ip': list_with_meta['fixed_ips'][0]['ip_address'], 'subnet_id': list_with_meta['fixed_ips'][0]['subnet_id']})
+
+                    for machine_opts in vms_with_ip_in_network:
+                        if((ipaddress.IPv4Address(machine_opts['ip']) < ipaddress.IPv4Address(allocation_start)) or (ipaddress.IPv4Address(machine_opts['ip']) > ipaddress.IPv4Address(allocation_end))):
+                            print('Changing the IPs for VMs in the local deployment')
+                            print(machine_opts['name'], machine_opts['ip'])
+                            detach_interface = nova_client.servers.interface_detach(
+                                machine_opts['id'], machine_opts['port_id'])
+                            attach_interface = nova_client.servers.interface_attach(
+                                machine_opts['id'], port_id='', net_id=machine_opts['net_id'], fixed_ip='')
+
+                            # As for the test scenario, CirrOS can't renew its IP address, need to test this in another scenario
+                            # restart_machine = nova_client.servers.reboot(
+                            #    machine_opts['id'])
+
+            index_cidr = 1
+            # Sending remote inter-site create requests to the distant nodes
+            for obj in service_resources_list:
+                if obj['resource_region'] != local_region_name:
+                    remote_inter_instance = service_remote_inter_endpoints[obj].strip(
+                        '9696/')
+                    remote_inter_instance = remote_inter_instance + '7575/api/intersite-horizontal'
+
+                    if service_type == 'L2':
+                        remote_service = {'name': service_name, 'type': service_type, 'params': [cidr_ranges[index_cidr], parameter_local_cidr, parameter_local_ipv],
+                                        'global': random_id, 'resources': service.get("resources", None)}
+                        index_cidr = index_cidr + 1
+                    else:
+                        remote_service = {'name': service_name, 'type': service_type, 'params': ['', '', parameter_local_ipv],
+                                        'global': random_id, 'resources': service.get("resources", None)}
+                    # send horizontal (service_remote_inter_endpoints[obj])
+                    headers = {'Content-Type': 'application/json',
+                            'Accept': 'application/json'}
+                    r = requests.post(remote_inter_instance, data=json.dumps(
+                        remote_service), headers=headers)
+                    # print(r.json())
+                    print(service_schema.dump(new_service).data) 
+
 
                 #service_data = service_schema.dump(service_update)
 
@@ -1153,3 +1276,16 @@ def create_random_global_id(stringLength=28):
     global_random_id = result + '-' + result1 + '-' + result2 + '-'+result3
 
     return global_random_id
+
+def reorder_cidrs(list_resources):
+
+    size = len(list_resources)
+    for i in range(size):
+        for j in range(size):
+            first_elem = ipaddress.IPv4Address(list_resources[i]['param'].split('-')[0])
+            second_elem = ipaddress.IPv4Address(list_resources[j]['param'].split('-')[0])
+            
+            if first_elem < second_elem:
+                temp = list_resources[i]
+                list_resources[i] = list_resources[j]
+                list_resources[j] = temp
