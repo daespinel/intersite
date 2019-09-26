@@ -66,7 +66,7 @@ def vertical_create_service(service):
     local_resource = ''
     service_name = service.get("name", None)
     service_type = service.get("type", None)
-    #service_resources = service.get("resources", None)
+    # service_resources = service.get("resources", None)
     service_resources_list = dict((k.strip(), v.strip()) for k, v in (
         (item.split(',')) for item in service.get("resources", None)))
     service_resources_list_search = copy.deepcopy(service_resources_list)
@@ -196,8 +196,8 @@ def vertical_create_service(service):
             abort(404, "ERROR: CIDR is not the same for all the resources")
 
         # test
-        #CIDRs = [ipaddr.IPNetwork("20.0.0.0/23"),ipaddr.IPNetwork("20.0.0.0/24"),ipaddr.IPNetwork("20.0.0.0/24"),ipaddr.IPNetwork("20.0.0.0/24"),ipaddr.IPNetwork("20.0.0.0/24")]
-        #service_resources_list = [5,4,2,5,6,7,5,5,5,8,5,2,6,5,8,4,5,8]
+        # CIDRs = [ipaddr.IPNetwork("20.0.0.0/23"),ipaddr.IPNetwork("20.0.0.0/24"),ipaddr.IPNetwork("20.0.0.0/24"),ipaddr.IPNetwork("20.0.0.0/24"),ipaddr.IPNetwork("20.0.0.0/24")]
+        # service_resources_list = [5,4,2,5,6,7,5,5,5,8,5,2,6,5,8,4,5,8]
         cidr = CIDRs[0]
         parameter_local_cidr = str(cidr)
         main_cidr = str(CIDRs[0])
@@ -448,7 +448,6 @@ def vertical_update_service(global_id, service):
             if(local_region_name in element['resource_region']):
                 search_local_resource_delete = True
 
-
         # If one of the resource is the local one, we only need to delete the entire service locally
         if(search_local_resource_delete):
             interconnections_delete = data_from_db['service_interconnections']
@@ -493,7 +492,7 @@ def vertical_update_service(global_id, service):
                     try:
 
                         filters = {'local_resource_id': search_local_resource_uuid,
-                                'remote_resource_id': remote_resource_to_delete['resource_uuid']}
+                                   'remote_resource_id': remote_resource_to_delete['resource_uuid']}
                         inter_del_list = (
                             neutron_client.list_interconnections(**filters))['interconnections']
 
@@ -513,10 +512,10 @@ def vertical_update_service(global_id, service):
 
                     except neutronclient_exc.ConnectionFailed:
                         print("Can't connect to neutron %s" %
-                            service_remote_inter_endpoints[item])
+                              service_remote_inter_endpoints[item])
                     except neutronclient_exc.Unauthorized:
                         print("Connection refused to neutron %s" %
-                            service_remote_inter_endpoints[item])
+                              service_remote_inter_endpoints[item])
                     except neutronclient_exc.NotFound:
                         print("Element not found %s" % inter_del_list)
 
@@ -549,14 +548,14 @@ def vertical_update_service(global_id, service):
                         for existing_resource in service_resources_list_db:
                             if endpoint['region'] == existing_resource['resource_region']:
                                 service_remote_inter_endpoints[existing_resource['resource_region']
-                                                                ] = endpoint['url']
+                                                               ] = endpoint['url']
                                 service_resources_list_db_search.remove(
                                     existing_resource)
                                 break
                         for resource_element in list_resources_add:
                             if endpoint['region'] == resource_element['resource_region']:
                                 service_remote_inter_endpoints[resource_element['resource_region']
-                                                                ] = endpoint['url']
+                                                               ] = endpoint['url']
                                 service_resources_list_search.remove(
                                     resource_element)
                                 break
@@ -565,21 +564,21 @@ def vertical_update_service(global_id, service):
                         for existing_resource in service_resources_list_db:
                             if endpoint['region'] == existing_resource['resource_region']:
                                 service_remote_auth_endpoints[existing_resource['resource_region']
-                                                                ] = endpoint['url']+'/v3'
+                                                              ] = endpoint['url']+'/v3'
                                 break
                         for resource_element in list_resources_add:
                             if endpoint['region'] == resource_element['resource_region'] and endpoint['interface'] == 'public':
                                 service_remote_auth_endpoints[resource_element['resource_region']
-                                                                ] = endpoint['url']+'/v3'
+                                                              ] = endpoint['url']+'/v3'
                                 break
 
             if bool(service_resources_list_search):
                 abort(404, "ERROR: Regions " + (" ".join(str(key['resource_region'])
-                                                            for key in service_resources_list_search)) + " are not found")
+                                                         for key in service_resources_list_search)) + " are not found")
 
             if bool(service_resources_list_db_search):
                 abort(404, "ERROR: Regions " + (" ".join(str(key['resource_region'])
-                                                            for key in service_resources_list_db_search)) + " are not found")
+                                                         for key in service_resources_list_db_search)) + " are not found")
 
             new_subnetworks = {}
             new_CIDRs = {}
@@ -602,10 +601,10 @@ def vertical_update_service(global_id, service):
 
                 except neutronclient_exc.ConnectionFailed:
                     print("Can't connect to neutron %s" %
-                            service_remote_inter_endpoints[item])
+                          service_remote_inter_endpoints[item])
                 except neutronclient_exc.Unauthorized:
                     print("Connection refused to neutron %s" %
-                            service_remote_inter_endpoints[item])
+                          service_remote_inter_endpoints[item])
 
                 # Retrieving the subnetwork information given the region name
             for item, value in new_subnetworks.items():
@@ -622,10 +621,10 @@ def vertical_update_service(global_id, service):
                     new_CIDRs[item] = ipaddress.ip_network(subnet['cidr'])
                 except neutronclient_exc.ConnectionFailed:
                     print("Can't connect to neutron %s" %
-                            service_remote_inter_endpoints[item])
+                          service_remote_inter_endpoints[item])
                 except neutronclient_exc.Unauthorized:
                     print("Connection refused to neutron %s" %
-                            service_remote_inter_endpoints[item])
+                          service_remote_inter_endpoints[item])
 
             # query distant sites composing the service to give their params
 
@@ -635,7 +634,7 @@ def vertical_update_service(global_id, service):
                 remote_inter_instance = ''
                 if obj['resource_region'] != service_utils.get_region_name():
                     remote_inter_instance = service_remote_inter_endpoints[obj['resource_region']].strip(
-                '9696/')
+                        '9696/')
                     remote_inter_instance = remote_inter_instance + \
                         '7575/api/intersite-horizontal/' + global_id
                     # send horizontal to get info (service_remote_inter_endpoints[obj])
@@ -643,14 +642,16 @@ def vertical_update_service(global_id, service):
                     r = requests.get(
                         remote_inter_instance, headers=headers)
                     if data_from_db['service_type'] == 'L2':
-                        service_resources_list_params.append({'resource_region':obj['resource_region'],'param':r.json()[0]['parameter_allocation_pool']})
+                        service_resources_list_params.append(
+                            {'resource_region': obj['resource_region'], 'param': r.json()[0]['parameter_allocation_pool']})
                     if data_from_db['service_type'] == 'L3':
-                        service_resources_list_params.append({'resource_region':obj['resource_region'],'param':r.json()[0]['parameter_local_cidr']})
-            
+                        service_resources_list_params.append(
+                            {'resource_region': obj['resource_region'], 'param': r.json()[0]['parameter_local_cidr']})
 
             if(data_from_db['service_type'] == 'L2'):
                 if(search_local_resource_delete != True):
-                    service_resources_list_params.append({'resource_region':local_region_name,'param':data_from_db['service_params'][0]['parameter_allocation_pool']})
+                    service_resources_list_params.append(
+                        {'resource_region': local_region_name, 'param': data_from_db['service_params'][0]['parameter_allocation_pool']})
                 check_cidrs = [key for key in new_CIDRs.values()]
                 check_cidrs.append(ipaddress.ip_network(
                     data_from_db['service_params'][0]['parameter_local_cidr']))
@@ -659,8 +660,8 @@ def vertical_update_service(global_id, service):
                     abort(
                         404, "ERROR: CIDR is not the same for all the resources")
 
-                #print(service_remote_auth_endpoints)
-                #print(horizontal_read_parameters(
+                # print(service_remote_auth_endpoints)
+                # print(horizontal_read_parameters(
                 #    data_from_db['service_global']))
 
                 cidr = ipaddress.ip_network(
@@ -674,7 +675,7 @@ def vertical_update_service(global_id, service):
                 host_per_site = math.floor(
                     ips_cidr_available/len(service_resources_list))
                 print("CIDR: " + str(cidr) + ", total available IPs: " + str(ips_cidr_available) +
-                        " , Number of sites: " + str(len(service_resources_list)) + " , IPs per site:" + str(host_per_site))
+                      " , Number of sites: " + str(len(service_resources_list)) + " , IPs per site:" + str(host_per_site))
                 base_index = 3
                 site_index = 1
                 while base_index <= ips_cidr_available and site_index <= len(service_resources_list):
@@ -683,33 +684,37 @@ def vertical_update_service(global_id, service):
                     base_index = base_index + int(host_per_site)
                     site_index = site_index + 1
 
-                
+                parameter_local_cidr = cidr_ranges[0]
 
                 print('Next ranges will be used:')
                 for element in cidr_ranges:
                     print(element)
 
-                check_cidrs = [key['param'] for key in service_resources_list_params]
+                check_cidrs = [key['param']
+                               for key in service_resources_list_params]
                 reorder_cidrs(service_resources_list_params)
 
                 for element in list_resources_add:
-                    service_resources_list_params.append({'resource_region':element['resource_region'],'param':''})
+                    service_resources_list_params.append(
+                        {'resource_region': element['resource_region'], 'param': ''})
 
                 if(search_local_resource_delete != True):
-                    #Search the most suitable range for the local resource
+                    # Search the most suitable range for the local resource
                     for i in range(len(service_resources_list_params)):
                         if(service_resources_list_params[i]['resource_region'] == local_region_name):
                             new_local_param_index = i
                             break
-                    
+
             if(data_from_db['service_type'] == 'L3'):
                 if(search_local_resource_delete != True):
-                    service_resources_list_params.append({'resource_region':local_region_name,'param':data_from_db['resource_params'][0]['parameter_local_cidr']})
-                check_cidrs = [key['param'] for key in service_resources_list_params]
+                    service_resources_list_params.append(
+                        {'resource_region': local_region_name, 'param': data_from_db['resource_params'][0]['parameter_local_cidr']})
+                check_cidrs = [key['param']
+                               for key in service_resources_list_params]
                 for a, b in itertools.combinations(check_cidrs, 2):
                     if a.overlaps(b):
                         abort(404, "ERROR: networks " + " " +
-                                (str(a)) + " and "+(str(b)) + " overlap")
+                              (str(a)) + " and "+(str(b)) + " overlap")
 
             for element in service_resources_list_db:
                 if(local_region_name in element['resource_region']):
@@ -718,7 +723,7 @@ def vertical_update_service(global_id, service):
 
             # In case the local resource is not being deleted, we create the local resources
             if(search_local_resource_delete != True):
-            # Calling the interconnection plugin in both cases
+                # Calling the interconnection plugin in both cases
                 id_temp = 1
                 local_interconnections_ids = []
                 for element in list_resources_add:
@@ -749,10 +754,10 @@ def vertical_update_service(global_id, service):
 
                         except neutronclient_exc.ConnectionFailed:
                             print("Can't connect to neutron %s" %
-                                    service_remote_inter_endpoints[item])
+                                  service_remote_inter_endpoints[item])
                         except neutronclient_exc.Unauthorized:
                             print("Connection refused to neutron %s" %
-                                    service_remote_inter_endpoints[item])
+                                  service_remote_inter_endpoints[item])
 
                 for element in list_resources_add:
                     resource = {
@@ -765,9 +770,8 @@ def vertical_update_service(global_id, service):
                     service_update.service_resources.append(
                         new_service_resources)
 
-
                 param_update = Parameter.query.filter(
-                        Parameter.service_id == data_from_db['service_id']).one_or_none()
+                    Parameter.service_id == data_from_db['service_id']).one_or_none()
                 param_update_schema = ServiceParamssSchema()
                 data_from_param = param_update_schema.dump(param_update).data
                 param_update.parameter_allocation_pool = cidr_ranges[new_local_param_index]
@@ -784,21 +788,20 @@ def vertical_update_service(global_id, service):
                         new_service_interconnections)
 
             # Set the id to the service we want to update
-            #to_update.service_id = service_update.service_id
-            #to_update.service_global = service_update.service_global
+            # to_update.service_id = service_update.service_id
+            # to_update.service_global = service_update.service_global
 
             # Merge the new object into the old and commit it into the DB
             # db.session.merge(to_update)
             db.session.commit()
 
-            
             # Updating the DHCP pool ranges for the local deployment
             if(search_local_resource_delete != True):
                 if data_from_db['service_type'] == 'L2':
 
                     neutron_client = service_utils.get_neutron_client(
-                    local_region_url,local_region_name
-                )
+                        local_region_url, local_region_name
+                    )
 
                     try:
                         network_temp = (
@@ -806,16 +809,15 @@ def vertical_update_service(global_id, service):
                                                         )
                         )
                         subnet = network_temp['network']
-                        local_subnetwork_id=subnet['subnets'][0]
+                        local_subnetwork_id = subnet['subnets'][0]
 
                     except neutronclient_exc.ConnectionFailed:
                         print("Can't connect to neutron %s" %
-                                service_remote_inter_endpoints[item])
+                              service_remote_inter_endpoints[item])
                     except neutronclient_exc.Unauthorized:
                         print("Connection refused to neutron %s" %
-                                service_remote_inter_endpoints[item])
+                              service_remote_inter_endpoints[item])
 
-                    
                     new_local_range = cidr_ranges[new_local_param_index]
                     allocation_start = new_local_range.split("-", 1)[0]
                     allocation_end = new_local_range.split("-", 1)[1]
@@ -829,10 +831,10 @@ def vertical_update_service(global_id, service):
                         # print(inter_temp)
                     except neutronclient_exc.ConnectionFailed:
                         print("Can't connect to neutron %s" %
-                            service_remote_inter_endpoints[item])
+                              service_remote_inter_endpoints[item])
                     except neutronclient_exc.Unauthorized:
                         print("Connection refused to neutron %s" %
-                            service_remote_inter_endpoints[item])
+                              service_remote_inter_endpoints[item])
 
                     nova_client = service_utils.get_nova_client(local_region_url,
                                                                 local_region_name)
@@ -844,10 +846,10 @@ def vertical_update_service(global_id, service):
 
                     except novaclient.exceptions.NotFound:
                         print("Can't connect to nova %s" %
-                            service_remote_inter_endpoints[item])
+                              service_remote_inter_endpoints[item])
                     except novaclient.exceptions.Unauthorized:
                         print("Connection refused to nova %s" %
-                            service_remote_inter_endpoints[item])
+                              service_remote_inter_endpoints[item])
 
                     vms_with_ip_in_network = []
                     for element in nova_list:
@@ -872,31 +874,49 @@ def vertical_update_service(global_id, service):
                             # restart_machine = nova_client.servers.reboot(
                             #    machine_opts['id'])
 
-            index_cidr = 1
+            print(service_resources_list)
+            print(list_resources_add)
             # Sending remote inter-site create requests to the distant nodes
-            for obj in service_resources_list:
-                if obj['resource_region'] != local_region_name:
-                    remote_inter_instance = service_remote_inter_endpoints[obj].strip(
+            for index in range(len(service_resources_list)):
+                obj = service_resources_list[index]
+                if index != new_local_param_index:
+                    remote_inter_instance = service_remote_inter_endpoints[obj['resource_region']].strip(
                         '9696/')
-                    remote_inter_instance = remote_inter_instance + '7575/api/intersite-horizontal'
+                    remote_inter_instance = remote_inter_instance + \
+                        '7575/api/intersite-horizontal'
 
-                    if service_type == 'L2':
-                        remote_service = {'name': service_name, 'type': service_type, 'params': [cidr_ranges[index_cidr], parameter_local_cidr, parameter_local_ipv],
-                                        'global': random_id, 'resources': service.get("resources", None)}
-                        index_cidr = index_cidr + 1
+                    if obj in list_resources_add:
+                        if data_from_db['service_type'] == 'L2':
+                            remote_service = {'name': data_from_db['service_name'], 'type': data_from_db['service_type'], 'params': [
+                                cidr_ranges[index], parameter_local_cidr, data_from_db['service_params'][0]['parameter_ipv']], 'global': global_id, 'resources': service.get("resources", None)}
+                            #index_cidr = index_cidr + 1
+                        else:
+                            remote_service = {'name': data_from_db['service_name'], 'type': data_from_db['service_type'], 'params': [
+                                '', '', data_from_db['service_params'][0]['parameter_ipv']], 'global': global_id, 'resources': service_resources_list}
+                        # send horizontal (service_remote_inter_endpoints[obj])
+                        headers = {'Content-Type': 'application/json',
+                                   'Accept': 'application/json'}
+                        r = requests.post(remote_inter_instance, data=json.dumps(
+                            remote_service), headers=headers)
+                        print(r.json())
                     else:
-                        remote_service = {'name': service_name, 'type': service_type, 'params': ['', '', parameter_local_ipv],
-                                        'global': random_id, 'resources': service.get("resources", None)}
-                    # send horizontal (service_remote_inter_endpoints[obj])
-                    headers = {'Content-Type': 'application/json',
-                            'Accept': 'application/json'}
-                    r = requests.post(remote_inter_instance, data=json.dumps(
-                        remote_service), headers=headers)
-                    # print(r.json())
-                    print(service_schema.dump(new_service).data) 
+                        remote_inter_instance = remote_inter_instance + '/' +str(global_id)
+                        if data_from_db['service_type'] == 'L2':
+                            remote_service = {'params': [cidr_ranges[index], parameter_local_cidr, data_from_db['service_params'][0]['parameter_ipv']],
+                                              'global': global_id, 'resources': service_resources_list}
+                            # index_cidr = index_cidr + 1
+                        else:
+                            remote_service = {'params': ['', '', ''],
+                                              'global': global_id, 'resources': service_resources_list}
+                        # send horizontal (service_remote_inter_endpoints[obj])
+                        headers = {'Content-Type': 'application/json',
+                                   'Accept': 'application/json'}
+                        r = requests.put(remote_inter_instance, data=json.dumps(
+                            remote_service), headers=headers)
+                        # print(r.json())
+                        print(r.json())
 
-
-                #service_data = service_schema.dump(service_update)
+                # service_data = service_schema.dump(service_update)
 
         return make_response("{id} successfully updated".format(id=global_id), 200)
 
@@ -981,7 +1001,7 @@ def horizontal_create_service(service):
     service_params = service.get("params", None)
     # print(service_params)
     service_global = service.get("global", None)
-    #service_resources = service.get("resources", None)
+    # service_resources = service.get("resources", None)
     service_resources_list = dict((k.strip(), v.strip()) for k, v in (
         (item.split(',')) for item in service.get("resources", None)))
     service_remote_auth_endpoints = {}
@@ -1171,7 +1191,7 @@ def horizontal_create_service(service):
 
         for machine_opts in vms_with_ip_in_network:
             if((ipaddress.IPv4Address(machine_opts['ip']) < ipaddress.IPv4Address(parameters['parameter_allocation_pool'].split(
-                "-", 1)[0])) or (ipaddress.IPv4Address(machine_opts['ip']) > ipaddress.IPv4Address(service_params.split(
+                "-", 1)[0])) or (ipaddress.IPv4Address(machine_opts['ip']) > ipaddress.IPv4Address(parameters['parameter_allocation_pool'].split(
                     "-", 1)[1]))):
                 print('Changing the IPs for VMs in the local deployment')
                 print(machine_opts['name'], machine_opts['ip'])
@@ -1277,14 +1297,17 @@ def create_random_global_id(stringLength=28):
 
     return global_random_id
 
+
 def reorder_cidrs(list_resources):
 
     size = len(list_resources)
     for i in range(size):
         for j in range(size):
-            first_elem = ipaddress.IPv4Address(list_resources[i]['param'].split('-')[0])
-            second_elem = ipaddress.IPv4Address(list_resources[j]['param'].split('-')[0])
-            
+            first_elem = ipaddress.IPv4Address(
+                list_resources[i]['param'].split('-')[0])
+            second_elem = ipaddress.IPv4Address(
+                list_resources[j]['param'].split('-')[0])
+
             if first_elem < second_elem:
                 temp = list_resources[i]
                 list_resources[i] = list_resources[j]
