@@ -89,10 +89,14 @@ ns.controller = (function (m, v) {
         let $target = $(e.target).parent().parent(),
             service_global = $target.data('service_global');
         console.log(service_global)
-        model.delete(service_global)
+        
+
+        if(confirm("Are you sure to delete the service?")){
+            model.delete(service_global)
         .done(function(data){
             window.location = '/';
-        });
+        });    
+        };
        
         
     });

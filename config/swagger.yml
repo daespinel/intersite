@@ -14,7 +14,7 @@ basePath: /api
 paths:
   /region:
     get:
-      operationId: read_region_name
+      operationId: readRegionName
       tags:
         - regions
       summary: Get the local region name
@@ -30,7 +30,7 @@ paths:
                 description: Name of the local region
   /intersite-vertical:
     get:
-      operationId: vertical_read_all_service
+      operationId: verticalReadAllService
       tags:
         - services
       summary: the inter-site Service mapping structure GET
@@ -74,7 +74,7 @@ paths:
                       interconnexion_uuid:
                         type: string
     post:
-      operationId: vertical_create_service
+      operationId: verticalCreateService
       tags:
         - services
       summary: Creates an inter-site Service POST
@@ -125,7 +125,7 @@ paths:
     
   /intersite-vertical/{global_id}:
     delete:
-      operationId: vertical_delete_service
+      operationId: verticalDeleteService
       tags:
         - services
       summary: Deletes an inter-site Service DELETE
@@ -142,7 +142,7 @@ paths:
           description: Successfully deleted a service from service list
 
     get:
-      operationId: vertical_read_one_service
+      operationId: verticalReadOneService
       tags:
         - services
       summary: Read one inter-site Service GET
@@ -180,7 +180,7 @@ paths:
                   type: string
 
     put:
-      operationId: vertical_update_service
+      operationId: verticalUpdateService
       tags:
         - services
       summary: Update an already deployed service
@@ -229,7 +229,7 @@ paths:
 
   /intersite-horizontal:
     post:
-      operationId: horizontal_create_service
+      operationId: horizontalCreateService
       tags:
         - horizontal
       summary: Horizontal request to create an inter-site Service POST
@@ -267,7 +267,7 @@ paths:
 
   /intersite-horizontal/{global_id}:
     delete:
-      operationId: horizontal_delete_service
+      operationId: horizontalDeleteService
       tags:
         - horizontal
       summary: Deletes an inter-site Service DELETE
@@ -284,7 +284,7 @@ paths:
           description: Successfully deleted a service from service list
 
     get:
-      operationId: horizontal_read_parameters
+      operationId: horizontalReadParameters
       tags:
         - horizontal
       summary: Read the local cidr of an inter-site Service 
@@ -305,7 +305,7 @@ paths:
                 items:
                   type: string
     put:
-      operationId: horizontal_update_service
+      operationId: horizontalUpdateService
       tags:
         - horizontal
       summary: Update an already deployed service

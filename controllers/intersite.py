@@ -23,13 +23,13 @@ local_region_url = service_utils.get_local_keystone()
 # Create a handler for our read (GET) services
 
 
-def read_region_name():
+def readRegionName():
     var_temp = service_utils.get_region_name()
     # print(var_temp)
     return var_temp
 
 
-def vertical_read_all_service():
+def verticalReadAllService():
     """
     This function responds to a request for /api/intersite
     with the complete lists of inter-site services
@@ -49,7 +49,7 @@ def vertical_read_all_service():
 # Possibility to add more information as ids of remote interconnection resources
 
 
-def vertical_read_one_service(global_id):
+def verticalReadOneService(global_id):
     service = Service.query.filter(Service.service_global == global_id).outerjoin(
         Resource).outerjoin(Interconnexion).one_or_none()
     if service is not None:
@@ -61,7 +61,7 @@ def vertical_read_one_service(global_id):
         abort(404, "Service with ID {id} not found".format(id=id))
 
 
-def vertical_create_service(service):
+def verticalCreateService(service):
     # Taking information from the API http POST request
     local_resource = ''
     service_name = service.get("name", None)
@@ -77,10 +77,10 @@ def vertical_create_service(service):
     parameter_local_cidr = ''
     parameter_local_ipv = 'v4'
     local_interconnections_ids = []
-    random_id = create_random_global_id()
+    random_id = createRandomGlobalId()
 
     # Check if a service exists with the requested resources
-    existing_service, check_service_id = check_existing_service(
+    existing_service, check_service_id = checkExistingService(
         service_resources_list)
     if(existing_service):
         abort(404, "Service with global ID {global_check} already connects the resources".format(
@@ -216,7 +216,7 @@ def vertical_create_service(service):
               (" ".join(str(value) for value in service_resources_list.values())))
 
         # Validating if the networks have the same CIDR
-        if not check_equal_element(CIDRs):
+        if not checkEqualElement(CIDRs):
             abort(404, "ERROR: CIDR is not the same for all the resources")
 
         # test
@@ -409,7 +409,7 @@ def vertical_create_service(service):
 # Handler to update an existing service
 
 
-def vertical_update_service(global_id, service):
+def verticalUpdateService(global_id, service):
 
     service_update = Service.query.filter(
         Service.service_global == global_id).one_or_none()
@@ -675,7 +675,7 @@ def vertical_update_service(global_id, service):
                 check_cidrs.append(ipaddress.ip_network(
                     data_from_db['service_params'][0]['parameter_local_cidr']))
 
-                if not check_equal_element(check_cidrs):
+                if not checkEqualElement(check_cidrs):
                     abort(
                         404, "ERROR: CIDR is not the same for all the resources")
 
@@ -943,7 +943,7 @@ def vertical_update_service(global_id, service):
 # Handler to delete a service
 
 
-def vertical_delete_service(global_id):
+def verticalDeleteService(global_id):
     service_remote_inter_endpoints = {}
     service = Service.query.filter(
         Service.service_global == global_id).one_or_none()
@@ -1010,7 +1010,7 @@ def vertical_delete_service(global_id):
 # /intersite-horizontal
 # Handler for inter-site service creation request
 
-def horizontal_create_service(service):
+def horizontalCreateService(service):
     local_region_name = service_utils.get_region_name()
     local_resource = ''
     service_name = service.get("name", None)
@@ -1223,7 +1223,7 @@ def horizontal_create_service(service):
 
 # Handler to update a service horizontal
 
-def horizontal_update_service(global_id, service):
+def horizontalUpdateService(global_id, service):
     service_update = Service.query.filter(Service.service_global == global_id).one_or_none()
 
     # Did we find a service?
@@ -1566,7 +1566,7 @@ def horizontal_update_service(global_id, service):
 # Handler to delete a service horizontal
 
 
-def horizontal_delete_service(global_id):
+def horizontalDeleteService(global_id):
     service_remote_inter_endpoints = {}
     service = Service.query.filter(
         Service.service_global == global_id).one_or_none()
@@ -1602,7 +1602,7 @@ def horizontal_delete_service(global_id):
         abort(404, "Service with ID {id} not found".format(id=global_id))
 
 
-def horizontal_read_parameters(global_id):
+def horizontalReadParameters(global_id):
 
     service = Service.query.filter(Service.service_global == global_id).outerjoin(
         Resource).outerjoin(Interconnexion).one_or_none()
@@ -1618,7 +1618,7 @@ def horizontal_read_parameters(global_id):
 # Utils
 
 
-def check_equal_element(iterator):
+def checkEqualElement(iterator):
     iterator = iter(iterator)
     try:
         first = next(iterator)
@@ -1627,7 +1627,7 @@ def check_equal_element(iterator):
     return all(first == rest for rest in iterator)
 
 
-def check_existing_service(resource_list):
+def checkExistingService(resource_list):
 
     services = Service.query.all()
     service_schema = ServiceSchema(many=True)
@@ -1646,7 +1646,7 @@ def check_existing_service(resource_list):
     return False, ''
 
 
-def create_random_global_id(stringLength=28):
+def createRandomGlobalId(stringLength=28):
     lettersAndDigits = string.ascii_lowercase[0:5] + string.digits
     result = ''.join(random.choice(lettersAndDigits) for i in range(8))
     result1 = ''.join(random.choice(lettersAndDigits) for i in range(4))
@@ -1657,7 +1657,7 @@ def create_random_global_id(stringLength=28):
     return global_random_id
 
 
-def reorder_cidrs(list_resources):
+def reorderCidrs(list_resources):
 
     size = len(list_resources)
     for i in range(size):
