@@ -31,6 +31,8 @@ for obj in catalog_endpoints:
 
 print(neutron_endpoints)
 
+ipaddress.ip_network()
+
 
     #if obj['name'] == 'keystone':
     #    for endpoint in obj['endpoints']:

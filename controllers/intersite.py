@@ -1114,6 +1114,12 @@ def horizontalCreateService(service):
         'parameter_local_cidr': '',
         'parameter_ipv': service_params[2]
     }
+    '''
+        Layer 2 extension service
+        * Why not do a mixing between the two approaches? CIDR division and Global sharing IP
+          Use the CIDR division but with a master per service in charge of the service
+
+    '''
     if(service_type == 'L2'):
         parameters['parameter_local_cidr'] = service_params[1]
     else:
