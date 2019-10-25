@@ -2,10 +2,12 @@ from flask import Flask
 from flask import render_template
 import common.utils as service_utils
 import connexion
+import logging
 import re
 
 # Create the application instance
 app = connexion.App(__name__, specification_dir='./config/')
+logging.basicConfig(level=logging.DEBUG)
 
 def main():
     # Read the swagger.yml file to configure the endpoints

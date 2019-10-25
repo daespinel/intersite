@@ -15,6 +15,7 @@ import random
 import requests
 
 
+
 # Data to serve with our API
 SERVICE_TYPE = {'L2': 'network_l2', 'L3': 'network_l3'}
 local_region_name = service_utils.get_region_name()
@@ -42,7 +43,7 @@ def verticalReadAllService():
     # Serialize the data for the response
     service_schema = ServiceSchema(many=True)
     data = service_schema.dump(services).data
-    # print(data)
+    print(data)
     return data
 
 # Create a handler for our read (GET) one service by ID
@@ -198,9 +199,9 @@ def verticalCreateService(service):
     # Validation for the L3 routing service
     if service_type == 'L3':
 
-        print("L3 routing service to be done among the resources: " +
+        app.logger.info("L3 routing service to be done among the resources: " +
               (" ".join(str(value) for value in service_resources_list.values())))
-        print(subnetworks)
+        app.logger.info(subnetworks)
 
         # Doing the IP range validation to avoid overlapping problems
         for a, b in itertools.combinations(CIDRs, 2):
@@ -211,7 +212,7 @@ def verticalCreateService(service):
     # Validation for the Layer 2 network extension
     if service_type == 'L2':
 
-        print("L2 extension service to be done among the resources: " +
+        app.logger.info("L2 extension service to be done among the resources: " +
               (" ".join(str(value) for value in service_resources_list.values())))
 
         # Validating if the networks have the same CIDR
