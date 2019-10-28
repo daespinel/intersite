@@ -13,9 +13,11 @@ import itertools
 import string
 import random
 import requests
+import logging
+from flask.logging import default_handler
 
 
-
+app_log = logging.getLogger()
 # Data to serve with our API
 SERVICE_TYPE = {'L2': 'network_l2', 'L3': 'network_l3'}
 local_region_name = service_utils.get_region_name()
@@ -26,7 +28,7 @@ local_region_url = service_utils.get_local_keystone()
 
 def readRegionName():
     var_temp = service_utils.get_region_name()
-    # print(var_temp)
+    # app_log.info(var_temp)
     return var_temp
 
 
@@ -43,9 +45,9 @@ def verticalReadAllService():
     # Serialize the data for the response
     service_schema = ServiceSchema(many=True)
     data = service_schema.dump(services).data
-    print(data)
+    app_log.info('The data from service schema: ' + data)
     return data
-
+    
 # Create a handler for our read (GET) one service by ID
 # Possibility to add more information as ids of remote interconnection resources
 
@@ -71,7 +73,7 @@ def verticalCreateService(service):
     service_resources_list = dict((k.strip(), v.strip()) for k, v in (
         (item.split(',')) for item in service.get("resources", None)))
     service_resources_list_search = copy.deepcopy(service_resources_list)
-    # print(service_resources_list)
+    # app_log.info(service_resources_list)
     service_remote_auth_endpoints = {}
     service_remote_inter_endpoints = {}
     parameter_local_allocation_pool = ''
@@ -117,13 +119,13 @@ def verticalCreateService(service):
         )
 
     except neutronclient_exc.ConnectionFailed:
-        print("Can't connect to neutron %s" %
+        app_log.info("Can't connect to neutron %s" %
               service_remote_inter_endpoints[item])
     except neutronclient_exc.Unauthorized:
-        print("Connection refused to neutron %s" %
+        app_log.info("Connection refused to neutron %s" %
               service_remote_inter_endpoints[item])
     except neutronclient_exc.NetworkNotFoundClient:
-        print("Resource not found %s" % local_resource)
+        app_log.info("Resource not found %s" % local_resource)
 
     if (network_temp_local == ''):
         abort(404, "There is no local resource for the service")
@@ -168,10 +170,10 @@ def verticalCreateService(service):
             subnetworks[item] = subnet['subnets'][0]
 
         except neutronclient_exc.ConnectionFailed:
-            print("Can't connect to neutron %s" %
+            app_log.info("Can't connect to neutron %s" %
                   service_remote_inter_endpoints[item])
         except neutronclient_exc.Unauthorized:
-            print("Connection refused to neutron %s" %
+            app_log.info("Connection refused to neutron %s" %
                   service_remote_inter_endpoints[item])
 
         # Retrieving the subnetwork information given the region name
@@ -190,18 +192,18 @@ def verticalCreateService(service):
             if (item == local_region_name):
                 parameter_local_cidr = subnet['cidr']
         except neutronclient_exc.ConnectionFailed:
-            print("Can't connect to neutron %s" %
+            app_log.info("Can't connect to neutron %s" %
                   service_remote_inter_endpoints[item])
         except neutronclient_exc.Unauthorized:
-            print("Connection refused to neutron %s" %
+            app_log.info("Connection refused to neutron %s" %
                   service_remote_inter_endpoints[item])
 
     # Validation for the L3 routing service
     if service_type == 'L3':
 
-        app.logger.info("L3 routing service to be done among the resources: " +
+        logger.info("L3 routing service to be done among the resources: " +
               (" ".join(str(value) for value in service_resources_list.values())))
-        app.logger.info(subnetworks)
+        logger.info(subnetworks)
 
         # Doing the IP range validation to avoid overlapping problems
         for a, b in itertools.combinations(CIDRs, 2):
@@ -232,7 +234,7 @@ def verticalCreateService(service):
         ips_cidr_available = 2**(32-int(main_cidr_prefix))-3
         host_per_site = math.floor(
             ips_cidr_available/len(service_resources_list))
-        print("CIDR: " + str(cidr) + ", total available IPs: " + str(ips_cidr_available) +
+        app_log.info("CIDR: " + str(cidr) + ", total available IPs: " + str(ips_cidr_available) +
               " , Number of sites: " + str(len(service_resources_list)) + " , IPs per site:" + str(host_per_site))
         base_index = 3
         site_index = 1
@@ -244,9 +246,9 @@ def verticalCreateService(service):
 
         parameter_local_allocation_pool = cidr_ranges[0]
 
-        print('Next ranges will be used:')
+        app_log.info('Next ranges will be used:')
         for element in cidr_ranges:
-            print(element)
+            app_log.info(element)
 
     # calling the interconnection service plugin to create the necessary objects
     id_temp = 1
@@ -271,15 +273,15 @@ def verticalCreateService(service):
                 inter_temp = (
                     neutron_client.create_interconnection(interconnection_data)
                 )
-                # print(inter_temp)
+                # app_log.info(inter_temp)
                 local_interconnections_ids.append(
                     inter_temp['interconnection']['id'])
 
             except neutronclient_exc.ConnectionFailed:
-                print("Can't connect to neutron %s" %
+                app_log.info("Can't connect to neutron %s" %
                       service_remote_inter_endpoints[item])
             except neutronclient_exc.Unauthorized:
-                print("Connection refused to neutron %s" %
+                app_log.info("Connection refused to neutron %s" %
                       service_remote_inter_endpoints[item])
 
     # Create a service instance using the schema and the build service
@@ -334,12 +336,12 @@ def verticalCreateService(service):
                 neutron_client.update_subnet(
                     subnetworks[local_region_name], body=body)
             )
-            # print(inter_temp)
+            # app_log.info(inter_temp)
         except neutronclient_exc.ConnectionFailed:
-            print("Can't connect to neutron %s" %
+            app_log.info("Can't connect to neutron %s" %
                   service_remote_inter_endpoints[item])
         except neutronclient_exc.Unauthorized:
-            print("Connection refused to neutron %s" %
+            app_log.info("Connection refused to neutron %s" %
                   service_remote_inter_endpoints[item])
 
         nova_client = service_utils.get_nova_client(service_utils.get_local_keystone(),
@@ -354,10 +356,10 @@ def verticalCreateService(service):
         #     nova_list = nova_client.servers.list()
 
         # except novaclient.exceptions.NotFound:
-        #     print("Can't connect to nova %s" %
+        #     app_log.info("Can't connect to nova %s" %
         #           service_remote_inter_endpoints[item])
         # except novaclient.exceptions.Unauthorized:
-        #     print("Connection refused to nova %s" %
+        #     app_log.info("Connection refused to nova %s" %
         #           service_remote_inter_endpoints[item])
 
         # vms_with_ip_in_network = []
@@ -372,8 +374,8 @@ def verticalCreateService(service):
 
         # for machine_opts in vms_with_ip_in_network:
         #     if((ipaddress.IPv4Address(machine_opts['ip']) < ipaddress.IPv4Address(allocation_start)) or (ipaddress.IPv4Address(machine_opts['ip']) > ipaddress.IPv4Address(allocation_end))):
-        #         print('Changing the IPs for VMs in the local deployment')
-        #         print(machine_opts['name'], machine_opts['ip'])
+        #         app_log.info('Changing the IPs for VMs in the local deployment')
+        #         app_log.info(machine_opts['name'], machine_opts['ip'])
         #         detach_interface = nova_client.servers.interface_detach(
         #             machine_opts['id'], machine_opts['port_id'])
         #         attach_interface = nova_client.servers.interface_attach(
@@ -403,8 +405,8 @@ def verticalCreateService(service):
                        'Accept': 'application/json'}
             r = requests.post(remote_inter_instance, data=json.dumps(
                 remote_service), headers=headers)
-            # print(r.json())
-            print(service_schema.dump(new_service).data)
+            # app_log.info(r.json())
+            app_log.info(service_schema.dump(new_service).data)
 
     return service_schema.dump(new_service).data, 201
 
@@ -429,14 +431,14 @@ def verticalUpdateService(global_id, service):
         for key, value in to_service_resources_list.items():
             service_resources_list_user.append(
                 {'resource_uuid': value, 'resource_region': key})
-        # print(service_resources_list_user)
+        # app_log.info(service_resources_list_user)
 
         service_resources_list_db = []
-        # print(data_from_db['service_resources'])
+        # app_log.info(data_from_db['service_resources'])
         for element in data_from_db['service_resources']:
             service_resources_list_db.append(
                 {'resource_uuid': element['resource_uuid'], 'resource_region': element['resource_region']})
-        # print(service_resources_list_db)
+        # app_log.info(service_resources_list_db)
         list_resources_remove = copy.deepcopy(service_resources_list_db)
         list_resources_add = []
 
@@ -444,16 +446,16 @@ def verticalUpdateService(global_id, service):
             contidion_temp = True
             for resource_component_2 in service_resources_list_db:
                 if resource_component == resource_component_2:
-                    # print(resource_component)
+                    # app_log.info(resource_component)
                     list_resources_remove.remove(resource_component_2)
                     contidion_temp = False
                     break
             if(contidion_temp == True):
                 list_resources_add.append(resource_component)
 
-        print('actual list of resources', service_resources_list_db)
-        print('resources to add', list_resources_add)
-        print('resources to delete', list_resources_remove)
+        app_log.info('actual list of resources', service_resources_list_db)
+        app_log.info('resources to add', list_resources_add)
+        app_log.info('resources to delete', list_resources_remove)
         search_local_resource_delete = False
         search_local_resource_uuid = ''
 
@@ -484,13 +486,13 @@ def verticalUpdateService(global_id, service):
                         neutron_client.delete_interconnection(inter))
 
                 except neutronclient_exc.ConnectionFailed:
-                    print("Can't connect to neutron %s" %
+                    app_log.info("Can't connect to neutron %s" %
                           service_remote_inter_endpoints[item])
                 except neutronclient_exc.Unauthorized:
-                    print("Connection refused to neutron %s" %
+                    app_log.info("Connection refused to neutron %s" %
                           service_remote_inter_endpoints[item])
                 except neutronclient_exc.NotFound:
-                    print("Element not found %s" % inter)
+                    app_log.info("Element not found %s" % inter)
 
                 for element in list_resources_remove:
                     if(local_region_name in element['resource_region']):
@@ -533,15 +535,15 @@ def verticalUpdateService(global_id, service):
                                 db.session.commit()
 
                     except neutronclient_exc.ConnectionFailed:
-                        print("Can't connect to neutron %s" %
+                        app_log.info("Can't connect to neutron %s" %
                               service_remote_inter_endpoints[item])
                     except neutronclient_exc.Unauthorized:
-                        print("Connection refused to neutron %s" %
+                        app_log.info("Connection refused to neutron %s" %
                               service_remote_inter_endpoints[item])
                     except neutronclient_exc.NotFound:
-                        print("Element not found %s" % inter_del_list)
+                        app_log.info("Element not found %s" % inter_del_list)
 
-                    # print(remote_resource_to_delete['resource_uuid'])
+                    # app_log.info(remote_resource_to_delete['resource_uuid'])
                     resource_delete = Resource.query.outerjoin(Service, Resource.service_id == Service.service_id).filter(
                         Service.service_id == data_from_db['service_id']).filter(Resource.resource_uuid == remote_resource_to_delete['resource_uuid']).one_or_none()
 
@@ -622,10 +624,10 @@ def verticalUpdateService(global_id, service):
                                     ] = subnet['subnets'][0]
 
                 except neutronclient_exc.ConnectionFailed:
-                    print("Can't connect to neutron %s" %
+                    app_log.info("Can't connect to neutron %s" %
                           service_remote_inter_endpoints[item])
                 except neutronclient_exc.Unauthorized:
-                    print("Connection refused to neutron %s" %
+                    app_log.info("Connection refused to neutron %s" %
                           service_remote_inter_endpoints[item])
 
                 # Retrieving the subnetwork information given the region name
@@ -642,10 +644,10 @@ def verticalUpdateService(global_id, service):
                     subnet = subnetwork_temp['subnet']
                     new_CIDRs[item] = ipaddress.ip_network(subnet['cidr'])
                 except neutronclient_exc.ConnectionFailed:
-                    print("Can't connect to neutron %s" %
+                    app_log.info("Can't connect to neutron %s" %
                           service_remote_inter_endpoints[item])
                 except neutronclient_exc.Unauthorized:
-                    print("Connection refused to neutron %s" %
+                    app_log.info("Connection refused to neutron %s" %
                           service_remote_inter_endpoints[item])
 
             # query distant sites composing the service to give their params
@@ -682,8 +684,8 @@ def verticalUpdateService(global_id, service):
                     abort(
                         404, "ERROR: CIDR is not the same for all the resources")
 
-                # print(service_remote_auth_endpoints)
-                # print(horizontal_read_parameters(
+                # app_log.info(service_remote_auth_endpoints)
+                # app_log.info(horizontal_read_parameters(
                 #    data_from_db['service_global']))
 
                 cidr = ipaddress.ip_network(
@@ -696,7 +698,7 @@ def verticalUpdateService(global_id, service):
                 ips_cidr_available = 2**(32-int(main_cidr_prefix))-3
                 host_per_site = math.floor(
                     ips_cidr_available/len(service_resources_list))
-                print("CIDR: " + str(cidr) + ", total available IPs: " + str(ips_cidr_available) +
+                app_log.info("CIDR: " + str(cidr) + ", total available IPs: " + str(ips_cidr_available) +
                       " , Number of sites: " + str(len(service_resources_list)) + " , IPs per site:" + str(host_per_site))
                 base_index = 3
                 site_index = 1
@@ -708,9 +710,9 @@ def verticalUpdateService(global_id, service):
 
                 parameter_local_cidr = main_cidr
 
-                print('Next ranges will be used:')
+                app_log.info('Next ranges will be used:')
                 for element in cidr_ranges:
-                    print(element)
+                    app_log.info(element)
 
                 check_cidrs = [key['param']
                                for key in service_resources_list_params]
@@ -770,15 +772,15 @@ def verticalUpdateService(global_id, service):
                                 neutron_client.create_interconnection(
                                     interconnection_data)
                             )
-                            # print(inter_temp)
+                            # app_log.info(inter_temp)
                             local_interconnections_ids.append(
                                 inter_temp['interconnection']['id'])
 
                         except neutronclient_exc.ConnectionFailed:
-                            print("Can't connect to neutron %s" %
+                            app_log.info("Can't connect to neutron %s" %
                                   service_remote_inter_endpoints[item])
                         except neutronclient_exc.Unauthorized:
-                            print("Connection refused to neutron %s" %
+                            app_log.info("Connection refused to neutron %s" %
                                   service_remote_inter_endpoints[item])
 
                 for element in list_resources_add:
@@ -834,10 +836,10 @@ def verticalUpdateService(global_id, service):
                         local_subnetwork_id = subnet['subnets'][0]
 
                     except neutronclient_exc.ConnectionFailed:
-                        print("Can't connect to neutron %s" %
+                        app_log.info("Can't connect to neutron %s" %
                               service_remote_inter_endpoints[item])
                     except neutronclient_exc.Unauthorized:
-                        print("Connection refused to neutron %s" %
+                        app_log.info("Connection refused to neutron %s" %
                               service_remote_inter_endpoints[item])
 
                     new_local_range = cidr_ranges[new_local_param_index]
@@ -850,12 +852,12 @@ def verticalUpdateService(global_id, service):
                             neutron_client.update_subnet(
                                 local_subnetwork_id, body=body)
                         )
-                        # print(inter_temp)
+                        # app_log.info(inter_temp)
                     except neutronclient_exc.ConnectionFailed:
-                        print("Can't connect to neutron %s" %
+                        app_log.info("Can't connect to neutron %s" %
                               service_remote_inter_endpoints[item])
                     except neutronclient_exc.Unauthorized:
-                        print("Connection refused to neutron %s" %
+                        app_log.info("Connection refused to neutron %s" %
                               service_remote_inter_endpoints[item])
 
                     nova_client = service_utils.get_nova_client(local_region_url,
@@ -870,10 +872,10 @@ def verticalUpdateService(global_id, service):
                     #     nova_list = nova_client.servers.list()
 
                     # except novaclient.exceptions.NotFound:
-                    #     print("Can't connect to nova %s" %
+                    #     app_log.info("Can't connect to nova %s" %
                     #           service_remote_inter_endpoints[item])
                     # except novaclient.exceptions.Unauthorized:
-                    #     print("Connection refused to nova %s" %
+                    #     app_log.info("Connection refused to nova %s" %
                     #           service_remote_inter_endpoints[item])
 
                     # vms_with_ip_in_network = []
@@ -888,8 +890,8 @@ def verticalUpdateService(global_id, service):
 
                     # for machine_opts in vms_with_ip_in_network:
                     #     if((ipaddress.IPv4Address(machine_opts['ip']) < ipaddress.IPv4Address(allocation_start)) or (ipaddress.IPv4Address(machine_opts['ip']) > ipaddress.IPv4Address(allocation_end))):
-                    #         print('Changing the IPs for VMs in the local deployment')
-                    #         print(machine_opts['name'], machine_opts['ip'])
+                    #         app_log.info('Changing the IPs for VMs in the local deployment')
+                    #         app_log.info(machine_opts['name'], machine_opts['ip'])
                     #         detach_interface = nova_client.servers.interface_detach(
                     #             machine_opts['id'], machine_opts['port_id'])
                     #         attach_interface = nova_client.servers.interface_attach(
@@ -937,7 +939,7 @@ def verticalUpdateService(global_id, service):
                                    'Accept': 'application/json'}
                         r = requests.put(remote_inter_instance, data=json.dumps(
                             remote_service), headers=headers)
-                        # print(r.json())
+                        # app_log.info(r.json())
 
                 # service_data = service_schema.dump(service_update)
 
@@ -957,7 +959,7 @@ def verticalDeleteService(global_id):
         service_schema = ServiceSchema()
         service_data = service_schema.dump(service).data
         resources_list_to_delete = service_data['service_resources']
-        # print(resources_list_to_delete)
+        # app_log.info(resources_list_to_delete)
         interconnections_delete = service_data['service_interconnections']
         for element in interconnections_delete:
             inter = element['interconnexion_uuid']
@@ -970,13 +972,13 @@ def verticalDeleteService(global_id):
                     neutron_client.delete_interconnection(inter))
 
             except neutronclient_exc.ConnectionFailed:
-                print("Can't connect to neutron %s" %
+                app_log.info("Can't connect to neutron %s" %
                       service_remote_inter_endpoints[item])
             except neutronclient_exc.Unauthorized:
-                print("Connection refused to neutron %s" %
+                app_log.info("Connection refused to neutron %s" %
                       service_remote_inter_endpoints[item])
             except neutronclient_exc.NotFound:
-                print("Interconnection not found %s" % inter)
+                app_log.info("Interconnection not found %s" % inter)
 
         db.session.delete(service)
         db.session.commit()
@@ -986,15 +988,15 @@ def verticalDeleteService(global_id):
         for obj in catalog_endpoints:
             if obj['name'] == 'neutron':
                 for endpoint in obj['endpoints']:
-                    # print(endpoint)
+                    # app_log.info(endpoint)
                     for region_name in resources_list_to_delete:
-                        # print(region_name)
+                        # app_log.info(region_name)
                         if endpoint['region'] == region_name['resource_region']:
                             service_remote_inter_endpoints[region_name['resource_region']
                                                            ] = endpoint['url']
                             break
 
-        # print(service_remote_inter_endpoints)
+        # app_log.info(service_remote_inter_endpoints)
         # Sending remote inter-site delete requests to the distant nodes
         for obj in resources_list_to_delete:
             remote_inter_instance = ''
@@ -1022,7 +1024,7 @@ def horizontalCreateService(service):
     service_name = service.get("name", None)
     service_type = service.get("type", None)
     service_params = service.get("params", None)
-    # print(service_params)
+    # app_log.info(service_params)
     service_global = service.get("global", None)
     # service_resources = service.get("resources", None)
     service_resources_list = dict((k.strip(), v.strip()) for k, v in (
@@ -1072,15 +1074,15 @@ def horizontalCreateService(service):
                     neutron_client.create_interconnection(
                         interconnection_data)
                 )
-                # print(inter_temp)
+                # app_log.info(inter_temp)
                 local_interconnections_ids.append(
                     inter_temp['interconnection']['id'])
 
             except neutronclient_exc.ConnectionFailed:
-                print("Can't connect to neutron %s" %
+                app_log.info("Can't connect to neutron %s" %
                       service_remote_inter_endpoints[item])
             except neutronclient_exc.Unauthorized:
-                print("Connection refused to neutron %s" %
+                app_log.info("Connection refused to neutron %s" %
                       service_remote_inter_endpoints[item])
 
     # Create a service instance using the schema and the build service
@@ -1137,10 +1139,10 @@ def horizontalCreateService(service):
             subnet_id = network_temp['network']['subnets'][0]
 
         except neutronclient_exc.ConnectionFailed:
-            print("Can't connect to neutron %s" %
+            app_log.info("Can't connect to neutron %s" %
                   service_remote_inter_endpoints[item])
         except neutronclient_exc.Unauthorized:
-            print("Connection refused to neutron %s" %
+            app_log.info("Connection refused to neutron %s" %
                   service_remote_inter_endpoints[item])
 
         try:
@@ -1152,10 +1154,10 @@ def horizontalCreateService(service):
             parameters['parameter_local_cidr'] = subnet['cidr']
 
         except neutronclient_exc.ConnectionFailed:
-            print("Can't connect to neutron %s" %
+            app_log.info("Can't connect to neutron %s" %
                   service_remote_inter_endpoints[item])
         except neutronclient_exc.Unauthorized:
-            print("Connection refused to neutron %s" %
+            app_log.info("Connection refused to neutron %s" %
                   service_remote_inter_endpoints[item])
 
     service_params_schema = ServiceParamssSchema()
@@ -1179,18 +1181,18 @@ def horizontalCreateService(service):
                                             )
             )
             subnet = network_temp['network']['subnets'][0]
-            print(subnet)
+            app_log.info(subnet)
 
             dhcp_change = (
                 neutron_client.update_subnet(
                     subnet, body=body)
             )
-            # print(inter_temp)
+            # app_log.info(inter_temp)
         except neutronclient_exc.ConnectionFailed:
-            print("Can't connect to neutron %s" %
+            app_log.info("Can't connect to neutron %s" %
                   service_remote_inter_endpoints[item])
         except neutronclient_exc.Unauthorized:
-            print("Connection refused to neutron %s" %
+            app_log.info("Connection refused to neutron %s" %
                   service_remote_inter_endpoints[item])
 
         # Check if there are hot-plugged VMs with IPs outside the allocation pool
@@ -1205,10 +1207,10 @@ def horizontalCreateService(service):
         #     nova_list = nova_client.servers.list()
 
         # except novaclient.exceptions.NotFound:
-        #     print("Can't connect to nova %s" %
+        #     app_log.info("Can't connect to nova %s" %
         #           service_remote_inter_endpoints[item])
         # except novaclient.exceptions.Unauthorized:
-        #     print("Connection refused to nova %s" %
+        #     app_log.info("Connection refused to nova %s" %
         #           service_remote_inter_endpoints[item])
 
         # vms_with_ip_in_network = []
@@ -1225,8 +1227,8 @@ def horizontalCreateService(service):
         #     if((ipaddress.IPv4Address(machine_opts['ip']) < ipaddress.IPv4Address(parameters['parameter_allocation_pool'].split(
         #         "-", 1)[0])) or (ipaddress.IPv4Address(machine_opts['ip']) > ipaddress.IPv4Address(parameters['parameter_allocation_pool'].split(
         #             "-", 1)[1]))):
-        #         print('Changing the IPs for VMs in the local deployment')
-        #         print(machine_opts['name'], machine_opts['ip'])
+        #         app_log.info('Changing the IPs for VMs in the local deployment')
+        #         app_log.info(machine_opts['name'], machine_opts['ip'])
         #         detach_interface = nova_client.servers.interface_detach(
         #             machine_opts['id'], machine_opts['port_id'])
         #         attach_interface = nova_client.servers.interface_attach(
@@ -1253,7 +1255,7 @@ def horizontalUpdateService(global_id, service):
         service_resources_list_user = []
 
         new_params = service.get("params", None)
-        print(new_params)
+        app_log.info(new_params)
 
         for key, value in to_service_resources_list.items():
             service_resources_list_user.append(
@@ -1271,16 +1273,16 @@ def horizontalUpdateService(global_id, service):
             contidion_temp = True
             for resource_component_2 in service_resources_list_db:
                 if resource_component == resource_component_2:
-                    # print(resource_component)
+                    # app_log.info(resource_component)
                     list_resources_remove.remove(resource_component_2)
                     contidion_temp = False
                     break
             if(contidion_temp == True):
                 list_resources_add.append(resource_component)
 
-        print('actual list of resources', service_resources_list_db)
-        print('resources to add', list_resources_add)
-        print('resources to delete', list_resources_remove)
+        app_log.info('actual list of resources', service_resources_list_db)
+        app_log.info('resources to add', list_resources_add)
+        app_log.info('resources to delete', list_resources_remove)
         search_local_resource_delete = False
         search_local_resource_uuid = ''
 
@@ -1311,13 +1313,13 @@ def horizontalUpdateService(global_id, service):
                         neutron_client.delete_interconnection(inter))
 
                 except neutronclient_exc.ConnectionFailed:
-                    print("Can't connect to neutron %s" %
+                    app_log.info("Can't connect to neutron %s" %
                           service_remote_inter_endpoints[item])
                 except neutronclient_exc.Unauthorized:
-                    print("Connection refused to neutron %s" %
+                    app_log.info("Connection refused to neutron %s" %
                           service_remote_inter_endpoints[item])
                 except neutronclient_exc.NotFound:
-                    print("Element not found %s" % inter)
+                    app_log.info("Element not found %s" % inter)
 
                 for element in list_resources_remove:
                     if(local_region_name in element['resource_region']):
@@ -1362,15 +1364,15 @@ def horizontalUpdateService(global_id, service):
                                 db.session.commit()
 
                     except neutronclient_exc.ConnectionFailed:
-                        print("Can't connect to neutron %s" %
+                        app_log.info("Can't connect to neutron %s" %
                               service_remote_inter_endpoints[item])
                     except neutronclient_exc.Unauthorized:
-                        print("Connection refused to neutron %s" %
+                        app_log.info("Connection refused to neutron %s" %
                               service_remote_inter_endpoints[item])
                     except neutronclient_exc.NotFound:
-                        print("Element not found %s" % inter_del_list)
+                        app_log.info("Element not found %s" % inter_del_list)
 
-                    # print(remote_resource_to_delete['resource_uuid'])
+                    # app_log.info(remote_resource_to_delete['resource_uuid'])
                     resource_delete = Resource.query.outerjoin(Service, Resource.service_id == Service.service_id).filter(
                         Service.service_id == data_from_db['service_id']).filter(Resource.resource_uuid == remote_resource_to_delete['resource_uuid']).one_or_none()
 
@@ -1452,15 +1454,15 @@ def horizontalUpdateService(global_id, service):
                                 neutron_client.create_interconnection(
                                     interconnection_data)
                             )
-                            # print(inter_temp)
+                            # app_log.info(inter_temp)
                             local_interconnections_ids.append(
                                 inter_temp['interconnection']['id'])
 
                         except neutronclient_exc.ConnectionFailed:
-                            print("Can't connect to neutron %s" %
+                            app_log.info("Can't connect to neutron %s" %
                                   service_remote_inter_endpoints[item])
                         except neutronclient_exc.Unauthorized:
-                            print("Connection refused to neutron %s" %
+                            app_log.info("Connection refused to neutron %s" %
                                   service_remote_inter_endpoints[item])
 
                 for element in list_resources_add:
@@ -1510,10 +1512,10 @@ def horizontalUpdateService(global_id, service):
                     local_subnetwork_id = subnet['subnets'][0]
 
                 except neutronclient_exc.ConnectionFailed:
-                    print("Can't connect to neutron %s" %
+                    app_log.info("Can't connect to neutron %s" %
                           service_remote_inter_endpoints[item])
                 except neutronclient_exc.Unauthorized:
-                    print("Connection refused to neutron %s" %
+                    app_log.info("Connection refused to neutron %s" %
                           service_remote_inter_endpoints[item])
 
                 new_local_range = new_params[1]
@@ -1526,12 +1528,12 @@ def horizontalUpdateService(global_id, service):
                         neutron_client.update_subnet(
                             local_subnetwork_id, body=body)
                     )
-                    # print(inter_temp)
+                    # app_log.info(inter_temp)
                 except neutronclient_exc.ConnectionFailed:
-                    print("Can't connect to neutron %s" %
+                    app_log.info("Can't connect to neutron %s" %
                           service_remote_inter_endpoints[item])
                 except neutronclient_exc.Unauthorized:
-                    print("Connection refused to neutron %s" %
+                    app_log.info("Connection refused to neutron %s" %
                           service_remote_inter_endpoints[item])
 
                 # Check if there are hot-plugged VMs with IPs outside the allocation pool
@@ -1546,10 +1548,10 @@ def horizontalUpdateService(global_id, service):
                 #     nova_list = nova_client.servers.list()
 
                 # except novaclient.exceptions.NotFound:
-                #     print("Can't connect to nova %s" %
+                #     app_log.info("Can't connect to nova %s" %
                 #           service_remote_inter_endpoints[item])
                 # except novaclient.exceptions.Unauthorized:
-                #     print("Connection refused to nova %s" %
+                #     app_log.info("Connection refused to nova %s" %
                 #           service_remote_inter_endpoints[item])
 
                 # vms_with_ip_in_network = []
@@ -1564,8 +1566,8 @@ def horizontalUpdateService(global_id, service):
 
                 # for machine_opts in vms_with_ip_in_network:
                 #     if((ipaddress.IPv4Address(machine_opts['ip']) < ipaddress.IPv4Address(allocation_start)) or (ipaddress.IPv4Address(machine_opts['ip']) > ipaddress.IPv4Address(allocation_end))):
-                #         print('Changing the IPs for VMs in the local deployment')
-                #         print(machine_opts['name'], machine_opts['ip'])
+                #         app_log.info('Changing the IPs for VMs in the local deployment')
+                #         app_log.info(machine_opts['name'], machine_opts['ip'])
                 #         detach_interface = nova_client.servers.interface_detach(
                 #             machine_opts['id'], machine_opts['port_id'])
                 #         attach_interface = nova_client.servers.interface_attach(
@@ -1588,7 +1590,7 @@ def horizontalDeleteService(global_id):
         service_schema = ServiceSchema()
         service_data = service_schema.dump(service).data
         resources_list_to_delete = service_data['service_resources']
-        # print(resources_list_to_delete)
+        # app_log.info(resources_list_to_delete)
         interconnections_delete = service_data['service_interconnections']
         for element in interconnections_delete:
             inter = element['interconnexion_uuid']
@@ -1601,10 +1603,10 @@ def horizontalDeleteService(global_id):
                     neutron_client.delete_interconnection(inter))
 
             except neutronclient_exc.ConnectionFailed:
-                print("Can't connect to neutron %s" %
+                app_log.info("Can't connect to neutron %s" %
                       service_remote_inter_endpoints[item])
             except neutronclient_exc.Unauthorized:
-                print("Connection refused to neutron %s" %
+                app_log.info("Connection refused to neutron %s" %
                       service_remote_inter_endpoints[item])
 
         db.session.delete(service)
@@ -1654,7 +1656,7 @@ def checkExistingService(resource_list):
                       ] = next_resource['resource_uuid']
         search_list_dict[element['service_global']] = temp_dict
     for key, value in search_list_dict.items():
-        # print(key)
+        # app_log.info(key)
         if(value == resource_list):
             return True, key
     return False, ''

@@ -7,7 +7,7 @@ import re
 
 # Create the application instance
 app = connexion.App(__name__, specification_dir='./config/')
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 def main():
     # Read the swagger.yml file to configure the endpoints
