@@ -38,6 +38,8 @@ class Parameter(db.Model):
     __tablename__ = "parameter"
     parameter_id = db.Column(db.Integer,
                              primary_key=True)
+    parameter_service_master = db.Column(db.String(64))
+    parameter_service_master_auth = db.Column(db.String(64))
     parameter_allocation_pool = db.Column(db.String(64))
     parameter_local_cidr = db.Column(db.String(64))
     parameter_ipv = db.Column(db.String(64))

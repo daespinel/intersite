@@ -45,7 +45,7 @@ def verticalReadAllService():
     # Serialize the data for the response
     service_schema = ServiceSchema(many=True)
     data = service_schema.dump(services).data
-    app_log.info('The data from service schema: ' + data)
+    app_log.info('The data from service schema: ' + str(data))
     return data
     
 # Create a handler for our read (GET) one service by ID
@@ -214,7 +214,7 @@ def verticalCreateService(service):
     # Validation for the Layer 2 network extension
     if service_type == 'L2':
 
-        app.logger.info("L2 extension service to be done among the resources: " +
+        app_log.info("L2 extension service to be done among the resources: " +
               (" ".join(str(value) for value in service_resources_list.values())))
 
         # Validating if the networks have the same CIDR
@@ -406,7 +406,7 @@ def verticalCreateService(service):
             r = requests.post(remote_inter_instance, data=json.dumps(
                 remote_service), headers=headers)
             # app_log.info(r.json())
-            app_log.info(service_schema.dump(new_service).data)
+            app_log.info(str(service_schema.dump(new_service).data))
 
     return service_schema.dump(new_service).data, 201
 
@@ -453,9 +453,9 @@ def verticalUpdateService(global_id, service):
             if(contidion_temp == True):
                 list_resources_add.append(resource_component)
 
-        app_log.info('actual list of resources', service_resources_list_db)
-        app_log.info('resources to add', list_resources_add)
-        app_log.info('resources to delete', list_resources_remove)
+        app_log.info('actual list of resources', str(service_resources_list_db))
+        app_log.info('resources to add', str(list_resources_add))
+        app_log.info('resources to delete', str(list_resources_remove))
         search_local_resource_delete = False
         search_local_resource_uuid = ''
 
@@ -1181,7 +1181,7 @@ def horizontalCreateService(service):
                                             )
             )
             subnet = network_temp['network']['subnets'][0]
-            app_log.info(subnet)
+            app_log.info(str(subnet))
 
             dhcp_change = (
                 neutron_client.update_subnet(
@@ -1255,7 +1255,7 @@ def horizontalUpdateService(global_id, service):
         service_resources_list_user = []
 
         new_params = service.get("params", None)
-        app_log.info(new_params)
+        app_log.info(str(new_params))
 
         for key, value in to_service_resources_list.items():
             service_resources_list_user.append(
@@ -1280,9 +1280,9 @@ def horizontalUpdateService(global_id, service):
             if(contidion_temp == True):
                 list_resources_add.append(resource_component)
 
-        app_log.info('actual list of resources', service_resources_list_db)
-        app_log.info('resources to add', list_resources_add)
-        app_log.info('resources to delete', list_resources_remove)
+        app_log.info('actual list of resources', str(service_resources_list_db))
+        app_log.info('resources to add', str(list_resources_add))
+        app_log.info('resources to delete', str(list_resources_remove))
         search_local_resource_delete = False
         search_local_resource_uuid = ''
 
