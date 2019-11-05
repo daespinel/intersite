@@ -1,9 +1,9 @@
 import os
 from config import db
-from service import Service, Resource, Interconnexion, Parameter
+from service import Service, Resource, Interconnexion, Parameter, L2AllocationPool, L2Master
 
 # Data to initialize database with
-SERVICES = [
+SERVICES1 = [
     {
         "name": "Service1",
         "type": "L2",
@@ -31,6 +31,18 @@ SERVICES = [
     }
 ]
 
+SERVICES = [
+    {
+        "name": "Service1",
+        "type": "L2",
+        "global": "a842c6f0-44a2-bc21-568a56c54de0",
+        "params": ["10.0.0.3-10.0.0.108", "10.0.0.0/24", "v4", "RegionOne", "http://192.168.57.6:7575"],
+        "resources": [("id589", "RegionOne"),("id16", "RegionSixTen")],
+        "interconnections": ["z1"]
+
+    }
+]
+
 # Delete database file if it exists currently
 if os.path.exists('service.db'):
     os.remove('service.db')
@@ -47,11 +59,11 @@ for service in SERVICES:
         s.service_resources.append(
             Resource(resource_region=region_name, resource_uuid=resource_uuid))
     
-    param_allocation, param_local_cidr, param_ipv = service.get("params")[0],service.get("params")[1],service.get("params")[2]
+    param_allocation, param_local_cidr, param_ipv, param_master, param_master_auth = service.get("params")[0],service.get("params")[1],service.get("params")[2],service.get("params")[3],service.get("params")[4]
     s.service_params.append(Parameter(parameter_allocation_pool=param_allocation,
-                                          parameter_local_cidr=param_local_cidr, parameter_ipv=param_ipv))
+                                          parameter_local_cidr=param_local_cidr, parameter_ipv=param_ipv, parameter_master=param_master, parameter_master_auth=param_master_auth))
 
-    # ,service['resources'],service['interconnections']
+    print()
     for interco in service.get("interconnections"):
         s.service_interconnections.append(
             Interconnexion(interconnexion_uuid=interco))

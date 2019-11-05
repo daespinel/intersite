@@ -97,7 +97,7 @@ class L2AllocationPool(db.Model):
 
 
 # Service schemas for model read and write
-
+# Service associated schema
 class ServiceSchema(ma.ModelSchema):
     def __init__(self, **kwargs):
         super().__init__(strict=True, **kwargs)
@@ -106,13 +106,13 @@ class ServiceSchema(ma.ModelSchema):
         model = Service
         sqla_session = db.session
     service_params = fields.Nested(
-        'SServiceParamsSchema', default=[], many=False)
+        'SServiceParamsSchema', default=[], many=True)
     service_resources = fields.Nested(
         'SServiceResourcesSchema', default=[], many=True)
     service_interconnections = fields.Nested(
         'SServiceInterconnectionsSchema', default=[], many=True)
 
-
+# Parameter associated schemas
 class SServiceParamsSchema(ma.ModelSchema):
     """
     This class exists to get around a recursion issue
@@ -147,7 +147,19 @@ class ServiceParamsServiceSchema(ma.ModelSchema):
     service_type = fields.Str()
     service_global = fields.Str()
 
+class SParamsL2MasterSchema(ma.ModelSchema):
+    """
+    This class exists to get around a recursion issue
+    """
+    parameter_id = fields.Int()
+    parameter_allocation_pool = fields.Str() 
+    parameter_local_cidr = fields.Str()
+    parameter_ipv = fields.Str()
+    parameter_master = fields.Str()
+    parameter_master_auth = fields.Str()
+    service_id = fields.Int()
 
+# Resources associated schemas
 class SServiceResourcesSchema(ma.ModelSchema):
     """
     This class exists to get around a recursion issue
@@ -177,7 +189,7 @@ class ServiceResourcesServiceSchema(ma.ModelSchema):
     service_type = fields.Str()
     service_global = fields.Str()
 
-
+# Interconnection associated schemas
 class SServiceInterconnectionsSchema(ma.ModelSchema):
     """
     This class exists to get around a recursion issue
