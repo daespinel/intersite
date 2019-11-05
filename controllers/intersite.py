@@ -2,7 +2,7 @@ from flask import make_response, abort
 from neutronclient.common import exceptions as neutronclient_exc
 from random import seed
 from random import randint
-from service import Service, ServiceSchema, Resource, Interconnexion, Parameter, ServiceParamssSchema, ServiceResourcesSchema, ServiceInterconnectionsSchema
+from service import Service, ServiceSchema, Resource, Interconnexion, Parameter, ServiceParamsSchema, ServiceResourcesSchema, ServiceInterconnectionsSchema
 from config import db
 import common.utils as service_utils
 import copy
@@ -305,7 +305,7 @@ def verticalCreateService(service):
         'parameter_local_cidr': parameter_local_cidr,
         'parameter_ipv': parameter_local_ipv
     }
-    service_params_schema = ServiceParamssSchema()
+    service_params_schema = ServiceParamsSchema()
     new_service_params = service_params_schema.load(
         parameters, session=db.session).data
     new_service.service_params.append(new_service_params)
@@ -796,7 +796,7 @@ def verticalUpdateService(global_id, service):
 
                 param_update = Parameter.query.filter(
                     Parameter.service_id == data_from_db['service_id']).one_or_none()
-                param_update_schema = ServiceParamssSchema()
+                param_update_schema = ServiceParamsSchema()
                 data_from_param = param_update_schema.dump(param_update).data
                 param_update.parameter_allocation_pool = cidr_ranges[new_local_param_index]
 
@@ -1160,7 +1160,7 @@ def horizontalCreateService(service):
             app_log.info("Connection refused to neutron %s" %
                   service_remote_inter_endpoints[item])
 
-    service_params_schema = ServiceParamssSchema()
+    service_params_schema = ServiceParamsSchema()
     new_service_params = service_params_schema.load(
         parameters, session=db.session).data
     new_service.service_params.append(new_service_params)
@@ -1491,7 +1491,7 @@ def horizontalUpdateService(global_id, service):
             if(data_from_db['service_params'][0]['parameter_allocation_pool'] != new_params[1]):
                 param_update = Parameter.query.filter(
                     Parameter.service_id == data_from_db['service_id']).one_or_none()
-                param_update_schema = ServiceParamssSchema()
+                param_update_schema = ServiceParamsSchema()
                 data_from_param = param_update_schema.dump(param_update).data
                 param_update.parameter_allocation_pool = new_params[1]
 

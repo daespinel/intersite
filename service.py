@@ -38,11 +38,18 @@ class Parameter(db.Model):
     __tablename__ = "parameter"
     parameter_id = db.Column(db.Integer,
                              primary_key=True)
-    parameter_service_master = db.Column(db.String(64))
-    parameter_service_master_auth = db.Column(db.String(64))
     parameter_allocation_pool = db.Column(db.String(64))
     parameter_local_cidr = db.Column(db.String(64))
     parameter_ipv = db.Column(db.String(64))
+    parameter_master = db.Column(db.String(64))
+    parameter_master_auth = db.Column(db.String(64))
+    parameter_l2master = db.relationship(
+        'L2Master',
+        backref='parameter',
+        cascade='all, delete, delete-orphan',
+        single_parent=True,
+        order_by='desc(L2Master.l2master_id)'
+    )
     service_id = db.Column(db.Integer, db.ForeignKey('service.service_id'))
 
 
@@ -63,6 +70,34 @@ class Interconnexion(db.Model):
     service_id = db.Column(db.Integer, db.ForeignKey('service.service_id'))
 
 
+class L2Master(db.Model):
+    __tablename__ = "l2master"
+    l2master_id  = db.Column(db.Integer,
+                                  primary_key=True)
+    l2master_l2allocationpools = db.relationship(
+        'L2AllocationPool',
+        backref='L2Master',
+        cascade='all, delete, delete-orphan',
+        single_parent=True,
+        order_by='desc(L2AllocationPool.l2allocationpool_id)'
+    )
+    parameter_id = db.Column(
+        db.Integer, db.ForeignKey('parameter.parameter_id'))
+
+
+class L2AllocationPool(db.Model):
+    __tablename__ = "l2allocationpool"
+    l2allocationpool_id = db.Column(db.Integer,
+                                    primary_key=True)
+    l2allocationpool_first_ip = db.Column(db.String(64))
+    l2allocationpool_last_ip = db.Column(db.String(64))
+    l2allocationpool_site = db.Column(db.String(64))
+    l2master_id = db.Column(
+        db.Integer, db.ForeignKey('l2master.l2master_id'))
+
+
+# Service schemas for model read and write
+
 class ServiceSchema(ma.ModelSchema):
     def __init__(self, **kwargs):
         super().__init__(strict=True, **kwargs)
@@ -71,7 +106,7 @@ class ServiceSchema(ma.ModelSchema):
         model = Service
         sqla_session = db.session
     service_params = fields.Nested(
-        'SServiceParamsSchema', default=[], many=True)
+        'SServiceParamsSchema', default=[], many=False)
     service_resources = fields.Nested(
         'SServiceResourcesSchema', default=[], many=True)
     service_interconnections = fields.Nested(
@@ -87,9 +122,13 @@ class SServiceParamsSchema(ma.ModelSchema):
     parameter_allocation_pool = fields.Str()
     parameter_local_cidr = fields.Str()
     parameter_ipv = fields.Str()
+    parameter_master = fields.Str()
+    parameter_master_auth = fields.Str()
+    parameter_l2master = fields.Nested(
+        'SParamsL2MasterSchema', default=[], many=False)
 
 
-class ServiceParamssSchema(ma.ModelSchema):
+class ServiceParamsSchema(ma.ModelSchema):
     def __init__(self, **kwargs):
         super().__init__(strict=True, **kwargs)
 
@@ -167,3 +206,5 @@ class ServiceInterconnectionsServiceSchema(ma.ModelSchema):
     service_name = fields.Str()
     service_type = fields.Str()
     service_global = fields.Str()
+
+
