@@ -68,7 +68,8 @@ for service in SERVICES:
     if('l2allocs' in service.keys()):
         l2master = L2Master()
         for allocationpool in service.get("l2allocs"):
-            allocation_first_ip, allocation_last_ip, allocation_site = service.get("first_ip"), service.get("last_ip"), service.get("site")
+
+            allocation_first_ip, allocation_last_ip, allocation_site = allocationpool.get("first_ip"), allocationpool.get("last_ip"), allocationpool.get("site")
             l2master.l2master_l2allocationpools.append(L2AllocationPool(l2allocationpool_first_ip=allocation_first_ip, l2allocationpool_last_ip=allocation_last_ip, l2allocationpool_site = allocation_site))
         param.parameter_l2master.append(l2master)
     s.service_params.append(param)
