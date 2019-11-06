@@ -2,7 +2,7 @@ from flask import make_response, abort
 from neutronclient.common import exceptions as neutronclient_exc
 from random import seed
 from random import randint
-from service import Service, ServiceSchema, Resource, Interconnexion, Parameter, ServiceParamsSchema, ServiceResourcesSchema, ServiceInterconnectionsSchema
+from service import Service, ServiceSchema, Resource, Interconnexion, Parameter, ParamsSchema, ResourcesSchema, InterconnectionsSchema, L2MasterSchema, L2AllocationPool
 from config import db
 import common.utils as service_utils
 import copy

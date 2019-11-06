@@ -76,7 +76,7 @@ class L2Master(db.Model):
                                   primary_key=True)
     l2master_l2allocationpools = db.relationship(
         'L2AllocationPool',
-        backref='L2Master',
+        backref='l2master',
         cascade='all, delete, delete-orphan',
         single_parent=True,
         order_by='desc(L2AllocationPool.l2allocationpool_id)'
@@ -106,14 +106,14 @@ class ServiceSchema(ma.ModelSchema):
         model = Service
         sqla_session = db.session
     service_params = fields.Nested(
-        'SServiceParamsSchema', default=[], many=True)
+        'SParamsSchema', default=[], many=True)
     service_resources = fields.Nested(
-        'SServiceResourcesSchema', default=[], many=True)
+        'SResourcesSchema', default=[], many=True)
     service_interconnections = fields.Nested(
-        'SServiceInterconnectionsSchema', default=[], many=True)
+        'SInterconnectionsSchema', default=[], many=True)
 
 # Parameter associated schemas
-class SServiceParamsSchema(ma.ModelSchema):
+class SParamsSchema(ma.ModelSchema):
     """
     This class exists to get around a recursion issue
     """
@@ -125,42 +125,80 @@ class SServiceParamsSchema(ma.ModelSchema):
     parameter_master = fields.Str()
     parameter_master_auth = fields.Str()
     parameter_l2master = fields.Nested(
-        'SParamsL2MasterSchema', default=[], many=False)
+        'SL2MasterSchema', default=[], many=True)
 
 
-class ServiceParamsSchema(ma.ModelSchema):
+class ParamsSchema(ma.ModelSchema):
     def __init__(self, **kwargs):
         super().__init__(strict=True, **kwargs)
 
     class Meta:
         model = Parameter
         sqla_session = db.session
-    service = fields.Nested('ServiceParamsServiceSchema', default=None)
+    service = fields.Nested('ParamsServiceSchema', default=None)
+    parameter_l2master = fields.Nested('SL2MasterSchema', default=[], many=False)
 
-
-class ServiceParamsServiceSchema(ma.ModelSchema):
+class ParamsServiceSchema(ma.ModelSchema):
     """
     This class exists to get around a recursion issue
     """
     service_id = fields.Int()
-    service_name = fields.Str()
-    service_type = fields.Str()
-    service_global = fields.Str()
+    #service_name = fields.Str()
+    #service_type = fields.Str()
+    #service_global = fields.Str()
 
-class SParamsL2MasterSchema(ma.ModelSchema):
+class SL2MasterSchema(ma.ModelSchema):
+    """
+    This class exists to get around a recursion issue
+    """
+    l2master_id  = fields.Int()
+    parameter_id = fields.Int()
+    l2master_l2allocationpools = fields.Nested(
+        'SL2AllocationPoolSchema', default=[], many=True)
+
+class L2MasterParamsSchema(ma.ModelSchema):
     """
     This class exists to get around a recursion issue
     """
     parameter_id = fields.Int()
-    parameter_allocation_pool = fields.Str() 
-    parameter_local_cidr = fields.Str()
-    parameter_ipv = fields.Str()
-    parameter_master = fields.Str()
-    parameter_master_auth = fields.Str()
     service_id = fields.Int()
 
+class L2MasterSchema(ma.ModelSchema):
+    def __init__(self, **kwargs):
+        super().__init__(strict=True, **kwargs)
+
+    class Meta:
+        model = L2Master
+        sqla_session = db.session
+    params = fields.Nested('L2MasterParamsSchema', default=None)
+    l2master_l2allocationpools = fields.Nested(
+        'SL2AllocationPoolSchema', default=[], many=True)
+
+class SL2AllocationPoolSchema(ma.ModelSchema):
+    """
+    This class exists to get around a recursion issue
+    """
+    l2allocationpool_id = fields.Int()
+    l2allocationpool_first_ip = fields.String()
+    l2allocationpool_last_ip = fields.String()
+    l2allocationpool_site = fields.String()
+    l2master_id = fields.Int()
+
+class L2AllocationPoolSchema(ma.ModelSchema):
+    def __init__(self, **kwargs):
+        super().__init__(strict=True, **kwargs)
+
+    class Meta:
+        model = L2AllocationPool
+        sqla_session = db.session
+    l2master = fields.Nested('L2AllocationPoolL2MasterSchema', default=None)
+
+class L2AllocationPoolL2MasterSchema(ma.ModelSchema):
+    parameter_id = fields.Int()
+    l2master_id = fields.Int()
+
 # Resources associated schemas
-class SServiceResourcesSchema(ma.ModelSchema):
+class SResourcesSchema(ma.ModelSchema):
     """
     This class exists to get around a recursion issue
     """
@@ -170,27 +208,27 @@ class SServiceResourcesSchema(ma.ModelSchema):
     resource_uuid = fields.Str()
 
 
-class ServiceResourcesSchema(ma.ModelSchema):
+class ResourcesSchema(ma.ModelSchema):
     def __init__(self, **kwargs):
         super().__init__(strict=True, **kwargs)
 
     class Meta:
         model = Resource
         sqla_session = db.session
-    service = fields.Nested('ServiceResourcesServiceSchema', default=None)
+    service = fields.Nested('ResourcesServiceSchema', default=None)
 
 
-class ServiceResourcesServiceSchema(ma.ModelSchema):
+class ResourcesServiceSchema(ma.ModelSchema):
     """
     This class exists to get around a recursion issue
     """
     service_id = fields.Int()
-    service_name = fields.Str()
-    service_type = fields.Str()
-    service_global = fields.Str()
+    #service_name = fields.Str()
+    #service_type = fields.Str()
+    #service_global = fields.Str()
 
 # Interconnection associated schemas
-class SServiceInterconnectionsSchema(ma.ModelSchema):
+class SInterconnectionsSchema(ma.ModelSchema):
     """
     This class exists to get around a recursion issue
     """
@@ -199,7 +237,7 @@ class SServiceInterconnectionsSchema(ma.ModelSchema):
     interconnexion_uuid = fields.Str()
 
 
-class ServiceInterconnectionsSchema(ma.ModelSchema):
+class InterconnectionsSchema(ma.ModelSchema):
     def __init__(self, **kwargs):
         super().__init__(strict=True, **kwargs)
 
@@ -207,16 +245,16 @@ class ServiceInterconnectionsSchema(ma.ModelSchema):
         model = Interconnexion
         sqla_session = db.session
     service = fields.Nested(
-        'ServiceInterconnectionsServiceSchema', default=None)
+        'InterconnectionsServiceSchema', default=None)
 
 
-class ServiceInterconnectionsServiceSchema(ma.ModelSchema):
+class InterconnectionsServiceSchema(ma.ModelSchema):
     """
     This class exists to get around a recursion issue
     """
     service_id = fields.Int()
-    service_name = fields.Str()
-    service_type = fields.Str()
-    service_global = fields.Str()
+    #service_name = fields.Str()
+    #service_type = fields.Str()
+    #service_global = fields.Str()
 
 
