@@ -302,7 +302,9 @@ def verticalCreateService(service):
     parameters = {
         'parameter_allocation_pool': parameter_local_allocation_pool,
         'parameter_local_cidr': parameter_local_cidr,
-        'parameter_ipv': parameter_local_ipv
+        'parameter_ipv': parameter_local_ipv,
+        'parameter_master': local_region_name,
+        'parameter_master_auth': local_region_url[0:-12]+":7575"
     }
     service_params_schema = ParamsSchema()
     new_service_params = service_params_schema.load(
@@ -391,13 +393,24 @@ def verticalCreateService(service):
             remote_inter_instance = service_remote_inter_endpoints[obj].strip(
                 '9696/')
             remote_inter_instance = remote_inter_instance + '7575/api/intersite-horizontal'
+            remote_params = {
+                'parameter_allocation_pool': '',
+                'parameter_local_cidr': '',
+                'parameter_ipv': parameter_local_ipv,
+                'parameter_master': '',
+                'parameter_master_auth': ''
+            }
 
             if service_type == 'L2':
-                remote_service = {'name': service_name, 'type': service_type, 'params': [cidr_ranges[index_cidr], parameter_local_cidr, parameter_local_ipv],
+                remote_params['parameter_allocation_pool'] = cidr_ranges[index_cidr]
+                remote_params['parameter_local_cidr'] = cidr_ranges[index_cidr]
+                remote_params['parameter_master'] = local_region_name
+                remote_params['parameter_master_auth'] = local_region_url[0:-12]+":7575"
+                remote_service = {'name': service_name, 'type': service_type, 'params': remote_params,
                                   'global': random_id, 'resources': service.get("resources", None)}
                 index_cidr = index_cidr + 1
             else:
-                remote_service = {'name': service_name, 'type': service_type, 'params': ['', '', parameter_local_ipv],
+                remote_service = {'name': service_name, 'type': service_type, 'params': remote_params,
                                   'global': random_id, 'resources': service.get("resources", None)}
             # send horizontal (service_remote_inter_endpoints[obj])
             headers = {'Content-Type': 'application/json',
@@ -412,7 +425,7 @@ def verticalCreateService(service):
 
 # Handler to update an existing service
 
-
+# TODO Need to refactor this, only modify using the master
 def verticalUpdateService(global_id, service):
 
     service_update = Service.query.filter(
@@ -1114,16 +1127,15 @@ def horizontalCreateService(service):
     parameters = {
         'parameter_allocation_pool': service_params[0],
         'parameter_local_cidr': '',
-        'parameter_ipv': service_params[2]
+        'parameter_ipv': service_params[2],
+        'parameter_master': '',
+        'parameter_master_auth': ''
     }
-    '''
-        Layer 2 extension service
-        * Why not do a mixing between the two approaches? CIDR division and Global sharing IP
-          Use the CIDR division but with a master per service in charge of the service
-
-    '''
+    
     if(service_type == 'L2'):
         parameters['parameter_local_cidr'] = service_params[1]
+        parameters['parameter_master'] = service_params[3]
+        parameters['parameter_auth'] = service_params[4]
     else:
         neutron_client = service_utils.get_neutron_client(
             local_region_url, local_region_name
