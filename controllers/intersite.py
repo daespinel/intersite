@@ -199,9 +199,9 @@ def verticalCreateService(service):
     # Validation for the L3 routing service
     if service_type == 'L3':
 
-        logger.info("L3 routing service to be done among the resources: " +
+        app_log.info("L3 routing service to be done among the resources: " +
                     (" ".join(str(value) for value in service_resources_list.values())))
-        logger.info(subnetworks)
+        app_log.info(subnetworks)
 
         # Doing the IP range validation to avoid overlapping problems
         for a, b in itertools.combinations(CIDRs, 2):
@@ -305,8 +305,11 @@ def verticalCreateService(service):
         'parameter_allocation_pool': parameter_local_allocation_pool,
         'parameter_local_cidr': parameter_local_cidr,
         'parameter_ipv': parameter_local_ipv,
-        'parameter_master': local_region_name,
-        'parameter_master_auth': local_region_url[0:-12]+":7575"
+        'parameter_master' : '',
+        'parameter_master_auth' : ''
+        # TODO attention to this, because for the L3 service we have not defined if the master will be also used 
+        #'parameter_master': local_region_name, 
+        #'parameter_master_auth': local_region_url[0:-12]+":7575"
     }
     service_params_schema = ParamsSchema()
     new_service_params = service_params_schema.load(
@@ -314,6 +317,9 @@ def verticalCreateService(service):
 
     # Adding the L2 Master object if the service type is L2
     if service_type == 'L2':
+        parameters['parameter_master'] = local_region_name
+        parameters['parameter_master_auth'] = local_region_url[0:-12]+":7575"
+
         service_l2master_schema = L2MasterSchema()
         new_l2master = {}
         new_l2master_params = service_l2master_schema.load(
@@ -331,6 +337,22 @@ def verticalCreateService(service):
                 'l2allocationpool_last_ip': cidr_ranges[cidr_range].split("-", 1)[1],
                 'l2allocationpool_site': objet_region
             }
+            
+            cidr_range = cidr_range + 1
+
+            new_l2allocation_pool_params = service_l2allocation_pool_schema.load(
+                to_add_l2allocation_pool, session=db.session).data
+            new_l2master_params.l2master_l2allocationpools.append(
+                new_l2allocation_pool_params)
+
+        while cidr_range < len(cidr_ranges):
+            
+            to_add_l2allocation_pool = {
+                'l2allocationpool_first_ip': cidr_ranges[cidr_range].split("-", 1)[0],
+                'l2allocationpool_last_ip': cidr_ranges[cidr_range].split("-", 1)[1],
+                'l2allocationpool_site': "free"
+            }
+            
             cidr_range = cidr_range + 1
 
             new_l2allocation_pool_params = service_l2allocation_pool_schema.load(
