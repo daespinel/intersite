@@ -311,14 +311,16 @@ def verticalCreateService(service):
         #'parameter_master': local_region_name, 
         #'parameter_master_auth': local_region_url[0:-12]+":7575"
     }
+
+
     service_params_schema = ParamsSchema()
     new_service_params = service_params_schema.load(
         parameters, session=db.session).data
 
     # Adding the L2 Master object if the service type is L2
     if service_type == 'L2':
-        parameters['parameter_master'] = local_region_name
-        parameters['parameter_master_auth'] = local_region_url[0:-12]+":7575"
+        new_service_params.parameter_master = local_region_name
+        new_service_params.parameter_master_auth = local_region_url[0:-12]+":7575"
 
         service_l2master_schema = L2MasterSchema()
         new_l2master = {}
