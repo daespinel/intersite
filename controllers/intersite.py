@@ -406,11 +406,10 @@ def verticalCreateService(service):
                 remote_params['parameter_local_cidr'] = cidr_ranges[index_cidr]
                 remote_params['parameter_master'] = local_region_name
                 remote_params['parameter_master_auth'] = local_region_url[0:-12]+":7575"
-                remote_service = {'name': service_name, 'type': service_type, 'params': remote_params,
-                                  'global': random_id, 'resources': service.get("resources", None)}
                 index_cidr = index_cidr + 1
-            else:
-                remote_service = {'name': service_name, 'type': service_type, 'params': [remote_params],
+            
+            remote_service = {'name': service_name, 'type': service_type, 'params': [str(remote_params)
+            ],
                                   'global': random_id, 'resources': service.get("resources", None)}
             # send horizontal (service_remote_inter_endpoints[obj])
             headers = {'Content-Type': 'application/json',
@@ -1035,7 +1034,7 @@ def horizontalCreateService(service):
     local_resource = ''
     service_name = service.get("name", None)
     service_type = service.get("type", None)
-    service_params = service.get("params", None)[0]
+    service_params = service.get("params", None)[0].to_dict()
     # app_log.info(service_params)
     service_global = service.get("global", None)
     # service_resources = service.get("resources", None)
