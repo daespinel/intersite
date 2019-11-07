@@ -410,7 +410,7 @@ def verticalCreateService(service):
                                   'global': random_id, 'resources': service.get("resources", None)}
                 index_cidr = index_cidr + 1
             else:
-                remote_service = {'name': service_name, 'type': service_type, 'params': remote_params,
+                remote_service = {'name': service_name, 'type': service_type, 'params': [remote_params],
                                   'global': random_id, 'resources': service.get("resources", None)}
             # send horizontal (service_remote_inter_endpoints[obj])
             headers = {'Content-Type': 'application/json',
@@ -1035,7 +1035,7 @@ def horizontalCreateService(service):
     local_resource = ''
     service_name = service.get("name", None)
     service_type = service.get("type", None)
-    service_params = service.get("params", None)
+    service_params = service.get("params", None)[0]
     # app_log.info(service_params)
     service_global = service.get("global", None)
     # service_resources = service.get("resources", None)
@@ -1124,19 +1124,9 @@ def horizontalCreateService(service):
             new_service_interconnections)
 
     # Adding the parameters to the service
-    parameters = {
-        'parameter_allocation_pool': service_params[0],
-        'parameter_local_cidr': '',
-        'parameter_ipv': service_params[2],
-        'parameter_master': '',
-        'parameter_master_auth': ''
-    }
+    parameters = service_params
     
-    if(service_type == 'L2'):
-        parameters['parameter_local_cidr'] = service_params[1]
-        parameters['parameter_master'] = service_params[3]
-        parameters['parameter_auth'] = service_params[4]
-    else:
+    if(service_type == 'L3'):
         neutron_client = service_utils.get_neutron_client(
             local_region_url, local_region_name
 
