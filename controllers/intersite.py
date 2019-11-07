@@ -240,11 +240,10 @@ def verticalCreateService(service):
         site_index = 1
         while base_index <= ips_cidr_available and site_index <= len(service_resources_list):
             cidr_ranges.append(
-                str(cidr[base_index])+"-"+str(cidr[base_index + host_per_site - 1]))
+                str(cidr[base_index]) + "-" + str(cidr[base_index + host_per_site - 1]))
             base_index = base_index + int(host_per_site)
             site_index = site_index + 1
-        app_log.info("last numbered IP: " + str(base_index))
-        app_log.info("final IP: " + str(cidr[ips_cidr_available]))
+        cidr_ranges.append(str(cidr[base_index]) + "-" + str(cidr[ips_cidr_available]))
 
         parameter_local_allocation_pool = cidr_ranges[0]
 
@@ -321,6 +320,9 @@ def verticalCreateService(service):
             new_l2master, session=db.session).data
         service_l2allocation_pool_schema = L2AllocationPoolSchema()
         cidr_range = 0
+
+        for ob in cidr_ranges:
+            print(ob)
 
         for objet_region in service_resources_list.keys():
 
