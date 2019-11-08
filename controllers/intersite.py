@@ -104,7 +104,7 @@ def verticalCreateService(service):
     if(local_resource == ''):
         abort(404, "There is no local resource for the service")
 
-    neutron_client = service_utils.get_neutron_client(
+    neutron_client_local = service_utils.get_neutron_client(
         local_region_url,
         local_region_name
     )
@@ -112,7 +112,7 @@ def verticalCreateService(service):
     network_temp_local = ''
     try:
         network_temp_local = (
-            neutron_client.show_network(network=local_resource
+            neutron_client_local.show_network(network=local_resource
                                         )
         )
 
@@ -154,14 +154,14 @@ def verticalCreateService(service):
     CIDRs = []
     # Retrieving information for networks given the region name
     for item, value in service_resources_list.items():
-        neutron_client = service_utils.get_neutron_client(
+        neutron_client_remote = service_utils.get_neutron_client(
             service_remote_auth_endpoints[item],
             item
         )
 
         try:
             network_temp = (
-                neutron_client.show_network(network=value
+                neutron_client_remote.show_network(network=value
                                             )
             )
             subnet = network_temp['network']
@@ -176,13 +176,13 @@ def verticalCreateService(service):
 
         # Retrieving the subnetwork information given the region name
     for item, value in subnetworks.items():
-        neutron_client = service_utils.get_neutron_client(
+        neutron_client_remote = service_utils.get_neutron_client(
             service_remote_auth_endpoints[item],
             item
         )
         try:
             subnetwork_temp = (
-                neutron_client.show_subnet(subnet=value)
+                neutron_client_remote.show_subnet(subnet=value)
             )
 
             subnet = subnetwork_temp['subnet']
@@ -256,10 +256,10 @@ def verticalCreateService(service):
     for k, v in service_resources_list.items():
 
         if local_region_name != k:
-            neutron_client = service_utils.get_neutron_client(
-                local_region_url,
-                local_region_name
-            )
+            #neutron_client = service_utils.get_neutron_client(
+            #    local_region_url,
+            #    local_region_name
+            #)
             interconnection_data = {'interconnection': {
                 'name': service_name+str(id_temp),
                 'remote_keystone': service_remote_auth_endpoints[k],
@@ -272,7 +272,7 @@ def verticalCreateService(service):
             id_temp = id_temp+1
             try:
                 inter_temp = (
-                    neutron_client.create_interconnection(interconnection_data)
+                    neutron_client_local.create_interconnection(interconnection_data)
                 )
                 # app_log.info(inter_temp)
                 local_interconnections_ids.append(
@@ -1146,8 +1146,8 @@ def horizontalCreateService(service):
 
     if service_type == 'L2':
         try:
-            body = {'subnet': {'allocation_pools': [{'start': parameters['parameter_allocation_pool'].split(
-                "-", 1)[0], 'end': parameters['parameter_allocation_pool'].split("-", 1)[1]}]}}
+            body = {'subnet': {'allocation_pools': [{'start': service_params['parameter_allocation_pool'].split(
+                "-", 1)[0], 'end': service_params['parameter_allocation_pool'].split("-", 1)[1]}]}}
 
             network_temp = (
                 neutron_client.show_network(network=local_resource
