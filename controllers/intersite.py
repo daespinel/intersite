@@ -1,4 +1,5 @@
 from flask import make_response, abort
+from keystoneauth1.adapter import Adapter
 from neutronclient.common import exceptions as neutronclient_exc
 from random import seed
 from random import randint
@@ -17,6 +18,9 @@ import logging
 import ast
 from flask.logging import default_handler
 
+####################################
+#################################### TODO REFACTOR EVERYTHING TO USE ADPAPTER INSTEAD OF CLIENTS
+####################################
 
 app_log = logging.getLogger()
 # Data to serve with our API
@@ -104,32 +108,29 @@ def verticalCreateService(service):
     if(local_resource == ''):
         abort(404, "There is no local resource for the service")
 
-    neutron_client_local = service_utils.get_neutron_client(
-        local_region_url,
-        local_region_name
-    )
+    auth = service_utils.get_auth_object(local_region_url)
+    sess = service_utils.get_session_object(auth)
 
-    network_temp_local = ''
-    try:
-        network_temp_local = (
-            neutron_client_local.show_network(network=local_resource
-                                        )
-        )
+    # Authenticate
+    auth.get_access(sess)
+    auth_ref = auth.auth_ref
 
-    except neutronclient_exc.ConnectionFailed:
-        app_log.info("Can't connect to neutron %s" %
-                     service_remote_inter_endpoints[item])
-    except neutronclient_exc.Unauthorized:
-        app_log.info("Connection refused to neutron %s" %
-                     service_remote_inter_endpoints[item])
-    except neutronclient_exc.NetworkNotFoundClient:
-        app_log.info("Resource not found %s" % local_resource)
+    catalog_endpoints = auth_ref.service_catalog.catalog
+
+    net_adap = Adapter(
+        auth=auth,
+        session=sess,
+        service_type='network',
+        interface='public',
+        region_name=local_region_name)
+
+    network_temp_local = net_adap.get('/v2.0/networks/' + local_resource).json()['network']
 
     if (network_temp_local == ''):
         abort(404, "There is no local resource for the service")
 
     # Saving info for Neutron and Keystone endpoints to be contacted based on keystone catalog
-    catalog_endpoints = service_utils.get_keystone_catalog(local_region_url)
+    # catalog_endpoints = service_utils.get_keystone_catalog(local_region_url)
     for obj in catalog_endpoints:
         if obj['name'] == 'neutron':
             for endpoint in obj['endpoints']:
@@ -154,47 +155,35 @@ def verticalCreateService(service):
     CIDRs = []
     # Retrieving information for networks given the region name
     for item, value in service_resources_list.items():
-        neutron_client_remote = service_utils.get_neutron_client(
-            service_remote_auth_endpoints[item],
-            item
-        )
 
-        try:
-            network_temp = (
-                neutron_client_remote.show_network(network=value
-                                            )
-            )
-            subnet = network_temp['network']
-            subnetworks[item] = subnet['subnets'][0]
+        net_adap_remote = Adapter(
+        auth=auth,
+        session=sess,
+        service_type='network',
+        interface='public',
+        region_name=item)
 
-        except neutronclient_exc.ConnectionFailed:
-            app_log.info("Can't connect to neutron %s" %
-                         service_remote_inter_endpoints[item])
-        except neutronclient_exc.Unauthorized:
-            app_log.info("Connection refused to neutron %s" %
-                         service_remote_inter_endpoints[item])
+        network_temp = net_adap_remote.get('/v2.0/networks/' + value).json()
 
-        # Retrieving the subnetwork information given the region name
+        subnet = network_temp['network']
+        subnetworks[item] = subnet['subnets'][0]
+
+    # Retrieving the subnetwork information given the region name
     for item, value in subnetworks.items():
-        neutron_client_remote = service_utils.get_neutron_client(
-            service_remote_auth_endpoints[item],
-            item
-        )
-        try:
-            subnetwork_temp = (
-                neutron_client_remote.show_subnet(subnet=value)
-            )
+        net_adap_remote = Adapter(
+        auth=auth,
+        session=sess,
+        service_type='network',
+        interface='public',
+        region_name=item)
 
-            subnet = subnetwork_temp['subnet']
-            CIDRs.append(ipaddress.ip_network(subnet['cidr']))
-            if (item == local_region_name):
-                parameter_local_cidr = subnet['cidr']
-        except neutronclient_exc.ConnectionFailed:
-            app_log.info("Can't connect to neutron %s" %
-                         service_remote_inter_endpoints[item])
-        except neutronclient_exc.Unauthorized:
-            app_log.info("Connection refused to neutron %s" %
-                         service_remote_inter_endpoints[item])
+
+        subnetwork_temp = net_adap_remote.get('/v2.0/subnets/' + value).json()
+        subnet = subnetwork_temp['subnet']
+        CIDRs.append(ipaddress.ip_network(subnet['cidr']))
+        if (item == local_region_name):
+            parameter_local_cidr = subnet['cidr']
+        
 
     # Validation for the L3 routing service
     if service_type == 'L3':
@@ -269,21 +258,11 @@ def verticalCreateService(service):
                 'remote_resource_id': v,
 
             }}
-            id_temp = id_temp+1
-            try:
-                inter_temp = (
-                    neutron_client_local.create_interconnection(interconnection_data)
-                )
-                # app_log.info(inter_temp)
-                local_interconnections_ids.append(
-                    inter_temp['interconnection']['id'])
 
-            except neutronclient_exc.ConnectionFailed:
-                app_log.info("Can't connect to neutron %s" %
-                             service_remote_inter_endpoints[item])
-            except neutronclient_exc.Unauthorized:
-                app_log.info("Connection refused to neutron %s" %
-                             service_remote_inter_endpoints[item])
+            id_temp = id_temp+1
+            inter_temp = net_adap.post(url='/v2.0/interconnection/interconnections/', json=interconnection_data)
+            # app_log.info(inter_temp)
+            local_interconnections_ids.append(inter_temp['interconnection']['id'])
 
     # Create a service instance using the schema and the build service
     service_schema = ServiceSchema()
