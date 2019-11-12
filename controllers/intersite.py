@@ -1,6 +1,5 @@
 from flask import make_response, abort
 from keystoneauth1.adapter import Adapter
-from neutronclient.common import exceptions as neutronclient_exc
 from random import seed
 from random import randint
 from service import Service, ServiceSchema, Resource, Interconnexion, Parameter, L2Master, L2AllocationPool, ParamsSchema, ResourcesSchema, InterconnectionsSchema, L2MasterSchema, L2AllocationPoolSchema
@@ -245,10 +244,7 @@ def verticalCreateService(service):
     for k, v in service_resources_list.items():
 
         if local_region_name != k:
-            #neutron_client = service_utils.get_neutron_client(
-            #    local_region_url,
-            #    local_region_name
-            #)
+            
             interconnection_data = {'interconnection': {
                 'name': service_name+str(id_temp),
                 'remote_keystone': service_remote_auth_endpoints[k],
@@ -262,7 +258,7 @@ def verticalCreateService(service):
             id_temp = id_temp+1
             inter_temp = net_adap.post(url='/v2.0/interconnection/interconnections/', json=interconnection_data)
             # app_log.info(inter_temp)
-            local_interconnections_ids.append(inter_temp['interconnection']['id'])
+            local_interconnections_ids.append(inter_temp.json()['interconnection']['id'])
 
     # Create a service instance using the schema and the build service
     service_schema = ServiceSchema()
@@ -360,21 +356,11 @@ def verticalCreateService(service):
     if service_type == 'L2':
         allocation_start = cidr_ranges[0].split("-", 1)[0]
         allocation_end = cidr_ranges[0].split("-", 1)[1]
-        try:
-            body = {'subnet': {'allocation_pools': [
-                {'start': allocation_start, 'end': allocation_end}]}}
-            dhcp_change = (
-                neutron_client.update_subnet(
-                    subnetworks[local_region_name], body=body)
-            )
-            # app_log.info(inter_temp)
-        except neutronclient_exc.ConnectionFailed:
-            app_log.info("Can't connect to neutron %s" %
-                         service_remote_inter_endpoints[item])
-        except neutronclient_exc.Unauthorized:
-            app_log.info("Connection refused to neutron %s" %
-                         service_remote_inter_endpoints[item])
 
+        body = {'subnet': {'allocation_pools': [
+                {'start': allocation_start, 'end': allocation_end}]}}
+        dhcp_change = net_adap.put(url='/v2.0/subnets/'+subnetworks[local_region_name],json=body)
+        
     index_cidr = 1
     # Sending remote inter-site create requests to the distant nodes
     for obj in service_resources_list.keys():
