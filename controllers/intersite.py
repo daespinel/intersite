@@ -129,7 +129,7 @@ def verticalCreateService(service):
         abort(404, "There is no local resource for the service")
 
     # Saving info for Neutron and Keystone endpoints to be contacted based on keystone catalog
-    # catalog_endpoints = service_utils.get_keystone_catalog(local_region_url)
+    
     for obj in catalog_endpoints:
         if obj['name'] == 'neutron':
             for endpoint in obj['endpoints']:
@@ -994,7 +994,15 @@ def horizontalCreateService(service):
             break
 
     # Saving info for Keystone endpoints to be contacted based on keystone catalog
-    catalog_endpoints = service_utils.get_keystone_catalog(local_region_url)
+    auth = service_utils.get_auth_object(local_region_url)
+    sess = service_utils.get_session_object(auth)
+
+    # Authenticate
+    auth.get_access(sess)
+    auth_ref = auth.auth_ref
+
+    catalog_endpoints = auth_ref.service_catalog.catalog
+
     for obj in catalog_endpoints:
         if obj['name'] == 'keystone':
             for endpoint in obj['endpoints']:
