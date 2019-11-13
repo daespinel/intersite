@@ -435,6 +435,7 @@ def verticalUpdateService(global_id, service):
         # app_log.info(service_resources_list_db)
         list_resources_remove = copy.deepcopy(service_resources_list_db)
         list_resources_add = []
+        service_resources_list = []
 
         for resource_component in service_resources_list_user:
             contidion_temp = True
@@ -543,9 +544,9 @@ def verticalUpdateService(global_id, service):
                     db.session.delete(resource_delete)
                     db.session.commit()
 
-            # Do a new list with the actual resources that are going to be used in the following part of the service
-            # then, verify the new resources to add to the service and add them
-            # Depending on the service type, the validation will be different
+        # Do a new list with the actual resources that are going to be used in the following part of the service
+        # then, verify the new resources to add to the service and add them
+        # Depending on the service type, the validation will be different
         if(list_resources_add):
             service_remote_auth_endpoints = {}
             service_remote_inter_endpoints = {}
@@ -553,8 +554,6 @@ def verticalUpdateService(global_id, service):
                 list_resources_add)
             service_resources_list_db_search = copy.deepcopy(
                 service_resources_list_db)
-            catalog_endpoints = service_utils.get_keystone_catalog(
-                local_region_url)
 
             for obj in catalog_endpoints:
                 if obj['name'] == 'neutron':
@@ -801,12 +800,6 @@ def verticalUpdateService(global_id, service):
                     service_update.service_interconnections.append(
                         new_service_interconnections)
 
-            # Set the id to the service we want to update
-            # to_update.service_id = service_update.service_id
-            # to_update.service_global = service_update.service_global
-
-            # Merge the new object into the old and commit it into the DB
-            # db.session.merge(to_update)
             db.session.commit()
 
             # Updating the DHCP pool ranges for the local deployment
@@ -850,47 +843,53 @@ def verticalUpdateService(global_id, service):
                         app_log.info("Connection refused to neutron %s" %
                                      service_remote_inter_endpoints[item])
 
-            # Sending remote inter-site create requests to the distant nodes
-            for index in range(len(service_resources_list)):
-                obj = service_resources_list[index]
-                if index != new_local_param_index:
-                    remote_inter_instance = service_remote_inter_endpoints[obj['resource_region']].strip(
-                        '9696/')
-                    remote_inter_instance = remote_inter_instance + \
-                        '7575/api/intersite-horizontal'
+        # Sending remote inter-site create requests to the distant nodes
+        print('Here we are sending the horizontal put requests')
+        print(service_resources_list)
+        print(list_resources_remove)
+        for index in range(len(service_resources_list)):
+            obj = service_resources_list[index]
+            if index != new_local_param_index:
+                remote_inter_instance = service_remote_inter_endpoints[obj['resource_region']].strip(
+                    '9696/')
+                remote_inter_instance = remote_inter_instance + \
+                    '7575/api/intersite-horizontal'
 
-                    if obj in list_resources_add:
-                        if data_from_db['service_type'] == 'L2':
-                            remote_service = {'name': data_from_db['service_name'], 'type': data_from_db['service_type'], 'params': [
-                                cidr_ranges[index], parameter_local_cidr, data_from_db['service_params'][0]['parameter_ipv']], 'global': global_id, 'resources': service.get("resources", None)}
-                            #index_cidr = index_cidr + 1
-                        else:
-                            remote_service = {'name': data_from_db['service_name'], 'type': data_from_db['service_type'], 'params': [
-                                '', '', data_from_db['service_params'][0]['parameter_ipv']], 'global': global_id, 'resources': service_resources_list}
-                        # send horizontal (service_remote_inter_endpoints[obj])
-                        headers = {'Content-Type': 'application/json',
-                                   'Accept': 'application/json'}
-                        r = requests.post(remote_inter_instance, data=json.dumps(
-                            remote_service), headers=headers)
-
+                if obj in list_resources_add:
+                    if data_from_db['service_type'] == 'L2':
+                        remote_service = {'name': data_from_db['service_name'], 'type': data_from_db['service_type'], 'params': [
+                            cidr_ranges[index], parameter_local_cidr, data_from_db['service_params'][0]['parameter_ipv']], 'global': global_id, 'resources': service.get("resources", None)}
+                        #index_cidr = index_cidr + 1
                     else:
-                        remote_inter_instance = remote_inter_instance + \
-                            '/' + str(global_id)
-                        if data_from_db['service_type'] == 'L2':
-                            remote_service = {'params': [cidr_ranges[index], parameter_local_cidr, data_from_db['service_params'][0]['parameter_ipv']],
-                                              'resources': service_resources_list}
-                            # index_cidr = index_cidr + 1
-                        else:
-                            remote_service = {'params': ['', '', ''],
-                                              'resources': service_resources_list}
-                        # send horizontal (service_remote_inter_endpoints[obj])
-                        headers = {'Content-Type': 'application/json',
-                                   'Accept': 'application/json'}
-                        r = requests.put(remote_inter_instance, data=json.dumps(
-                            remote_service), headers=headers)
-                        # app_log.info(r.json())
+                        remote_service = {'name': data_from_db['service_name'], 'type': data_from_db['service_type'], 'params': [
+                            '', '', data_from_db['service_params'][0]['parameter_ipv']], 'global': global_id, 'resources': service_resources_list}
+                    # send horizontal (service_remote_inter_endpoints[obj])
+                    headers = {'Content-Type': 'application/json',
+                                'Accept': 'application/json'}
+                    r = requests.post(remote_inter_instance, data=json.dumps(
+                        remote_service), headers=headers)
 
-                # service_data = service_schema.dump(service_update)
+                else:
+                    remote_inter_instance = remote_inter_instance + \
+                        '/' + str(global_id)
+                    if data_from_db['service_type'] == 'L2':
+                        remote_service = {'params': [cidr_ranges[index], parameter_local_cidr, data_from_db['service_params'][0]['parameter_ipv']],
+                                            'resources': service_resources_list}
+                        # index_cidr = index_cidr + 1
+                    else:
+                        remote_service = {'params': ['', '', ''],
+                                            'resources': service_resources_list}
+                    # send horizontal (service_remote_inter_endpoints[obj])
+                    headers = {'Content-Type': 'application/json',
+                                'Accept': 'application/json'}
+                    r = requests.put(remote_inter_instance, data=json.dumps(
+                        remote_service), headers=headers)
+                    # app_log.info(r.json())
+
+        for obj in list_resources_remove:
+            print(obj)
+
+            # service_data = service_schema.dump(service_update)
 
         return make_response("{id} successfully updated".format(id=global_id), 200)
 
