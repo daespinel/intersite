@@ -38,7 +38,7 @@ SERVICES = [
         "global": "a842c6f0-44a2-bc21-568a56c54de0",
         "params": ["10.0.0.3-10.0.0.108", "10.0.0.0/24", "v4", "RegionOne", "http://192.168.57.6:7575"],
         "l2allocs": [{"first_ip": "10.0.0.3", "last_ip": "10.0.0.108", "site": "RegionOne"}, {"first_ip": "10.0.0.109", "last_ip": "10.0.0.153", "site": "RegionTwo"}, {"first_ip": "10.0.0.110", "last_ip": "10.0.0.253", "site": "free"}],
-        "resources": [("id589", "RegionOne"), ("id16", "RegionSixTen")],
+        "resources": [("3b8360e6-e29a-4063-a8bc-7bbd0785d08b", "RegionOne"), ("829c3a52-c7de-4430-b721-fb85b7dcf60f", "RegionTwo")],
         "interconnections": ["z1"]
 
     }

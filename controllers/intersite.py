@@ -1031,8 +1031,7 @@ def horizontalCreateService(service):
 
             inter_temp = net_adap.post(url='/v2.0/interconnection/interconnections/', json=interconnection_data)
             app_log.info(inter_temp)
-            local_interconnections_ids.append(
-                inter_temp['interconnection']['id'])
+            local_interconnections_ids.append(inter_temp.json()['interconnection']['id'])
 
     # Create a service instance using the schema and the build service
     service_schema = ServiceSchema()
@@ -1092,7 +1091,7 @@ def horizontalCreateService(service):
         network_temp = net_adap.get('/v2.0/networks/' + local_resource).json()['network']
         subnet_id = network_temp['subnets'][0]
             
-        app_log.info(str(subnet))
+        app_log.info(str(subnet_id))
 
         dhcp_change = net_adap.put(url='/v2.0/subnets/'+subnet_id,json=body)
 
