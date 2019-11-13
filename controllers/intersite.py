@@ -412,6 +412,13 @@ def verticalUpdateService(global_id, service):
         service_schema_temp = ServiceSchema()
         data_from_db = service_schema_temp.dump(service_update).data
 
+        service_to_update_type = data_from_db['service_params'][0]['parameter_master']
+        # For the L2 service, check if the module is the master for that service. If it isn't, return abort to inform that it can't execute the request
+        if(data_from_db['service_type'] == 'L2'):
+            if(service_to_update_type != local_region_name):
+                app_log.info('This module is not the master of the service')
+                abort(404, "This module is not the master of the service, please redirect the request to: " + service_to_update_type + " module")
+
         to_service_resources_list = dict((k.strip(), v.strip()) for k, v in (
             (item.split(',')) for item in service.get("resources", None)))
         service_resources_list_user = []
@@ -440,10 +447,10 @@ def verticalUpdateService(global_id, service):
             if(contidion_temp == True):
                 list_resources_add.append(resource_component)
 
-        app_log.info('actual list of resources',
+        app_log.info('actual list of resources' +
                      str(service_resources_list_db))
-        app_log.info('resources to add', str(list_resources_add))
-        app_log.info('resources to delete', str(list_resources_remove))
+        app_log.info('resources to add' + str(list_resources_add))
+        app_log.info('resources to delete' + str(list_resources_remove))
         search_local_resource_delete = False
         search_local_resource_uuid = ''
 
@@ -460,36 +467,45 @@ def verticalUpdateService(global_id, service):
             if(local_region_name in element['resource_region']):
                 search_local_resource_delete = True
 
+        auth = service_utils.get_auth_object(local_region_url)
+        sess = service_utils.get_session_object(auth)
+
+        # Authenticate
+        auth.get_access(sess)
+        auth_ref = auth.auth_ref
+
+        catalog_endpoints = auth_ref.service_catalog.catalog
+
+        net_adap = Adapter(
+            auth=auth,
+            session=sess,
+            service_type='network',
+            interface='public',
+            region_name=local_region_name)
+
+
         # If one of the resource is the local one, we only need to delete the entire service locally
+        # For the moment we're going to avoid this with L2 services
         if(search_local_resource_delete):
-            interconnections_delete = data_from_db['service_interconnections']
-            for element in interconnections_delete:
-                inter = element['interconnexion_uuid']
-                neutron_client = service_utils.get_neutron_client(
-                    service_utils.get_local_keystone(),
-                    service_utils.get_region_name()
-                )
-                try:
-                    inter_del = (
-                        neutron_client.delete_interconnection(inter))
+            if(service_to_update_type=='L3'):
+                interconnections_delete = data_from_db['service_interconnections']
+                for element in interconnections_delete:
 
-                except neutronclient_exc.ConnectionFailed:
-                    app_log.info("Can't connect to neutron %s" %
-                                 service_remote_inter_endpoints[item])
-                except neutronclient_exc.Unauthorized:
-                    app_log.info("Connection refused to neutron %s" %
-                                 service_remote_inter_endpoints[item])
-                except neutronclient_exc.NotFound:
-                    app_log.info("Element not found %s" % inter)
+                    inter = element['interconnexion_uuid']
+                    inter_del = net_adap.delete('/v2.0/interconnection/interconnections/' + inter)
 
-                for element in list_resources_remove:
-                    if(local_region_name in element['resource_region']):
-                        service_resources_list_db.remove(element)
-                        list_resources_remove.remove(element)
-                        break
+                    for element in list_resources_remove:
+                        if(local_region_name in element['resource_region']):
+                            service_resources_list_db.remove(element)
+                            list_resources_remove.remove(element)
+                            break
 
-            db.session.delete(service_update)
-            db.session.commit()
+                db.session.delete(service_update)
+                db.session.commit()
+
+            else:
+                app_log.info('The resource belonging to the master node can not be deleted, Please rework the request')
+                abort(404,'The resource belonging to the master node can not be deleted, Please rework the request')
 
         # First delete the interconnections between the local resource and the resources that are going to be deleted
         if (list_resources_remove):
@@ -497,49 +513,35 @@ def verticalUpdateService(global_id, service):
             if (search_local_resource_delete != True):
                 for remote_resource_to_delete in list_resources_remove:
 
-                    neutron_client = service_utils.get_neutron_client(
-                        service_utils.get_local_keystone(),
-                        service_utils.get_region_name()
-                    )
-                    try:
+                    filters = {'local_resource_id': search_local_resource_uuid,
+                                'remote_resource_id': remote_resource_to_delete['resource_uuid']}
+                    
+                    inter_del_list = net_adap.get(url='/v2.0/interconnection/interconnections/', json=filters).json()['interconnections']
+                    print(inter_del_list)
 
-                        filters = {'local_resource_id': search_local_resource_uuid,
-                                   'remote_resource_id': remote_resource_to_delete['resource_uuid']}
-                        inter_del_list = (
-                            neutron_client.list_interconnections(**filters))['interconnections']
+                    if inter_del_list:
+                        interco_delete = inter_del_list.pop()
+                        interconnection_uuid_to_delete = interco_delete['id']
 
-                        if inter_del_list:
-                            interco_delete = inter_del_list.pop()
-                            interconnection_uuid_to_delete = interco_delete['id']
+                        inter_del = net_adap.delete('/v2.0/interconnection/interconnections/' + interconnection_uuid_to_delete)
 
-                            inter_del = (neutron_client.delete_interconnection(
-                                interconnection_uuid_to_delete))
+                        interconnection_delete = Interconnexion.query.outerjoin(Service, Interconnexion.service_id == Service.service_id).filter(
+                            Interconnexion.interconnexion_uuid == interconnection_uuid_to_delete).filter(Interconnexion.service_id == data_from_db['service_id']).one_or_none()
 
-                            interconnection_delete = Interconnexion.query.outerjoin(Service, Interconnexion.service_id == Service.service_id).filter(
-                                Interconnexion.interconnexion_uuid == interconnection_uuid_to_delete).filter(Interconnexion.service_id == data_from_db['service_id']).one_or_none()
+                        if interconnection_delete:
+                            db.session.delete(interconnection_delete)
+                            db.session.commit()
 
-                            if interconnection_delete:
-                                db.session.delete(interconnection_delete)
-                                db.session.commit()
 
-                    except neutronclient_exc.ConnectionFailed:
-                        app_log.info("Can't connect to neutron %s" %
-                                     service_remote_inter_endpoints[item])
-                    except neutronclient_exc.Unauthorized:
-                        app_log.info("Connection refused to neutron %s" %
-                                     service_remote_inter_endpoints[item])
-                    except neutronclient_exc.NotFound:
-                        app_log.info("Element not found %s" % inter_del_list)
+                # app_log.info(remote_resource_to_delete['resource_uuid'])
+                resource_delete = Resource.query.outerjoin(Service, Resource.service_id == Service.service_id).filter(
+                    Service.service_id == data_from_db['service_id']).filter(Resource.resource_uuid == remote_resource_to_delete['resource_uuid']).one_or_none()
 
-                    # app_log.info(remote_resource_to_delete['resource_uuid'])
-                    resource_delete = Resource.query.outerjoin(Service, Resource.service_id == Service.service_id).filter(
-                        Service.service_id == data_from_db['service_id']).filter(Resource.resource_uuid == remote_resource_to_delete['resource_uuid']).one_or_none()
+                service_resources_list_db.remove(remote_resource_to_delete)
 
-                    service_resources_list_db.remove(remote_resource_to_delete)
-
-                    if resource_delete:
-                        db.session.delete(resource_delete)
-                        db.session.commit()
+                if resource_delete:
+                    db.session.delete(resource_delete)
+                    db.session.commit()
 
             # Do a new list with the actual resources that are going to be used in the following part of the service
             # then, verify the new resources to add to the service and add them
