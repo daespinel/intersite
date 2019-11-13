@@ -304,9 +304,6 @@ def verticalCreateService(service):
         service_l2allocation_pool_schema = L2AllocationPoolSchema()
         cidr_range = 0
 
-        for ob in cidr_ranges:
-            print(ob)
-
         for objet_region in service_resources_list.keys():
 
             to_add_l2allocation_pool = {
@@ -1033,7 +1030,7 @@ def horizontalCreateService(service):
             }}
 
             inter_temp = net_adap.post(url='/v2.0/interconnection/interconnections/', json=interconnection_data)
-            # app_log.info(inter_temp)
+            app_log.info(inter_temp)
             local_interconnections_ids.append(
                 inter_temp['interconnection']['id'])
 
