@@ -911,30 +911,31 @@ def verticalDeleteService(global_id):
         resources_list_to_delete = service_data['service_resources']
         # app_log.info(resources_list_to_delete)
         interconnections_delete = service_data['service_interconnections']
+
+        auth = service_utils.get_auth_object(local_region_url)
+        sess = service_utils.get_session_object(auth)
+
+        # Authenticate
+        auth.get_access(sess)
+        auth_ref = auth.auth_ref
+
+        catalog_endpoints = auth_ref.service_catalog.catalog
+
+        net_adap = Adapter(
+            auth=auth,
+            session=sess,
+            service_type='network',
+            interface='public',
+            region_name=local_region_name)
+
         for element in interconnections_delete:
             inter = element['interconnexion_uuid']
-            neutron_client = service_utils.get_neutron_client(
-                service_utils.get_local_keystone(),
-                service_utils.get_region_name()
-            )
-            try:
-                inter_del = (
-                    neutron_client.delete_interconnection(inter))
-
-            except neutronclient_exc.ConnectionFailed:
-                app_log.info("Can't connect to neutron %s" %
-                             service_remote_inter_endpoints[item])
-            except neutronclient_exc.Unauthorized:
-                app_log.info("Connection refused to neutron %s" %
-                             service_remote_inter_endpoints[item])
-            except neutronclient_exc.NotFound:
-                app_log.info("Interconnection not found %s" % inter)
-
+            
+            inter_del = net_adap.delete(url='/v2.0/interconnection/interconnections/' + inter)
+            
         db.session.delete(service)
         db.session.commit()
 
-        catalog_endpoints = service_utils.get_keystone_catalog(
-            local_region_url)
         for obj in catalog_endpoints:
             if obj['name'] == 'neutron':
                 for endpoint in obj['endpoints']:
@@ -1003,6 +1004,13 @@ def horizontalCreateService(service):
 
     catalog_endpoints = auth_ref.service_catalog.catalog
 
+    net_adap = Adapter(
+        auth=auth,
+        session=sess,
+        service_type='network',
+        interface='public',
+        region_name=local_region_name)
+
     for obj in catalog_endpoints:
         if obj['name'] == 'keystone':
             for endpoint in obj['endpoints']:
@@ -1014,10 +1022,7 @@ def horizontalCreateService(service):
     # calling the interconnection service plugin to create the necessary objects
     for k, v in service_resources_list.items():
         if local_region_name != k:
-            neutron_client = service_utils.get_neutron_client(
-                local_region_url,
-                local_region_name
-            )
+            
             interconnection_data = {'interconnection': {
                 'name': service_name,
                 'remote_keystone': service_remote_auth_endpoints[k],
@@ -1025,23 +1030,12 @@ def horizontalCreateService(service):
                 'local_resource_id': local_resource,
                 'type': SERVICE_TYPE[service_type],
                 'remote_resource_id': v,
-
             }}
-            try:
-                inter_temp = (
-                    neutron_client.create_interconnection(
-                        interconnection_data)
-                )
-                # app_log.info(inter_temp)
-                local_interconnections_ids.append(
-                    inter_temp['interconnection']['id'])
 
-            except neutronclient_exc.ConnectionFailed:
-                app_log.info("Can't connect to neutron %s" %
-                             service_remote_inter_endpoints[item])
-            except neutronclient_exc.Unauthorized:
-                app_log.info("Connection refused to neutron %s" %
-                             service_remote_inter_endpoints[item])
+            inter_temp = net_adap.post(url='/v2.0/interconnection/interconnections/', json=interconnection_data)
+            # app_log.info(inter_temp)
+            local_interconnections_ids.append(
+                inter_temp['interconnection']['id'])
 
     # Create a service instance using the schema and the build service
     service_schema = ServiceSchema()
@@ -1072,39 +1066,15 @@ def horizontalCreateService(service):
     # Adding the parameters to the service
 
     if(service_type == 'L3'):
-        neutron_client = service_utils.get_neutron_client(
-            local_region_url, local_region_name
+        
 
-        )
+        network_temp = net_adap.get('/v2.0/networks/' + local_resource).json()['network']
+        subnet_id = network_temp['subnets'][0]
 
-        try:
-            network_temp = (
-                neutron_client.show_network(network=local_resource
-                                            )
-            )
-            subnet_id = network_temp['network']['subnets'][0]
+        subnetwork_temp = net_adap.get('/v2.0/subnets/' + subnet_id).json()
+        subnet = subnetwork_temp['subnet']
+        service_params['parameter_local_cidr'] = subnet['cidr']
 
-        except neutronclient_exc.ConnectionFailed:
-            app_log.info("Can't connect to neutron %s" %
-                         service_remote_inter_endpoints[item])
-        except neutronclient_exc.Unauthorized:
-            app_log.info("Connection refused to neutron %s" %
-                         service_remote_inter_endpoints[item])
-
-        try:
-            subnetwork_temp = (
-                neutron_client.show_subnet(subnet=subnet_id)
-            )
-
-            subnet = subnetwork_temp['subnet']
-            service_params['parameter_local_cidr'] = subnet['cidr']
-
-        except neutronclient_exc.ConnectionFailed:
-            app_log.info("Can't connect to neutron %s" %
-                         service_remote_inter_endpoints[item])
-        except neutronclient_exc.Unauthorized:
-            app_log.info("Connection refused to neutron %s" %
-                         service_remote_inter_endpoints[item])
 
     service_params_schema = ParamsSchema()
     new_service_params = service_params_schema.load(
@@ -1118,28 +1088,16 @@ def horizontalCreateService(service):
     # If the service is from L2 type, do the local DHCP change
 
     if service_type == 'L2':
-        try:
-            body = {'subnet': {'allocation_pools': [{'start': service_params['parameter_allocation_pool'].split(
+
+        body = {'subnet': {'allocation_pools': [{'start': service_params['parameter_allocation_pool'].split(
                 "-", 1)[0], 'end': service_params['parameter_allocation_pool'].split("-", 1)[1]}]}}
 
-            network_temp = (
-                neutron_client.show_network(network=local_resource
-                                            )
-            )
-            subnet = network_temp['network']['subnets'][0]
-            app_log.info(str(subnet))
+        network_temp = net_adap.get('/v2.0/networks/' + local_resource).json()['network']
+        subnet_id = network_temp['subnets'][0]
+            
+        app_log.info(str(subnet))
 
-            dhcp_change = (
-                neutron_client.update_subnet(
-                    subnet, body=body)
-            )
-            # app_log.info(inter_temp)
-        except neutronclient_exc.ConnectionFailed:
-            app_log.info("Can't connect to neutron %s" %
-                         service_remote_inter_endpoints[item])
-        except neutronclient_exc.Unauthorized:
-            app_log.info("Connection refused to neutron %s" %
-                         service_remote_inter_endpoints[item])
+        dhcp_change = net_adap.put(url='/v2.0/subnets/'+subnet_id,json=body)
 
     return service_schema.dump(new_service).data, 201
 
@@ -1461,22 +1419,27 @@ def horizontalDeleteService(global_id):
         resources_list_to_delete = service_data['service_resources']
         # app_log.info(resources_list_to_delete)
         interconnections_delete = service_data['service_interconnections']
+
+        auth = service_utils.get_auth_object(local_region_url)
+        sess = service_utils.get_session_object(auth)
+
+        # Authenticate
+        auth.get_access(sess)
+        auth_ref = auth.auth_ref
+
+        catalog_endpoints = auth_ref.service_catalog.catalog
+
+        net_adap = Adapter(
+            auth=auth,
+            session=sess,
+            service_type='network',
+            interface='public',
+            region_name=local_region_name)
+
         for element in interconnections_delete:
             inter = element['interconnexion_uuid']
-            neutron_client = service_utils.get_neutron_client(
-                service_utils.get_local_keystone(),
-                service_utils.get_region_name()
-            )
-            try:
-                inter_del = (
-                    neutron_client.delete_interconnection(inter))
-
-            except neutronclient_exc.ConnectionFailed:
-                app_log.info("Can't connect to neutron %s" %
-                             service_remote_inter_endpoints[item])
-            except neutronclient_exc.Unauthorized:
-                app_log.info("Connection refused to neutron %s" %
-                             service_remote_inter_endpoints[item])
+            
+            inter_del = net_adap.delete(url='/v2.0/interconnection/interconnections/' + inter)
 
         db.session.delete(service)
         db.session.commit()
@@ -1541,7 +1504,7 @@ def createRandomGlobalId(stringLength=28):
 
     return global_random_id
 
-
+# DEPRECATED Since the recomposition of cidrs allocation pools has been left aside, this is no longer usefull
 def reorderCidrs(list_resources):
 
     size = len(list_resources)
