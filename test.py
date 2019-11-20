@@ -3,6 +3,10 @@ from keystoneauth1.identity import v3
 from keystoneauth1 import session
 from keystoneauth1.adapter import Adapter
 from keystoneclient.v3 import client as keystoneclient
+import swagger_client
+from swagger_client.configuration import Configuration
+from swagger_client.rest import ApiException
+import timeit
 
 FIRST_REGION_NAME = "RegionOne"
 #KEYSTONE_ENDPOINT = "http://{{keystone_ip_node}}/identity/v3"
@@ -77,3 +81,27 @@ for region_name, region_endpoint in regions_list.items():
         cidrs_region_network_information[subnet_cidr].append(test_object)
 
 print(cidrs_region_network_information)
+
+test_type = "L3"
+test_number = 5 
+configuration = Configuration()
+configuration.host = "http://192.168.57.6:7575"
+
+if(test_type == "L3"):
+    for i in range(test_number):
+        api_instance = swagger_client.ServicesApi(swagger_client.ApiClient(configuration))
+        service = swagger_client.Service() # Service2 | data for inter-site creation
+        service.type = "L3"
+        service.name = "Inter-site network test " + str(i) 
+
+        try:
+            # Horizontal request to create an inter-site Service POST
+            api_response = api_instance.vertical_create_service(service)
+        except ApiException as e:
+            print("Exception when calling HorizontalApi->horizontal_create_service: %s\n" % e)
+
+
+
+if(test_type == "L2"):
+    for i in range(test_number):
+        print(i)

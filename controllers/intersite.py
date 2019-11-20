@@ -544,54 +544,67 @@ def verticalUpdateService(global_id, service):
                     db.session.delete(resource_delete)
                     db.session.commit()
 
+        
+        service_remote_auth_endpoints = {}
+        service_remote_inter_endpoints = {}
+        service_resources_list_search = copy.deepcopy(
+            list_resources_add)
+        service_resources_list_db_search = copy.deepcopy(
+            service_resources_list_db)
+
+        for obj in catalog_endpoints:
+            if obj['name'] == 'neutron':
+                for endpoint in obj['endpoints']:
+                    for existing_resource in service_resources_list_db:
+                        if endpoint['region'] == existing_resource['resource_region']:
+                            service_remote_inter_endpoints[existing_resource['resource_region']
+                                                            ] = endpoint['url']
+                            service_resources_list_db_search.remove(
+                                existing_resource)
+                            break
+                    for resource_element in list_resources_add:
+                        if endpoint['region'] == resource_element['resource_region']:
+                            service_remote_inter_endpoints[resource_element['resource_region']
+                                                            ] = endpoint['url']
+                            service_resources_list_search.remove(
+                                resource_element)
+                            break
+                    for resource_delete in list_resources_remove:
+                        if endpoint['region'] == resource_delete['resource_region']:
+                            service_remote_inter_endpoints[resource_delete['resource_region']
+                                                            ] = endpoint['url']
+                            break
+            if obj['name'] == 'keystone':
+                for endpoint in obj['endpoints']:
+                    for existing_resource in service_resources_list_db:
+                        if endpoint['region'] == existing_resource['resource_region']:
+                            service_remote_auth_endpoints[existing_resource['resource_region']
+                                                            ] = endpoint['url']+'/v3'
+                            break
+                    for resource_element in list_resources_add:
+                        if endpoint['region'] == resource_element['resource_region'] and endpoint['interface'] == 'public':
+                            service_remote_auth_endpoints[resource_element['resource_region']
+                                                            ] = endpoint['url']+'/v3'
+                            break
+                    for resource_delete in list_resources_remove:
+                        if endpoint['region'] == resource_delete['resource_region']:
+                            service_remote_auth_endpoints[resource_delete['resource_region']
+                                                            ] = endpoint['url'] + '/v3'
+                            break
+
+        if bool(service_resources_list_search):
+            abort(404, "ERROR: Regions " + (" ".join(str(key['resource_region'])
+                                                        for key in service_resources_list_search)) + " are not found")
+
+        if bool(service_resources_list_db_search):
+            abort(404, "ERROR: Regions " + (" ".join(str(key['resource_region'])
+                                                        for key in service_resources_list_db_search)) + " are not found")
+
+        
         # Do a new list with the actual resources that are going to be used in the following part of the service
         # then, verify the new resources to add to the service and add them
         # Depending on the service type, the validation will be different
         if(list_resources_add):
-            service_remote_auth_endpoints = {}
-            service_remote_inter_endpoints = {}
-            service_resources_list_search = copy.deepcopy(
-                list_resources_add)
-            service_resources_list_db_search = copy.deepcopy(
-                service_resources_list_db)
-
-            for obj in catalog_endpoints:
-                if obj['name'] == 'neutron':
-                    for endpoint in obj['endpoints']:
-                        for existing_resource in service_resources_list_db:
-                            if endpoint['region'] == existing_resource['resource_region']:
-                                service_remote_inter_endpoints[existing_resource['resource_region']
-                                                               ] = endpoint['url']
-                                service_resources_list_db_search.remove(
-                                    existing_resource)
-                                break
-                        for resource_element in list_resources_add:
-                            if endpoint['region'] == resource_element['resource_region']:
-                                service_remote_inter_endpoints[resource_element['resource_region']
-                                                               ] = endpoint['url']
-                                service_resources_list_search.remove(
-                                    resource_element)
-                                break
-                if obj['name'] == 'keystone':
-                    for endpoint in obj['endpoints']:
-                        for existing_resource in service_resources_list_db:
-                            if endpoint['region'] == existing_resource['resource_region']:
-                                service_remote_auth_endpoints[existing_resource['resource_region']
-                                                              ] = endpoint['url']+'/v3'
-                                break
-                        for resource_element in list_resources_add:
-                            if endpoint['region'] == resource_element['resource_region'] and endpoint['interface'] == 'public':
-                                service_remote_auth_endpoints[resource_element['resource_region']
-                                                              ] = endpoint['url']+'/v3'
-                                break
-
-            if bool(service_resources_list_search):
-                abort(404, "ERROR: Regions " + (" ".join(str(key['resource_region'])
-                                                         for key in service_resources_list_search)) + " are not found")
-
-            if bool(service_resources_list_db_search):
-                abort(404, "ERROR: Regions " + (" ".join(str(key['resource_region'])
-                                                         for key in service_resources_list_db_search)) + " are not found")
 
             new_subnetworks = {}
             new_CIDRs = {}
@@ -845,8 +858,8 @@ def verticalUpdateService(global_id, service):
 
         # Sending remote inter-site create requests to the distant nodes
         print('Here we are sending the horizontal put requests')
-        print(service_resources_list)
-        print(list_resources_remove)
+        print('Service resource list: ' + str(service_resources_list))
+        print('Service resource remove: ' + str(list_resources_remove))
         for index in range(len(service_resources_list)):
             obj = service_resources_list[index]
             if index != new_local_param_index:
@@ -887,8 +900,19 @@ def verticalUpdateService(global_id, service):
                     # app_log.info(r.json())
 
         for obj in list_resources_remove:
+            remote_inter_instance = service_remote_inter_endpoints[obj['resource_region']].strip(
+                    '9696/')
+            remote_inter_instance = remote_inter_instance + \
+                    '7575/api/intersite-horizontal/' + str(global_id)
             print(obj)
 
+            remote_service = {'name': data_from_db['service_name'], 'type': data_from_db['service_type'], 'params': [
+                            '', '', ''], 'global': global_id, 'resources': service.get("resources", None)}
+
+            headers = {'Content-Type': 'application/json',
+                                'Accept': 'application/json'}
+            r = requests.put(remote_inter_instance, data=json.dumps(
+                        remote_service), headers=headers)
             # service_data = service_schema.dump(service_update)
 
         return make_response("{id} successfully updated".format(id=global_id), 200)
