@@ -6,7 +6,10 @@ from keystoneclient.v3 import client as keystoneclient
 import swagger_client
 from swagger_client.configuration import Configuration
 from swagger_client.rest import ApiException
-import timeit
+import time
+from random import seed
+from random import randint
+import random
 
 FIRST_REGION_NAME = "RegionOne"
 #KEYSTONE_ENDPOINT = "http://{{keystone_ip_node}}/identity/v3"
@@ -42,20 +45,23 @@ auth_ref = auth.auth_ref
 catalog_endpoints = auth_ref.service_catalog.catalog
 #print("Service catalog: %s" % catalog_endpoints)
 
-regions_list = {}
+regions_list = []
 
 for obj in catalog_endpoints:
     if obj['name'] == 'neutron':
         for endpoint in obj['endpoints']:
-            regions_list[endpoint["region"]] = endpoint["url"]
+            obj = {'region_name' : endpoint["region"], 'url' : endpoint["url"]}
+            regions_list.append(obj)
 
-# print(regions_list)
+#print(regions_list)
 
-cidrs_region_network_information = {'10.0.0.0/24': [], '10.0.1.0/24': [], '10.0.2.0/24': [], '10.0.3.0/24': [], '10.0.4.0/24': [
-], '10.0.5.0/24': [], '10.0.6.0/24': [], '10.0.7.0/24': [], '10.0.8.0/24': [], '10.0.9.0/24': [], '20.0.0.0/24': []}
+#cidrs_region_network_information = {'10.0.0.0/24': [], '10.0.1.0/24': [], '10.0.2.0/24': [], '10.0.3.0/24': [], '10.0.4.0/24': [], '10.0.5.0/24': [], '10.0.6.0/24': [], '10.0.7.0/24': [], '10.0.8.0/24': [], '10.0.9.0/24': [], '20.0.0.0/24': []}
+
+cidrs_region_network_information = {'10.0.0.0/24': [], '20.0.0.0/24': []}
 
 # For every region find the networks created with heat
-for region_name, region_endpoint in regions_list.items():
+for i in range(len(regions_list)):
+    region_name, region_endpoint = regions_list[i]['region_name'], regions_list[i]['url']
     net_adap = Adapter(
         auth=auth,
         session=sess,
@@ -73,34 +79,90 @@ for region_name, region_endpoint in regions_list.items():
 
         per_net_subnet = net_adap.get('/v2.0/subnets/'+subnet_ID).json()
         subnet_cidr = per_net_subnet['subnet']['cidr']
-        print(subnet_cidr)
+        #print(subnet_cidr)
         test_object = {
             'region_name': region_name,
             'net_uuid': net_ID,
         }
         cidrs_region_network_information[subnet_cidr].append(test_object)
 
-print(cidrs_region_network_information)
+#print(cidrs_region_network_information)
 
 test_type = "L3"
-test_number = 5 
+test_size = 2
+test_number = 10
 configuration = Configuration()
-configuration.host = "http://192.168.57.6:7575"
+
 
 if(test_type == "L3"):
     for i in range(test_number):
-        api_instance = swagger_client.ServicesApi(swagger_client.ApiClient(configuration))
-        service = swagger_client.Service() # Service2 | data for inter-site creation
-        service.type = "L3"
-        service.name = "Inter-site network test " + str(i) 
+        selected_index = randint(1,len(regions_list))
+        host = regions_list[selected_index-1]
+        #print(host['region_name'])
+        configuration.host = host['url'][0:-5] + "7575/api"
+        api_instance = swagger_client.ServicesApi(
+            swagger_client.ApiClient(configuration))
 
+        service = swagger_client.Service()  # Service | data for inter-site creation
+        service.type = "L3"
+        service.name = "Inter-site network test " + str(i)
+        
+        condition = True
+        keys = []
+        regions = []
+        resources = []
+        
+        while (condition):
+            key = random.choice(list(cidrs_region_network_information))
+            for element in cidrs_region_network_information[key]:
+                #print('element')
+                if element['region_name'] == host['region_name']:
+                    #print(key)
+                    #print(element)
+                    keys.append(key)
+                    regions.append(element['region_name'])
+                    resources.append(element['region_name']+","+element['net_uuid'])
+                    condition = False
+                    break
+
+        for j in range(test_size-1):
+            #print(j)
+            condition = True
+            while (condition):
+                key = random.choice(list(cidrs_region_network_information))
+                for element in cidrs_region_network_information[key]:
+                    #print('element')
+                    if element['region_name'] not in regions and key not in keys :
+                        #print(key)
+                        #print(element)
+                        keys.append(key)
+                        resources.append(element['region_name']+","+element['net_uuid'])
+                        condition = False
+                        break
+
+        #print(resources)
+        #for i in range(test_size):
+        #   for obj,val in cidrs_region_network_information.items():
+        #        print(obj,val)
+                #while(condition):
+
+
+        service.resources = resources
+        api_responde = ""
+        start = time.time()
         try:
             # Horizontal request to create an inter-site Service POST
             api_response = api_instance.vertical_create_service(service)
+            #print(api_response['service_global'])
         except ApiException as e:
-            print("Exception when calling HorizontalApi->horizontal_create_service: %s\n" % e)
+            print("Exception when calling VerticalApi->vertical_create_service: %s\n" % e)
 
-
+        try:
+            delete_service = api_instance.vertical_delete_service(api_response['service_global'])
+        except ApiException as e:
+            print("Exception when calling VerticalApi->vertical_create_service: %s\n" % e)
+        end = time.time()
+        print(end - start)
 
 if(test_type == "L2"):
     for i in range(test_number):

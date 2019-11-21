@@ -17,9 +17,6 @@ import logging
 import ast
 from flask.logging import default_handler
 
-####################################
-#################################### TODO REFACTOR EVERYTHING TO USE ADPAPTER INSTEAD OF CLIENTS
-####################################
 
 app_log = logging.getLogger()
 # Data to serve with our API
@@ -123,7 +120,11 @@ def verticalCreateService(service):
         interface='public',
         region_name=local_region_name)
 
-    network_temp_local = net_adap.get('/v2.0/networks/' + local_resource).json()['network']
+    try:
+        network_temp_local = net_adap.get('/v2.0/networks/' + local_resource).json()['network']
+    except:
+        app_log.info("Exception when contacting the network adapter")
+
 
     if (network_temp_local == ''):
         abort(404, "There is no local resource for the service")
@@ -162,7 +163,10 @@ def verticalCreateService(service):
         interface='public',
         region_name=item)
 
-        network_temp = net_adap_remote.get('/v2.0/networks/' + value).json()
+        try:
+            network_temp = net_adap_remote.get('/v2.0/networks/' + value).json()
+        except:
+            app_log.info("Exception when contacting the network adapter")
 
         subnet = network_temp['network']
         subnetworks[item] = subnet['subnets'][0]
@@ -176,8 +180,11 @@ def verticalCreateService(service):
         interface='public',
         region_name=item)
 
+        try:
+            subnetwork_temp = net_adap_remote.get('/v2.0/subnets/' + value).json()
+        except:
+            app_log.info("Exception when contacting the network adapter")
 
-        subnetwork_temp = net_adap_remote.get('/v2.0/subnets/' + value).json()
         subnet = subnetwork_temp['subnet']
         CIDRs.append(ipaddress.ip_network(subnet['cidr']))
         if (item == local_region_name):
@@ -256,7 +263,12 @@ def verticalCreateService(service):
             }}
 
             id_temp = id_temp+1
-            inter_temp = net_adap.post(url='/v2.0/interconnection/interconnections/', json=interconnection_data)
+
+            try:
+                inter_temp = net_adap.post(url='/v2.0/interconnection/interconnections/', json=interconnection_data)
+            except:
+                app_log.info("Exception when contacting the network adapter")
+            
             # app_log.info(inter_temp)
             local_interconnections_ids.append(inter_temp.json()['interconnection']['id'])
 
@@ -356,8 +368,13 @@ def verticalCreateService(service):
 
         body = {'subnet': {'allocation_pools': [
                 {'start': allocation_start, 'end': allocation_end}]}}
-        dhcp_change = net_adap.put(url='/v2.0/subnets/'+subnetworks[local_region_name],json=body)
-        
+
+        try:        
+            dhcp_change = net_adap.put(url='/v2.0/subnets/'+subnetworks[local_region_name],json=body)
+        except:
+            app_log.info("Exception when contacting the network adapter")
+
+
     index_cidr = 1
     # Sending remote inter-site create requests to the distant nodes
     for obj in service_resources_list.keys():
@@ -493,7 +510,11 @@ def verticalUpdateService(global_id, service):
                 for element in interconnections_delete:
 
                     inter = element['interconnexion_uuid']
-                    inter_del = net_adap.delete('/v2.0/interconnection/interconnections/' + inter)
+
+                    try:
+                        inter_del = net_adap.delete('/v2.0/interconnection/interconnections/' + inter)
+                    except:
+                        app_log.info("Exception when contacting the network adapter")
 
                     for element in list_resources_remove:
                         if(local_region_name in element['resource_region']):
@@ -517,14 +538,21 @@ def verticalUpdateService(global_id, service):
                     filters = {'local_resource_id': search_local_resource_uuid,
                                 'remote_resource_id': remote_resource_to_delete['resource_uuid']}
                     
-                    inter_del_list = net_adap.get(url='/v2.0/interconnection/interconnections/', json=filters).json()['interconnections']
+                    try:
+                        inter_del_list = net_adap.get(url='/v2.0/interconnection/interconnections/', json=filters).json()['interconnections']
+                    except:
+                        app_log.info("Exception when contacting the network adapter")
+
                     print(inter_del_list)
 
                     if inter_del_list:
                         interco_delete = inter_del_list.pop()
                         interconnection_uuid_to_delete = interco_delete['id']
 
-                        inter_del = net_adap.delete('/v2.0/interconnection/interconnections/' + interconnection_uuid_to_delete)
+                        try:
+                            inter_del = net_adap.delete('/v2.0/interconnection/interconnections/' + interconnection_uuid_to_delete)
+                        except:
+                            app_log.info("Exception when contacting the network adapter")
 
                         interconnection_delete = Interconnexion.query.outerjoin(Service, Interconnexion.service_id == Service.service_id).filter(
                             Interconnexion.interconnexion_uuid == interconnection_uuid_to_delete).filter(Interconnexion.service_id == data_from_db['service_id']).one_or_none()
@@ -953,8 +981,11 @@ def verticalDeleteService(global_id):
         for element in interconnections_delete:
             inter = element['interconnexion_uuid']
             
-            inter_del = net_adap.delete(url='/v2.0/interconnection/interconnections/' + inter)
-            
+            try:
+                inter_del = net_adap.delete(url='/v2.0/interconnection/interconnections/' + inter)
+            except:
+                app_log.info("Exception when contacting the network adapter")
+
         db.session.delete(service)
         db.session.commit()
 
