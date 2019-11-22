@@ -265,7 +265,7 @@ def verticalCreateService(service):
             id_temp = id_temp+1
 
             try:
-                inter_temp = net_adap.post(url='/v2.0/interconnection/interconnections/', json=interconnection_data)
+                inter_temp = net_adap.post(url='/v2.0/inter/interconnections/', json=interconnection_data)
             except:
                 app_log.info("Exception when contacting the network adapter")
             
@@ -512,7 +512,7 @@ def verticalUpdateService(global_id, service):
                     inter = element['interconnexion_uuid']
 
                     try:
-                        inter_del = net_adap.delete('/v2.0/interconnection/interconnections/' + inter)
+                        inter_del = net_adap.delete('/v2.0/inter/interconnections/' + inter)
                     except:
                         app_log.info("Exception when contacting the network adapter")
 
@@ -539,7 +539,7 @@ def verticalUpdateService(global_id, service):
                                 'remote_resource_id': remote_resource_to_delete['resource_uuid']}
                     
                     try:
-                        inter_del_list = net_adap.get(url='/v2.0/interconnection/interconnections/', json=filters).json()['interconnections']
+                        inter_del_list = net_adap.get(url='/v2.0/inter/interconnections/', json=filters).json()['interconnections']
                     except:
                         app_log.info("Exception when contacting the network adapter")
 
@@ -550,7 +550,7 @@ def verticalUpdateService(global_id, service):
                         interconnection_uuid_to_delete = interco_delete['id']
 
                         try:
-                            inter_del = net_adap.delete('/v2.0/interconnection/interconnections/' + interconnection_uuid_to_delete)
+                            inter_del = net_adap.delete('/v2.0/inter/interconnections/' + interconnection_uuid_to_delete)
                         except:
                             app_log.info("Exception when contacting the network adapter")
 
@@ -982,7 +982,7 @@ def verticalDeleteService(global_id):
             inter = element['interconnexion_uuid']
             
             try:
-                inter_del = net_adap.delete(url='/v2.0/interconnection/interconnections/' + inter)
+                inter_del = net_adap.delete(url='/v2.0/inter/interconnections/' + inter)
             except:
                 app_log.info("Exception when contacting the network adapter")
 
@@ -1085,7 +1085,7 @@ def horizontalCreateService(service):
                 'remote_resource_id': v,
             }}
 
-            inter_temp = net_adap.post(url='/v2.0/interconnection/interconnections/', json=interconnection_data)
+            inter_temp = net_adap.post(url='/v2.0/inter/interconnections/', json=interconnection_data)
             app_log.info(inter_temp)
             local_interconnections_ids.append(inter_temp.json()['interconnection']['id'])
 
@@ -1491,7 +1491,7 @@ def horizontalDeleteService(global_id):
         for element in interconnections_delete:
             inter = element['interconnexion_uuid']
             
-            inter_del = net_adap.delete(url='/v2.0/interconnection/interconnections/' + inter)
+            inter_del = net_adap.delete(url='/v2.0/inter/interconnections/' + inter)
 
         db.session.delete(service)
         db.session.commit()
