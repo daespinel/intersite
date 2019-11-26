@@ -397,7 +397,8 @@ def verticalCreateService(service):
     # TODO Do the threads here too
     index_cidr = 1
     # Sending remote inter-site create requests to the distant nodes
-    for obj in service_resources_list.keys():
+
+    def parallel_horizontal_request(obj):
         if obj != service_utils.get_region_name():
             remote_inter_instance = service_remote_inter_endpoints[obj].strip(
                 '9696/')
@@ -425,9 +426,14 @@ def verticalCreateService(service):
                        'Accept': 'application/json'}
             r = requests.post(remote_inter_instance, data=json.dumps(
                 remote_service), headers=headers)
-            # app_log.info(r.json())
-            app_log.info(str(service_schema.dump(new_service).data))
 
+    workers2 = len(service_resources_list.keys())
+    app_log.info("Using threads for horizontal creation request. Starting.")
+    with concurrent.futures.ThreadPoolExecutor(max_workers=workers2) as executor:
+        for obj in service_resources_list.keys():
+            executor.submit(parallel_horizontal_request, obj)
+    app_log.info('Threads finished, proceeding')    
+    
     # Add the service to the database
     db.session.add(new_service)
     db.session.commit()
