@@ -1127,26 +1127,22 @@ def horizontalCreateService(service):
 
             }}
 
-            id_temp = id_temp+1
-
             try:
                 inter_temp = net_adap.post(url='/v2.0/inter/interconnections/', json=interconnection_data)
             except:
                 app_log.info("Exception when contacting the network adapter")
             
-            # app_log.info(inter_temp)
+            app_log.info(inter_temp)
             local_interconnections_ids.append(inter_temp.json()['interconnection']['id'])
             
 
     # calling the interconnection service plugin to create the necessary objects
     
     workers3 = len(service_resources_list.keys())
-    id_temp = 1
     app_log.info("Using threads for local interconnection create request. Starting.")
     with concurrent.futures.ThreadPoolExecutor(max_workers=workers3) as executor:
         for k, v in service_resources_list.items():
             executor.submit(parallel_inters_creation_request, k, v)
-
     app_log.info('Interconnection threads finished, proceeding')
 
     # Create a service instance using the schema and the build service
