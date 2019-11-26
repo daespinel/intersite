@@ -16,6 +16,8 @@ import requests
 import logging
 import ast
 from flask.logging import default_handler
+import threading
+import concurrent.futures
 
 
 app_log = logging.getLogger()
@@ -153,9 +155,8 @@ def verticalCreateService(service):
 
     subnetworks = {}
     CIDRs = []
-    # Retrieving information for networks given the region name
-    for item, value in service_resources_list.items():
 
+    def parallel_network_request(item, value):
         net_adap_remote = Adapter(
         auth=auth,
         session=sess,
@@ -170,9 +171,20 @@ def verticalCreateService(service):
 
         subnet = network_temp['network']
         subnetworks[item] = subnet['subnets'][0]
+    
+    # Retrieving information for networks given the region name
+    # TODO First action that needs to be paralelized
+    workers = len(service_resources_list.keys())
+    app_log.info("Using threads for remote network request. Starting.")
+    with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
+        for item, value in service_resources_list.items():
+            executor.submit(parallel_network_request, item, value)
+
+    app_log.info('Threads finished, proceeding')    
+        
 
     # Retrieving the subnetwork information given the region name
-    for item, value in subnetworks.items():
+    def parallel_subnetwork_request(item, value):
         net_adap_remote = Adapter(
         auth=auth,
         session=sess,
@@ -189,6 +201,14 @@ def verticalCreateService(service):
         CIDRs.append(ipaddress.ip_network(subnet['cidr']))
         if (item == local_region_name):
             parameter_local_cidr = subnet['cidr']
+    
+    workers1 = len(subnetworks.keys())
+    app_log.info("Using threads for remote subnetwork request. Starting.")
+    with concurrent.futures.ThreadPoolExecutor(max_workers=workers1) as executor:
+        for item, value in subnetworks.items():
+            executor.submit(parallel_subnetwork_request, item, value)
+
+    app_log.info('Threads finished, proceeding')    
         
 
     # Validation for the L3 routing service
@@ -374,7 +394,7 @@ def verticalCreateService(service):
         except:
             app_log.info("Exception when contacting the network adapter")
 
-
+    # TODO Do the threads here too
     index_cidr = 1
     # Sending remote inter-site create requests to the distant nodes
     for obj in service_resources_list.keys():
