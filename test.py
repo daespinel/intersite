@@ -55,11 +55,10 @@ for obj in catalog_endpoints:
             regions_list.append(obj)
 
 #print(regions_list)
-file_results = open("Results"+str(datetime.datetime.now()),"w+")
 
-#cidrs_region_network_information = {'10.0.0.0/24': [], '10.0.1.0/24': [], '10.0.2.0/24': [], '10.0.3.0/24': [], '10.0.4.0/24': [], '10.0.5.0/24': [], '10.0.6.0/24': [], '10.0.7.0/24': [], '10.0.8.0/24': [], '10.0.9.0/24': [], '20.0.0.0/24': []}
+cidrs_region_network_information = {'10.0.0.0/24': [], '10.0.1.0/24': [], '10.0.2.0/24': [], '10.0.3.0/24': [], '10.0.4.0/24': [], '10.0.5.0/24': [], '10.0.6.0/24': [], '10.0.7.0/24': [], '10.0.8.0/24': [], '10.0.9.0/24': [], '20.0.0.0/24': []}
 
-cidrs_region_network_information = {'10.0.0.0/24': [], '20.0.0.0/24': []}
+#cidrs_region_network_information = {'10.0.0.0/24': [], '20.0.0.0/24': []}
 
 # For every region find the networks created with heat
 for i in range(len(regions_list)):
@@ -91,10 +90,12 @@ for i in range(len(regions_list)):
 #print(cidrs_region_network_information)
 
 test_type1 = "L3"
-test_type2 = "L3"
+test_type2 = "L2"
 test_size = 2
-test_number = 10
+test_number = 100
 configuration = Configuration()
+
+file_results = open("results/Results_" + test_type1 + "_" + str(test_size)  +str(datetime.datetime.now().strftime("%H:%M:%S")),"w+")
 
 
 if(test_type1 == "L3"):
@@ -142,11 +143,15 @@ if(test_type1 == "L3"):
                         #print(key)
                         #print(element)
                         keys.append(key)
+                        regions.append(element['region_name'])
                         resources.append(element['region_name']+","+element['net_uuid'])
                         condition = False
                         break
 
-        #print(resources)
+        print(i)
+        print(resources)
+        print(regions)
+        print(keys)
         #for i in range(test_size):
         #   for obj,val in cidrs_region_network_information.items():
         #        print(obj,val)
@@ -163,16 +168,98 @@ if(test_type1 == "L3"):
         except ApiException as e:
             print("Exception when calling VerticalApi->vertical_create_service: %s\n" % e)
 
+        end = time.time()
+
         try:
             delete_service = api_instance.vertical_delete_service(api_response['service_global'])
         except ApiException as e:
             print("Exception when calling VerticalApi->vertical_create_service: %s\n" % e)
-        end = time.time()
+        
         print(end-start)
         file_results.write(str(end - start)+"\n")
 
+file_results.close()
+
+file_results = open("results/Results_" + test_type2 + "_" + str(test_size)  +str(datetime.datetime.now().strftime("%H:%M:%S")),"w+")
+
 if(test_type2 == "L2"):
+    file_results.write("L2\n")
+    file_results.write(str(test_size)+"\n")
+    file_results.write(str(test_number)+"\n")
     for i in range(test_number):
+        selected_index = randint(1,len(regions_list))
+        host = regions_list[selected_index-1]
+        #print(host['region_name'])
+        configuration.host = host['url'][0:-5] + "7575/api"
+        api_instance = swagger_client.ServicesApi(
+            swagger_client.ApiClient(configuration))
+
+        service = swagger_client.Service()  # Service | data for inter-site creation
+        service.type = "L2"
+        service.name = "Inter-site network test " + str(i)
+        
+        condition = True
+        keys = []
+        regions = []
+        resources = []
+        
+        while (condition):
+            key = random.choice(list(cidrs_region_network_information))
+            for element in cidrs_region_network_information[key]:
+                #print('element')
+                if element['region_name'] == host['region_name']:
+                    #print(key)
+                    #print(element)
+                    keys.append(key)
+                    regions.append(element['region_name'])
+                    resources.append(element['region_name']+","+element['net_uuid'])
+                    condition = False
+                    break
+
+        for j in range(test_size-1):
+            #print(j)
+            condition = True
+            while (condition):
+                key = random.choice(list(cidrs_region_network_information))
+                for element in cidrs_region_network_information[key]:
+                    #print('element')
+                    if element['region_name'] not in regions and key in keys :
+                        #print(key)
+                        #print(element)
+                        #keys.append(key)
+                        regions.append(element['region_name'])
+                        resources.append(element['region_name']+","+element['net_uuid'])
+                        condition = False
+                        break
+
         print(i)
+        print(resources)
+        print(regions)
+        print(keys)
+        #for i in range(test_size):
+        #   for obj,val in cidrs_region_network_information.items():
+        #        print(obj,val)
+                #while(condition):
+
+
+        service.resources = resources
+        api_responde = ""
+        start = time.time()
+        try:
+            # Horizontal request to create an inter-site Service POST
+            api_response = api_instance.vertical_create_service(service)
+            #print(api_response['service_global'])
+        except ApiException as e:
+            print("Exception when calling VerticalApi->vertical_create_service: %s\n" % e)
+
+        end = time.time()
+
+        try:
+            delete_service = api_instance.vertical_delete_service(api_response['service_global'])
+        except ApiException as e:
+            print("Exception when calling VerticalApi->vertical_create_service: %s\n" % e)
+        
+        print(end-start)
+        file_results.write(str(end - start)+"\n")
 
 file_results.close()
