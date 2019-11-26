@@ -69,6 +69,7 @@ def verticalReadOneService(global_id):
 
 def verticalCreateService(service):
     # Taking information from the API http POST request
+    app_log.info('Starting a new service creation request')
     local_resource = ''
     service_name = service.get("name", None)
     service_type = service.get("type", None)
@@ -266,10 +267,7 @@ def verticalCreateService(service):
         for element in cidr_ranges:
             app_log.info(element)
 
-    # calling the interconnection service plugin to create the necessary objects
-    id_temp = 1
-    for k, v in service_resources_list.items():
-
+    def parallel_inters_creation_request(k,v):
         if local_region_name != k:
             
             interconnection_data = {'interconnection': {
@@ -291,6 +289,17 @@ def verticalCreateService(service):
             
             # app_log.info(inter_temp)
             local_interconnections_ids.append(inter_temp.json()['interconnection']['id'])
+
+    # calling the interconnection service plugin to create the necessary objects
+    
+    workers3 = len(service_resources_list.keys())
+    id_temp = 1
+    app_log.info("Using threads for local interconnection create request. Starting.")
+    with concurrent.futures.ThreadPoolExecutor(max_workers=workers3) as executor:
+        for k, v in service_resources_list.items():
+            executor.submit(parallel_inters_creation_request, k, v)
+
+    app_log.info('Interconnection threads finished, proceeding')
 
     # Create a service instance using the schema and the build service
     service_schema = ServiceSchema()
@@ -432,8 +441,8 @@ def verticalCreateService(service):
     with concurrent.futures.ThreadPoolExecutor(max_workers=workers2) as executor:
         for obj in service_resources_list.keys():
             executor.submit(parallel_horizontal_request, obj)
-    app_log.info('Threads finished, proceeding')    
-    
+    app_log.info('Horizontal threads finished, proceeding')    
+
     # Add the service to the database
     db.session.add(new_service)
     db.session.commit()
@@ -1028,7 +1037,8 @@ def verticalDeleteService(global_id):
 
         # app_log.info(service_remote_inter_endpoints)
         # Sending remote inter-site delete requests to the distant nodes
-        for obj in resources_list_to_delete:
+
+        def parallel_horizontal_delete_request(obj):
             remote_inter_instance = ''
             if obj['resource_region'] != service_utils.get_region_name():
                 remote_inter_instance = service_remote_inter_endpoints[obj['resource_region']].strip(
@@ -1038,6 +1048,14 @@ def verticalDeleteService(global_id):
                 # send horizontal delete (service_remote_inter_endpoints[obj])
                 headers = {'Accept': 'text/html'}
                 r = requests.delete(remote_inter_instance, headers=headers)
+
+        workers = len(resources_list_to_delete)
+        app_log.info("Using threads for horizontal delete request. Starting.")
+        with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
+            for obj in resources_list_to_delete:
+                executor.submit(parallel_horizontal_delete_request, obj)
+        app_log.info('Horizontal threads finished, proceeding')    
+            
 
         return make_response("{id} successfully deleted".format(id=global_id), 200)
 
@@ -1099,7 +1117,7 @@ def horizontalCreateService(service):
                         break
 
     # calling the interconnection service plugin to create the necessary objects
-    for k, v in service_resources_list.items():
+    def parallel_inters_creation_request(k,v):
         if local_region_name != k:
             
             interconnection_data = {'interconnection': {
@@ -1109,11 +1127,30 @@ def horizontalCreateService(service):
                 'local_resource_id': local_resource,
                 'type': SERVICE_TYPE[service_type],
                 'remote_resource_id': v,
+
             }}
 
-            inter_temp = net_adap.post(url='/v2.0/inter/interconnections/', json=interconnection_data)
-            app_log.info(inter_temp)
+            id_temp = id_temp+1
+
+            try:
+                inter_temp = net_adap.post(url='/v2.0/inter/interconnections/', json=interconnection_data)
+            except:
+                app_log.info("Exception when contacting the network adapter")
+            
+            # app_log.info(inter_temp)
             local_interconnections_ids.append(inter_temp.json()['interconnection']['id'])
+            
+
+    # calling the interconnection service plugin to create the necessary objects
+    
+    workers3 = len(service_resources_list.keys())
+    id_temp = 1
+    app_log.info("Using threads for local interconnection create request. Starting.")
+    with concurrent.futures.ThreadPoolExecutor(max_workers=workers3) as executor:
+        for k, v in service_resources_list.items():
+            executor.submit(parallel_inters_creation_request, k, v)
+
+    app_log.info('Interconnection threads finished, proceeding')
 
     # Create a service instance using the schema and the build service
     service_schema = ServiceSchema()

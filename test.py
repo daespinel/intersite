@@ -169,14 +169,13 @@ if(test_type1 == "L3"):
             print("Exception when calling VerticalApi->vertical_create_service: %s\n" % e)
 
         end = time.time()
+        print(end-start)
+        file_results.write(str(end - start)+"\n")
 
         try:
             delete_service = api_instance.vertical_delete_service(api_response['service_global'])
         except ApiException as e:
             print("Exception when calling VerticalApi->vertical_create_service: %s\n" % e)
-        
-        print(end-start)
-        file_results.write(str(end - start)+"\n")
 
 file_results.close()
 
@@ -253,13 +252,12 @@ if(test_type2 == "L2"):
             print("Exception when calling VerticalApi->vertical_create_service: %s\n" % e)
 
         end = time.time()
+        print(end-start)
+        file_results.write(str(end - start)+"\n")
 
         try:
             delete_service = api_instance.vertical_delete_service(api_response['service_global'])
         except ApiException as e:
             print("Exception when calling VerticalApi->vertical_create_service: %s\n" % e)
-        
-        print(end-start)
-        file_results.write(str(end - start)+"\n")
 
 file_results.close()
