@@ -202,6 +202,9 @@ def verticalCreateService(service):
         CIDRs.append(ipaddress.ip_network(subnet['cidr']))
         if (item == local_region_name):
             parameter_local_cidr = subnet['cidr']
+        app_log.info(str(subnet['cidr']))
+        app_log.info(item)
+        app_log.info(local_region_name)
     
     workers1 = len(subnetworks.keys())
     app_log.info("Using threads for remote subnetwork request. Starting.")
