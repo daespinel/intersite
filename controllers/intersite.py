@@ -324,6 +324,7 @@ def verticalCreateService(service):
         #'parameter_master': local_region_name, 
         #'parameter_master_auth': local_region_url[0:-12]+":7575"
     }
+    app_log.info(parameters)
 
 
     service_params_schema = ParamsSchema()
