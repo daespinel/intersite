@@ -206,6 +206,7 @@ def verticalCreateService(service):
         app_log.info("Local " + local_region_name)
         
         if (item == local_region_name):
+            app_log.info("Trueee")
             parameter_local_cidr = subnet['cidr']
             
     workers1 = len(subnetworks.keys())
