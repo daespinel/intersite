@@ -185,7 +185,7 @@ def verticalCreateService(service):
         
 
     # Retrieving the subnetwork information given the region name
-    def parallel_subnetwork_request(item, value):
+    def parallel_subnetwork_request(item, value, local_region_name):
         net_adap_remote = Adapter(
         auth=auth,
         session=sess,
@@ -200,17 +200,19 @@ def verticalCreateService(service):
 
         subnet = subnetwork_temp['subnet']
         CIDRs.append(ipaddress.ip_network(subnet['cidr']))
+        
+        app_log.info("CIDR " + str(subnet['cidr']))
+        app_log.info("Item " + item)
+        app_log.info("Local " + local_region_name)
+        
         if (item == local_region_name):
             parameter_local_cidr = subnet['cidr']
-        app_log.info(str(subnet['cidr']))
-        app_log.info(item)
-        app_log.info(local_region_name)
-    
+            
     workers1 = len(subnetworks.keys())
     app_log.info("Using threads for remote subnetwork request. Starting.")
     with concurrent.futures.ThreadPoolExecutor(max_workers=workers1) as executor:
         for item, value in subnetworks.items():
-            executor.submit(parallel_subnetwork_request, item, value)
+            executor.submit(parallel_subnetwork_request, item, value, local_region_name)
 
     app_log.info('Threads finished, proceeding')    
         
