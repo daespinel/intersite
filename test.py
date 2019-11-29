@@ -10,6 +10,7 @@ import time
 from random import seed
 from random import randint
 import random
+import datetime
 
 FIRST_REGION_NAME = "RegionOne"
 #KEYSTONE_ENDPOINT = "http://{{keystone_ip_node}}/identity/v3"
@@ -55,7 +56,7 @@ for obj in catalog_endpoints:
 
 #print(regions_list)
 
-#cidrs_region_network_information = {'10.0.0.0/24': [], '10.0.1.0/24': [], '10.0.2.0/24': [], '10.0.3.0/24': [], '10.0.4.0/24': [], '10.0.5.0/24': [], '10.0.6.0/24': [], '10.0.7.0/24': [], '10.0.8.0/24': [], '10.0.9.0/24': [], '20.0.0.0/24': []}
+#cidrs_region_network_information = {'10.0.0.0/24': [], '10.0.1.0/24': [], '10.0.2.0/24': [], '10.0.3.0/24': [], '10.0.4.0/24': [], '10.0.5.0/24': [], '10.0.6.0/24': [], '10.0.7.0/24': [], '10.0.8.0/24': [], '10.0.9.0/24': []}
 
 cidrs_region_network_information = {'10.0.0.0/24': [], '20.0.0.0/24': []}
 
@@ -90,12 +91,13 @@ for i in range(len(regions_list)):
 
 test_type = "L3"
 test_size = 2
-test_number = 10
+test_number = 5
 configuration = Configuration()
 
 
 if(test_type == "L3"):
     for i in range(test_number):
+        seed(datetime.datetime.now())
         selected_index = randint(1,len(regions_list))
         host = regions_list[selected_index-1]
         #print(host['region_name'])
@@ -113,9 +115,13 @@ if(test_type == "L3"):
         resources = []
         
         while (condition):
+            seed(datetime.datetime.now())
             key = random.choice(list(cidrs_region_network_information))
-            for element in cidrs_region_network_information[key]:
-                #print('element')
+            condition1 = True
+            while(condition1):
+                seed(datetime.datetime.now())
+                second_element = random.randint(1,len(cidrs_region_network_information[key]))
+                element = cidrs_region_network_information[key][second_element-1]
                 if element['region_name'] == host['region_name']:
                     #print(key)
                     #print(element)
@@ -123,24 +129,31 @@ if(test_type == "L3"):
                     regions.append(element['region_name'])
                     resources.append(element['region_name']+","+element['net_uuid'])
                     condition = False
+                    condition1 = False
                     break
 
         for j in range(test_size-1):
             #print(j)
             condition = True
-            while (condition):
+            condition1 = True
+            while (condition and condition1):
+                seed(datetime.datetime.now())
                 key = random.choice(list(cidrs_region_network_information))
-                for element in cidrs_region_network_information[key]:
-                    #print('element')
-                    if element['region_name'] not in regions and key not in keys :
-                        #print(key)
-                        #print(element)
-                        keys.append(key)
-                        resources.append(element['region_name']+","+element['net_uuid'])
-                        condition = False
-                        break
+                seed(datetime.datetime.now())
+                second_element = random.randint(1,len(cidrs_region_network_information[key]))
+                print(second_element)
+                element = cidrs_region_network_information[key][second_element-1]
+                if element['region_name'] not in regions and key not in keys :
+                    #print(key)
+                    #print(element)
+                    keys.append(key)
+                    regions.append(element['region_name'])
+                    resources.append(element['region_name']+","+element['net_uuid'])
+                    condition = False
+                    condition1 = False
+                    break
 
-        #print(resources)
+        print(resources)
         #for i in range(test_size):
         #   for obj,val in cidrs_region_network_information.items():
         #        print(obj,val)
@@ -156,12 +169,12 @@ if(test_type == "L3"):
             #print(api_response['service_global'])
         except ApiException as e:
             print("Exception when calling VerticalApi->vertical_create_service: %s\n" % e)
-
+        end = time.time()
         try:
             delete_service = api_instance.vertical_delete_service(api_response['service_global'])
         except ApiException as e:
             print("Exception when calling VerticalApi->vertical_create_service: %s\n" % e)
-        end = time.time()
+        
         print(end - start)
 
 if(test_type == "L2"):
