@@ -99,10 +99,11 @@ file_results = open("results/Results_" + test_type1 + "_" + str(test_size)  +str
 
 
 if(test_type1 == "L3"):
-    file_results.write("L3\n")
-    file_results.write(str(test_size)+"\n")
-    file_results.write(str(test_number)+"\n")
+    #file_results.write("L3\n")
+    #file_results.write(str(test_size)+"\n")
+    #file_results.write(str(test_number)+"\n")
     for i in range(test_number):
+        seed(datetime.datetime.now())
         selected_index = randint(1,len(regions_list))
         host = regions_list[selected_index-1]
         #print(host['region_name'])
@@ -120,6 +121,7 @@ if(test_type1 == "L3"):
         resources = []
         
         while (condition):
+            seed(datetime.datetime.now())
             key = random.choice(list(cidrs_region_network_information))
             for element in cidrs_region_network_information[key]:
                 #print('element')
@@ -136,6 +138,7 @@ if(test_type1 == "L3"):
             #print(j)
             condition = True
             while (condition):
+                seed(datetime.datetime.now())
                 key = random.choice(list(cidrs_region_network_information))
                 for element in cidrs_region_network_information[key]:
                     #print('element')
@@ -182,10 +185,11 @@ file_results.close()
 file_results = open("results/Results_" + test_type2 + "_" + str(test_size)  +str(datetime.datetime.now().strftime("%H:%M:%S")),"w+")
 
 if(test_type2 == "L2"):
-    file_results.write("L2\n")
-    file_results.write(str(test_size)+"\n")
-    file_results.write(str(test_number)+"\n")
+    #file_results.write("L2\n")
+    #file_results.write(str(test_size)+"\n")
+    #file_results.write(str(test_number)+"\n")
     for i in range(test_number):
+        seed(datetime.datetime.now())
         selected_index = randint(1,len(regions_list))
         host = regions_list[selected_index-1]
         #print(host['region_name'])
@@ -203,6 +207,7 @@ if(test_type2 == "L2"):
         resources = []
         
         while (condition):
+            seed(datetime.datetime.now())
             key = random.choice(list(cidrs_region_network_information))
             for element in cidrs_region_network_information[key]:
                 #print('element')
@@ -219,6 +224,7 @@ if(test_type2 == "L2"):
             #print(j)
             condition = True
             while (condition):
+                seed(datetime.datetime.now())
                 key = random.choice(list(cidrs_region_network_information))
                 for element in cidrs_region_network_information[key]:
                     #print('element')

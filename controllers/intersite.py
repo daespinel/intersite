@@ -18,6 +18,7 @@ import ast
 from flask.logging import default_handler
 import threading
 import concurrent.futures
+from threading import Lock
 
 
 app_log = logging.getLogger()
@@ -82,6 +83,8 @@ def verticalCreateService(service):
     service_remote_inter_endpoints = {}
     parameter_local_allocation_pool = ''
     parameter_local_cidr = ''
+    parameter_local_cidr_temp = []
+    lock = Lock()
     parameter_local_ipv = 'v4'
     local_interconnections_ids = []
     random_id = createRandomGlobalId()
@@ -185,7 +188,10 @@ def verticalCreateService(service):
         
 
     # Retrieving the subnetwork information given the region name
-    def parallel_subnetwork_request(item, value, local_region_name):
+    def parallel_subnetwork_request(item, value):
+        
+        global parameter_local_cidr
+
         net_adap_remote = Adapter(
         auth=auth,
         session=sess,
@@ -201,21 +207,17 @@ def verticalCreateService(service):
         subnet = subnetwork_temp['subnet']
         CIDRs.append(ipaddress.ip_network(subnet['cidr']))
         
-        app_log.info("CIDR " + str(subnet['cidr']))
-        app_log.info("Item " + item)
-        app_log.info("Local " + local_region_name)
-        
         if (item == local_region_name):
-            app_log.info("Trueee")
-            parameter_local_cidr = subnet['cidr']
-            
+            parameter_local_cidr_temp.append(subnet['cidr'])
+
     workers1 = len(subnetworks.keys())
     app_log.info("Using threads for remote subnetwork request. Starting.")
     with concurrent.futures.ThreadPoolExecutor(max_workers=workers1) as executor:
         for item, value in subnetworks.items():
-            executor.submit(parallel_subnetwork_request, item, value, local_region_name)
-
+            executor.submit(parallel_subnetwork_request, item, value)
     app_log.info('Threads finished, proceeding')    
+
+
         
 
     # Validation for the L3 routing service
@@ -224,6 +226,8 @@ def verticalCreateService(service):
         app_log.info("L3 routing service to be done among the resources: " +
                     (" ".join(str(value) for value in service_resources_list.values())))
         app_log.info(subnetworks)
+
+        parameter_local_cidr = parameter_local_cidr_temp[0]
 
         # Doing the IP range validation to avoid overlapping problems
         for a, b in itertools.combinations(CIDRs, 2):
@@ -423,13 +427,13 @@ def verticalCreateService(service):
                 'parameter_master': '',
                 'parameter_master_auth': ''
             }
-
+            # TODO Need to check the cidr_ranges
             if service_type == 'L2':
                 remote_params['parameter_allocation_pool'] = cidr_ranges[index_cidr]
+                
                 remote_params['parameter_local_cidr'] = parameter_local_cidr
                 remote_params['parameter_master'] = local_region_name
                 remote_params['parameter_master_auth'] = local_region_url[0:-12]+":7575"
-                index_cidr = index_cidr + 1
 
             remote_service = {'name': service_name, 'type': service_type, 'params': [str(remote_params)
                                                                                      ],
@@ -437,6 +441,9 @@ def verticalCreateService(service):
             # send horizontal (service_remote_inter_endpoints[obj])
             headers = {'Content-Type': 'application/json',
                        'Accept': 'application/json'}
+
+            app_log.info("Sending the horizontal really in details")
+            
             r = requests.post(remote_inter_instance, data=json.dumps(
                 remote_service), headers=headers)
 
