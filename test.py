@@ -56,7 +56,7 @@ for obj in catalog_endpoints:
 
 #print(regions_list)
 
-cidrs_region_network_information = {'10.0.0.0/24': [], '10.0.1.0/24': [], '10.0.2.0/24': [], '10.0.3.0/24': [], '10.0.4.0/24': [], '10.0.5.0/24': [], '10.0.6.0/24': [], '10.0.7.0/24': [], '10.0.8.0/24': [], '10.0.9.0/24': [], '20.0.0.0/24': []}
+cidrs_region_network_information = {'10.0.0.0/24': [], '10.0.1.0/24': [], '10.0.2.0/24': [], '10.0.3.0/24': [], '10.0.4.0/24': [], '10.0.5.0/24': [], '10.0.6.0/24': [], '10.0.7.0/24': [], '10.0.8.0/24': [], '10.0.9.0/24': []}
 
 #cidrs_region_network_information = {'10.0.0.0/24': [], '20.0.0.0/24': []}
 
@@ -123,8 +123,10 @@ if(test_type1 == "L3"):
         while (condition):
             seed(datetime.datetime.now())
             key = random.choice(list(cidrs_region_network_information))
-            for element in cidrs_region_network_information[key]:
-                #print('element')
+            condition1 + True
+            while(condition1):            
+                second_element = random.randint(1,len(cidrs_region_network_information[key]))
+                element = cidrs_region_network_information[key][second_element-1]
                 if element['region_name'] == host['region_name']:
                     #print(key)
                     #print(element)
@@ -132,24 +134,28 @@ if(test_type1 == "L3"):
                     regions.append(element['region_name'])
                     resources.append(element['region_name']+","+element['net_uuid'])
                     condition = False
+                    condition1 = False
                     break
 
         for j in range(test_size-1):
             #print(j)
             condition = True
-            while (condition):
+            condition1 = True
+            while (condition and condition1):
                 seed(datetime.datetime.now())
-                key = random.choice(list(cidrs_region_network_information))
-                for element in cidrs_region_network_information[key]:
-                    #print('element')
-                    if element['region_name'] not in regions and key not in keys :
-                        #print(key)
-                        #print(element)
-                        keys.append(key)
-                        regions.append(element['region_name'])
-                        resources.append(element['region_name']+","+element['net_uuid'])
-                        condition = False
-                        break
+                second_element = random.randint(1,len(cidrs_region_network_information[key]))
+                #print(second_element)
+                element = cidrs_region_network_information[key][second_element-1]
+                if element['region_name'] not in regions and key not in keys :
+                    #print(key)
+                    #print(element)
+                    keys.append(key)
+                    regions.append(element['region_name'])
+                    resources.append(element['region_name']+","+element['net_uuid'])
+                    condition = False
+                    condition1 = False
+                    break
+
 
         print(i)
         print(resources)
@@ -162,7 +168,7 @@ if(test_type1 == "L3"):
 
 
         service.resources = resources
-        api_responde = ""
+        
         start = time.time()
         try:
             # Horizontal request to create an inter-site Service POST
@@ -172,6 +178,7 @@ if(test_type1 == "L3"):
             print("Exception when calling VerticalApi->vertical_create_service: %s\n" % e)
 
         end = time.time()
+        print(api_response["service_global"])
         print(end-start)
         file_results.write(str(end - start)+"\n")
 
@@ -205,12 +212,14 @@ if(test_type2 == "L2"):
         keys = []
         regions = []
         resources = []
-        
+
         while (condition):
             seed(datetime.datetime.now())
             key = random.choice(list(cidrs_region_network_information))
-            for element in cidrs_region_network_information[key]:
-                #print('element')
+            condition1 + True
+            while(condition1):            
+                second_element = random.randint(1,len(cidrs_region_network_information[key]))
+                element = cidrs_region_network_information[key][second_element-1]
                 if element['region_name'] == host['region_name']:
                     #print(key)
                     #print(element)
@@ -218,24 +227,27 @@ if(test_type2 == "L2"):
                     regions.append(element['region_name'])
                     resources.append(element['region_name']+","+element['net_uuid'])
                     condition = False
+                    condition1 = False
                     break
 
         for j in range(test_size-1):
             #print(j)
             condition = True
-            while (condition):
+            condition1 = True
+            while (condition and condition1):
                 seed(datetime.datetime.now())
-                key = random.choice(list(cidrs_region_network_information))
-                for element in cidrs_region_network_information[key]:
-                    #print('element')
-                    if element['region_name'] not in regions and key in keys :
-                        #print(key)
-                        #print(element)
-                        #keys.append(key)
-                        regions.append(element['region_name'])
-                        resources.append(element['region_name']+","+element['net_uuid'])
-                        condition = False
-                        break
+                second_element = random.randint(1,len(cidrs_region_network_information[key]))
+                #print(second_element)
+                element = cidrs_region_network_information[key][second_element-1]
+                if element['region_name'] not in regions and key in keys :
+                    #print(key)
+                    #print(element)
+                    regions.append(element['region_name'])
+                    resources.append(element['region_name']+","+element['net_uuid'])
+                    condition = False
+                    condition1 = False
+                    break
+
 
         print(i)
         print(resources)
