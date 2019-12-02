@@ -95,10 +95,9 @@ test_size = 2
 test_number = 100
 configuration = Configuration()
 
-file_results = open("results/Results_" + test_type1 + "_" + str(test_size)  +str(datetime.datetime.now().strftime("%H:%M:%S")),"w+")
-
 
 if(test_type1 == "L3"):
+    file_results = open("results/Results_" + test_type1 + "_" + str(test_size)  +str(datetime.datetime.now().strftime("%H:%M:%S")),"w+")
     #file_results.write("L3\n")
     #file_results.write(str(test_size)+"\n")
     #file_results.write(str(test_number)+"\n")
@@ -190,11 +189,11 @@ if(test_type1 == "L3"):
         except ApiException as e:
             print("Exception when calling VerticalApi->vertical_create_service: %s\n" % e)
 
-file_results.close()
+    file_results.close()
 
-file_results = open("results/Results_" + test_type2 + "_" + str(test_size)  +str(datetime.datetime.now().strftime("%H:%M:%S")),"w+")
 
 if(test_type2 == "L2"):
+    file_results = open("results/Results_" + test_type2 + "_" + str(test_size)  +str(datetime.datetime.now().strftime("%H:%M:%S")),"w+")
     #file_results.write("L2\n")
     #file_results.write(str(test_size)+"\n")
     #file_results.write(str(test_number)+"\n")
@@ -219,7 +218,7 @@ if(test_type2 == "L2"):
         while (condition):
             seed(datetime.datetime.now())
             key = random.choice(list(cidrs_region_network_information))
-            condition1 + True
+            condition1 = True
             while(condition1):            
                 second_element = random.randint(1,len(cidrs_region_network_information[key]))
                 element = cidrs_region_network_information[key][second_element-1]
@@ -281,4 +280,4 @@ if(test_type2 == "L2"):
         except ApiException as e:
             print("Exception when calling VerticalApi->vertical_create_service: %s\n" % e)
 
-file_results.close()
+    file_results.close()

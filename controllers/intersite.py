@@ -273,9 +273,9 @@ def verticalCreateService(service):
 
         parameter_local_allocation_pool = cidr_ranges[0]
 
-        #app_log.info('Next ranges will be used:')
-        #for element in cidr_ranges:
-        #    app_log.info(element)
+        app_log.info('Next ranges will be used:')
+        for element in cidr_ranges:
+            app_log.info(element)
 
     def parallel_inters_creation_request(k,v):
         if local_region_name != k:
@@ -362,13 +362,14 @@ def verticalCreateService(service):
                 'l2allocationpool_site': objet_region
             }
             
-            cidr_range = cidr_range + 1
 
             new_l2allocation_pool_params = service_l2allocation_pool_schema.load(
                 to_add_l2allocation_pool, session=db.session).data
             new_l2master_params.l2master_l2allocationpools.append(
                 new_l2allocation_pool_params)
             l2allocation_list[objet_region] = cidr_ranges[cidr_range]
+
+            cidr_range = cidr_range + 1
 
         while cidr_range < len(cidr_ranges):
             
