@@ -273,9 +273,9 @@ def verticalCreateService(service):
 
         parameter_local_allocation_pool = cidr_ranges[0]
 
-        app_log.info('Next ranges will be used:')
-        for element in cidr_ranges:
-            app_log.info(element)
+        #app_log.info('Next ranges will be used:')
+        #for element in cidr_ranges:
+        #    app_log.info(element)
 
     def parallel_inters_creation_request(k,v):
         if local_region_name != k:
@@ -295,7 +295,7 @@ def verticalCreateService(service):
             except:
                 app_log.info("Exception when contacting the network adapter")
             
-            app_log.info(inter_temp)
+            #app_log.info(inter_temp)
             local_interconnections_ids.append(inter_temp.json()['interconnection']['id'])
 
     # calling the interconnection service plugin to create the necessary objects
@@ -323,7 +323,7 @@ def verticalCreateService(service):
         new_service.service_resources.append(new_service_resources)
 
     # Adding the parameters to the service
-    app_log.info("Adding the parameters to the service")
+    #app_log.info("Adding the parameters to the service")
     parameters = {
         'parameter_allocation_pool': parameter_local_allocation_pool,
         'parameter_local_cidr': parameter_local_cidr,
@@ -334,7 +334,7 @@ def verticalCreateService(service):
         #'parameter_master': local_region_name, 
         #'parameter_master_auth': local_region_url[0:-12]+":7575"
     }
-    app_log.info(parameters)
+    #app_log.info(parameters)
 
 
     service_params_schema = ParamsSchema()
@@ -352,7 +352,7 @@ def verticalCreateService(service):
             new_l2master, session=db.session).data
         service_l2allocation_pool_schema = L2AllocationPoolSchema()
         cidr_range = 0
-        l2allocation_list = []
+        l2allocation_list = {}
 
         for objet_region in service_resources_list.keys():
 
@@ -368,7 +368,7 @@ def verticalCreateService(service):
                 to_add_l2allocation_pool, session=db.session).data
             new_l2master_params.l2master_l2allocationpools.append(
                 new_l2allocation_pool_params)
-            l2allocation_list.append(new_l2allocation_pool_params)
+            l2allocation_list[objet_region] = cidr_ranges[cidr_range]
 
         while cidr_range < len(cidr_ranges):
             
@@ -444,8 +444,6 @@ def verticalCreateService(service):
             headers = {'Content-Type': 'application/json',
                        'Accept': 'application/json'}
 
-            app_log.info("Sending the horizontal really in details")
-            
             r = requests.post(remote_inter_instance, data=json.dumps(
                 remote_service), headers=headers)
 
@@ -458,7 +456,7 @@ def verticalCreateService(service):
     with concurrent.futures.ThreadPoolExecutor(max_workers=workers2) as executor:
         for obj in service_resources_list.keys():
             if service_type == 'L2':    
-                executor.submit(parallel_horizontal_request, obj, "")
+                executor.submit(parallel_horizontal_request, obj, l2allocation_list[obj])
             if service_type == 'L3':
                 executor.submit(parallel_horizontal_request, obj, "")
     app_log.info('Horizontal threads finished, proceeding')    
@@ -597,8 +595,6 @@ def verticalUpdateService(global_id, service):
                         inter_del_list = net_adap.get(url='/v2.0/inter/interconnections/', json=filters).json()['interconnections']
                     except:
                         app_log.info("Exception when contacting the network adapter")
-
-                    print(inter_del_list)
 
                     if inter_del_list:
                         interco_delete = inter_del_list.pop()

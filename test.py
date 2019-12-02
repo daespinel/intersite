@@ -123,8 +123,9 @@ if(test_type1 == "L3"):
         while (condition):
             seed(datetime.datetime.now())
             key = random.choice(list(cidrs_region_network_information))
-            condition1 + True
-            while(condition1):            
+            condition1 = True
+            while(condition1):
+                seed(datetime.datetime.now())
                 second_element = random.randint(1,len(cidrs_region_network_information[key]))
                 element = cidrs_region_network_information[key][second_element-1]
                 if element['region_name'] == host['region_name']:
@@ -143,8 +144,10 @@ if(test_type1 == "L3"):
             condition1 = True
             while (condition and condition1):
                 seed(datetime.datetime.now())
+                key = random.choice(list(cidrs_region_network_information))
+                seed(datetime.datetime.now())
                 second_element = random.randint(1,len(cidrs_region_network_information[key]))
-                #print(second_element)
+                print(second_element)
                 element = cidrs_region_network_information[key][second_element-1]
                 if element['region_name'] not in regions and key not in keys :
                     #print(key)
