@@ -95,6 +95,10 @@ class L2AllocationPool(db.Model):
     l2master_id = db.Column(
         db.Integer, db.ForeignKey('l2master.l2master_id'))
 
+    def get_string_allocation_pool(self):
+        answer = self.l2allocationpool_first_ip + "-" + self.l2allocationpool_last_ip
+        return answer
+
 
 # Service schemas for model read and write
 # Service associated schema
