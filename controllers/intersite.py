@@ -448,8 +448,8 @@ def verticalCreateService(service):
                 remote_service), headers=headers)
 
 
-    app_log.info("Preparing to use the following l2")
-    app_log.info(l2allocation_list)
+    #app_log.info("Preparing to use the following l2")
+    #app_log.info(l2allocation_list)
 
     workers2 = len(service_resources_list.keys())
     app_log.info("Using threads for horizontal creation request. Starting.")
