@@ -177,7 +177,7 @@ def verticalCreateService(service):
         subnetworks[item] = subnet['subnets'][0]
     
     # Retrieving information for networks given the region name
-    # TODO First action that needs to be paralelized
+
     workers = len(service_resources_list.keys())
     app_log.info("Using threads for remote network request. Starting.")
     with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
@@ -291,7 +291,7 @@ def verticalCreateService(service):
             }}
 
             try:
-                inter_temp = net_adap.post(url='/v2.0/interconnection/interconnections/', json=interconnection_data)
+                inter_temp = net_adap.post(url='/v2.0/inter/interconnections/', json=interconnection_data)
             except:
                 app_log.info("Exception when contacting the network adapter")
             
@@ -352,6 +352,7 @@ def verticalCreateService(service):
             new_l2master, session=db.session).data
         service_l2allocation_pool_schema = L2AllocationPoolSchema()
         cidr_range = 0
+        l2allocation_list = []
 
         for objet_region in service_resources_list.keys():
 
@@ -367,6 +368,7 @@ def verticalCreateService(service):
                 to_add_l2allocation_pool, session=db.session).data
             new_l2master_params.l2master_l2allocationpools.append(
                 new_l2allocation_pool_params)
+            l2allocation_list.append(new_l2allocation_pool_params)
 
         while cidr_range < len(cidr_ranges):
             
@@ -412,10 +414,10 @@ def verticalCreateService(service):
             app_log.info("Exception when contacting the network adapter")
 
     # TODO Do the threads here too
-    index_cidr = 1
+    
     # Sending remote inter-site create requests to the distant nodes
 
-    def parallel_horizontal_request(obj):
+    def parallel_horizontal_request(obj, alloc_pool):
         if obj != service_utils.get_region_name():
             remote_inter_instance = service_remote_inter_endpoints[obj].strip(
                 '9696/')
@@ -429,7 +431,7 @@ def verticalCreateService(service):
             }
             # TODO Need to check the cidr_ranges
             if service_type == 'L2':
-                remote_params['parameter_allocation_pool'] = cidr_ranges[index_cidr]
+                remote_params['parameter_allocation_pool'] = alloc_pool
                 
                 remote_params['parameter_local_cidr'] = parameter_local_cidr
                 remote_params['parameter_master'] = local_region_name
@@ -447,11 +449,18 @@ def verticalCreateService(service):
             r = requests.post(remote_inter_instance, data=json.dumps(
                 remote_service), headers=headers)
 
+
+    app_log.info("Preparing to use the following l2")
+    app_log.info(l2allocation_list)
+
     workers2 = len(service_resources_list.keys())
     app_log.info("Using threads for horizontal creation request. Starting.")
     with concurrent.futures.ThreadPoolExecutor(max_workers=workers2) as executor:
         for obj in service_resources_list.keys():
-            executor.submit(parallel_horizontal_request, obj)
+            if service_type == 'L2':    
+                executor.submit(parallel_horizontal_request, obj, "")
+            if service_type == 'L3':
+                executor.submit(parallel_horizontal_request, obj, "")
     app_log.info('Horizontal threads finished, proceeding')    
 
     # Add the service to the database
@@ -558,7 +567,7 @@ def verticalUpdateService(global_id, service):
                     inter = element['interconnexion_uuid']
 
                     try:
-                        inter_del = net_adap.delete('/v2.0/interconnection/interconnections/' + inter)
+                        inter_del = net_adap.delete('/v2.0/inter/interconnections/' + inter)
                     except:
                         app_log.info("Exception when contacting the network adapter")
 
@@ -585,7 +594,7 @@ def verticalUpdateService(global_id, service):
                                 'remote_resource_id': remote_resource_to_delete['resource_uuid']}
                     
                     try:
-                        inter_del_list = net_adap.get(url='/v2.0/interconnection/interconnections/', json=filters).json()['interconnections']
+                        inter_del_list = net_adap.get(url='/v2.0/inter/interconnections/', json=filters).json()['interconnections']
                     except:
                         app_log.info("Exception when contacting the network adapter")
 
@@ -596,7 +605,7 @@ def verticalUpdateService(global_id, service):
                         interconnection_uuid_to_delete = interco_delete['id']
 
                         try:
-                            inter_del = net_adap.delete('/v2.0/interconnection/interconnections/' + interconnection_uuid_to_delete)
+                            inter_del = net_adap.delete('/v2.0/inter/interconnections/' + interconnection_uuid_to_delete)
                         except:
                             app_log.info("Exception when contacting the network adapter")
 
@@ -1028,7 +1037,7 @@ def verticalDeleteService(global_id):
             inter = element['interconnexion_uuid']
             
             try:
-                inter_del = net_adap.delete(url='/v2.0/interconnection/interconnections/' + inter)
+                inter_del = net_adap.delete(url='/v2.0/inter/interconnections/' + inter)
             except:
                 app_log.info("Exception when contacting the network adapter")
 
@@ -1142,7 +1151,7 @@ def horizontalCreateService(service):
             }}
 
             try:
-                inter_temp = net_adap.post(url='/v2.0/interconnections/interconnections/', json=interconnection_data)
+                inter_temp = net_adap.post(url='/v2.0/inter/interconnections/', json=interconnection_data)
             except:
                 app_log.info("Exception when contacting the network adapter")
             
@@ -1561,7 +1570,7 @@ def horizontalDeleteService(global_id):
         for element in interconnections_delete:
             inter = element['interconnexion_uuid']
             
-            inter_del = net_adap.delete(url='/v2.0/interconnection/interconnections/' + inter)
+            inter_del = net_adap.delete(url='/v2.0/inter/interconnections/' + inter)
 
         db.session.delete(service)
         db.session.commit()
