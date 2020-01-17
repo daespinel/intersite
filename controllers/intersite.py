@@ -292,7 +292,7 @@ def verticalCreateService(service):
             }}
 
             try:
-                inter_temp = net_adap.post(url='/v2.0/inter/interconnections/', json=interconnection_data)
+                inter_temp = net_adap.post(url='/v2.0/interconnection/interconnections/', json=interconnection_data)
             except:
                 app_log.info("Exception when contacting the network adapter")
             

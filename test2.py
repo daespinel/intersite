@@ -2,6 +2,7 @@ import random
 import datetime
 from random import seed
 from random import randint
+import time
 
 print(datetime.datetime.now())
 
@@ -11,6 +12,8 @@ test_type = "L3"
 test_size = 2
 test_number = 5
 
+end = time.time()
+print(end)
 
 if(test_type == "L3"):
     for i in range(test_number):

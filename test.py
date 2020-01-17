@@ -13,8 +13,8 @@ import random
 import datetime
 
 FIRST_REGION_NAME = "RegionOne"
-KEYSTONE_ENDPOINT = "http://{{keystone_ip_node}}/identity/v3"
-#KEYSTONE_ENDPOINT = "http://192.168.57.6/identity/v3"
+#KEYSTONE_ENDPOINT = "http://{{keystone_ip_node}}/identity/v3"
+KEYSTONE_ENDPOINT = "http://192.168.57.6/identity/v3"
 
 
 def get_session_object(auth_param):
@@ -56,9 +56,9 @@ for obj in catalog_endpoints:
 
 #print(regions_list)
 
-cidrs_region_network_information = {'10.0.0.0/24': [], '10.0.1.0/24': [], '10.0.2.0/24': [], '10.0.3.0/24': [], '10.0.4.0/24': [], '10.0.5.0/24': [], '10.0.6.0/24': [], '10.0.7.0/24': [], '10.0.8.0/24': [], '10.0.9.0/24': []}
+#cidrs_region_network_information = {'10.0.0.0/24': [], '10.0.1.0/24': [], '10.0.2.0/24': [], '10.0.3.0/24': [], '10.0.4.0/24': [], '10.0.5.0/24': [], '10.0.6.0/24': [], '10.0.7.0/24': [], '10.0.8.0/24': [], '10.0.9.0/24': []}
 
-#cidrs_region_network_information = {'10.0.0.0/24': [], '20.0.0.0/24': []}
+cidrs_region_network_information = {'10.0.0.0/24': [], '20.0.0.0/24': []}
 
 # For every region find the networks created with heat
 for i in range(len(regions_list)):
@@ -90,14 +90,14 @@ for i in range(len(regions_list)):
 #print(cidrs_region_network_information)
 
 test_type1 = "L3"
-test_type2 = "L2"
+test_type2 = "L4"
 test_size = 2
-test_number = 100
+test_number = 1
 configuration = Configuration()
 
 
 if(test_type1 == "L3"):
-    file_results = open("results/Results_" + test_type1 + "_" + str(test_size)  +str(datetime.datetime.now().strftime("%H:%M:%S")),"w+")
+    file_results = open("results/Results_" + test_type1 + "_" + str(test_size) + "_"  +str(datetime.datetime.now().strftime("%H:%M:%S")),"w+")
     #file_results.write("L3\n")
     #file_results.write(str(test_size)+"\n")
     #file_results.write(str(test_number)+"\n")
@@ -170,7 +170,7 @@ if(test_type1 == "L3"):
 
         service.resources = resources
         
-        start = time.time()
+        start = time.clock()
         try:
             # Horizontal request to create an inter-site Service POST
             api_response = api_instance.vertical_create_service(service)
@@ -178,8 +178,10 @@ if(test_type1 == "L3"):
         except ApiException as e:
             print("Exception when calling VerticalApi->vertical_create_service: %s\n" % e)
 
-        end = time.time()
+        end = time.clock()
         print(api_response["service_global"])
+        print(start)
+        print(end)
         print(end-start)
         file_results.write(str(end - start)+"\n")
 
@@ -192,7 +194,7 @@ if(test_type1 == "L3"):
 
 
 if(test_type2 == "L2"):
-    file_results = open("results/Results_" + test_type2 + "_" + str(test_size)  +str(datetime.datetime.now().strftime("%H:%M:%S")),"w+")
+    file_results = open("results/Results_" + test_type2 + "_" + str(test_size)  + "_" +str(datetime.datetime.now().strftime("%H:%M:%S")),"w+")
     #file_results.write("L2\n")
     #file_results.write(str(test_size)+"\n")
     #file_results.write(str(test_number)+"\n")
