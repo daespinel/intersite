@@ -146,7 +146,6 @@ if(test_type1 == "L3"):
                 key = random.choice(list(cidrs_region_network_information))
                 seed(datetime.datetime.now())
                 second_element = random.randint(1,len(cidrs_region_network_information[key]))
-                print(second_element)
                 element = cidrs_region_network_information[key][second_element-1]
                 if element['region_name'] not in regions and key not in keys :
                     #print(key)
@@ -272,6 +271,7 @@ if(test_type2 == "L2"):
             print("Exception when calling VerticalApi->vertical_create_service: %s\n" % e)
 
         end = time.time()
+        print(api_response["service_global"])
         print(end-start)
         file_results.write(str(end - start)+"\n")
 

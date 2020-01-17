@@ -96,6 +96,7 @@ paths:
                 description: Name of the inter-site service
               resources:
                 type: array
+                description: Resources belonging to the user
                 items:
                   type: string 
       responses:

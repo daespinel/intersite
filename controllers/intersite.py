@@ -160,6 +160,8 @@ def verticalCreateService(service):
     subnetworks = {}
     CIDRs = []
 
+    '''
+    # Retrieving information for networks given the region name
     def parallel_network_request(item, value):
         net_adap_remote = Adapter(
         auth=auth,
@@ -176,8 +178,8 @@ def verticalCreateService(service):
         subnet = network_temp['network']
         subnetworks[item] = subnet['subnets'][0]
     
-    # Retrieving information for networks given the region name
-
+    
+    
     workers = len(service_resources_list.keys())
     app_log.info("Using threads for remote network request. Starting.")
     with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
@@ -185,7 +187,7 @@ def verticalCreateService(service):
             executor.submit(parallel_network_request, item, value)
 
     app_log.info('Threads finished, proceeding')    
-        
+    '''    
 
     # Retrieving the subnetwork information given the region name
     def parallel_subnetwork_request(item, value):
@@ -200,32 +202,31 @@ def verticalCreateService(service):
         region_name=item)
 
         try:
-            subnetwork_temp = net_adap_remote.get('/v2.0/subnets/' + value).json()
+            subnetworks_temp = net_adap_remote.get('/v2.0/subnets/').json()
         except:
             app_log.info("Exception when contacting the network adapter")
 
-        subnet = subnetwork_temp['subnet']
-        CIDRs.append(ipaddress.ip_network(subnet['cidr']))
-        
-        if (item == local_region_name):
-            parameter_local_cidr_temp.append(subnet['cidr'])
-
-    workers1 = len(subnetworks.keys())
-    app_log.info("Using threads for remote subnetwork request. Starting.")
-    with concurrent.futures.ThreadPoolExecutor(max_workers=workers1) as executor:
-        for item, value in subnetworks.items():
-            executor.submit(parallel_subnetwork_request, item, value)
-    app_log.info('Threads finished, proceeding')    
-
-
-        
+        for subnetwork in subnetworks_temp['subnets']:
+            if (item == local_region_name):
+                parameter_local_cidr_temp.append(subnetwork['cidr'])
+            if(value == subnetwork['network_id']): 
+                CIDRs.append(ipaddress.ip_network(subnetwork['cidr']))
+                break        
 
     # Validation for the L3 routing service
+    # Use of the parallel request methods
     if service_type == 'L3':
 
         app_log.info("L3 routing service to be done among the resources: " +
                     (" ".join(str(value) for value in service_resources_list.values())))
         app_log.info(subnetworks)
+
+        workers1 = len(service_resources_list.keys())
+        app_log.info("Using threads for remote subnetwork request. Starting.")
+        with concurrent.futures.ThreadPoolExecutor(max_workers=workers1) as executor:
+            for item, value in service_resources_list.items():
+                executor.submit(parallel_subnetwork_request, item, value)
+        app_log.info('Threads finished, proceeding')
 
         parameter_local_cidr = parameter_local_cidr_temp[0]
 
