@@ -7,6 +7,7 @@ import swagger_client
 from swagger_client.configuration import Configuration
 from swagger_client.rest import ApiException
 import time
+import timeit
 from random import seed
 from random import randint
 import random
@@ -170,15 +171,19 @@ if(test_type1 == "L3"):
 
         service.resources = resources
         
-        start = time.clock()
+        #start = time.clock()
+        start = time.time()
+
         try:
             # Horizontal request to create an inter-site Service POST
             api_response = api_instance.vertical_create_service(service)
             #print(api_response['service_global'])
         except ApiException as e:
-            print("Exception when calling VerticalApi->vertical_create_service: %s\n" % e)
-
-        end = time.clock()
+            print("Exception when calling VerticalApi->vertical_create_service: %s\\n" % e)
+        
+        #end = time.clock()
+        end = time.time()
+        
         print(api_response["service_global"])
         print(start)
         print(end)

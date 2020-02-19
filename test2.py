@@ -3,20 +3,11 @@ import datetime
 from random import seed
 from random import randint
 import time
+from datetime import datetime
 
-print(datetime.datetime.now())
+datetime_str = '09/19/18 13:55:26'
 
-regions_list = ["RegionOne","RegionTwo","RegionThree","RegionFour","RegionFive","RegionSix","RegionSeven","RegionEigth","RegionNine"]
+datetime_object = datetime.strptime(datetime_str, '%m/%d/%y %H:%M:%S')
 
-test_type = "L3"
-test_size = 2
-test_number = 5
-
-end = time.time()
-print(end)
-
-if(test_type == "L3"):
-    for i in range(test_number):
-        seed(datetime.datetime.now())
-        selected_index = randint(1,len(regions_list))
-        print(selected_index)
+print(type(datetime_object))
+print(datetime_object)  # printed in default format

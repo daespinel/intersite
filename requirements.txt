@@ -1,4 +1,4 @@
-connexion==2.3.0
+connexion==2.6.0
 Flask==1.0.3
 flask-marshmallow==0.10.1
 Flask-SQLAlchemy==2.1
