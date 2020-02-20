@@ -12,6 +12,7 @@ import ipaddress
 import itertools
 import string
 import random
+import time
 import requests
 import logging
 import ast
@@ -70,6 +71,8 @@ def verticalReadOneService(global_id):
 
 def verticalCreateService(service):
     # Taking information from the API http POST request
+    start_time = time.time()
+    app_log.info('Starting time: %s', start_time)
     app_log.info('Starting a new service creation request')
     local_resource = ''
     service_name = service.get("name", None)
@@ -466,6 +469,10 @@ def verticalCreateService(service):
     # Add the service to the database
     db.session.add(new_service)
     db.session.commit()
+
+    end_time = time.time()
+    app_log.info('Ending time: %s', end_time)
+    app_log.info('Total time spent: %s', end_time - start_time)
 
     return service_schema.dump(new_service).data, 201
 
