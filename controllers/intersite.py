@@ -138,8 +138,10 @@ def verticalCreateService(service):
     if (network_temp_local == ''):
         abort(404, "There is no local resource for the service")
 
-    # Saving info for Neutron and Keystone endpoints to be contacted based on keystone catalog
+    # Saving info for Neutron and Keystone endpoints to be contacted based on keystone catalogue
     
+    app_log.info('Starting: Saving Neutron and Keystone information from catalogue')
+
     for obj in catalog_endpoints:
         if obj['name'] == 'neutron':
             for endpoint in obj['endpoints']:
@@ -154,6 +156,8 @@ def verticalCreateService(service):
                     if endpoint['region'] == region_name and endpoint['interface'] == 'public':
                         service_remote_auth_endpoints[region_name] = endpoint['url']+'/v3'
                         break
+
+    app_log.info('Finishing: Saving Neutron and Keystone information from catalogue')
 
     # If a provided Region Name doesn't exist, exit the method
     if bool(service_resources_list_search):
@@ -220,16 +224,16 @@ def verticalCreateService(service):
     # Use of the parallel request methods
     if service_type == 'L3':
 
-        app_log.info("L3 routing service to be done among the resources: " +
+        app_log.info("Starting: L3 routing service to be done among the resources: " +
                     (" ".join(str(value) for value in service_resources_list.values())))
         app_log.info(subnetworks)
 
         workers1 = len(service_resources_list.keys())
-        app_log.info("Using threads for remote subnetwork request. Starting.")
+        app_log.info("Starting: Using threads for remote subnetwork request.")
         with concurrent.futures.ThreadPoolExecutor(max_workers=workers1) as executor:
             for item, value in service_resources_list.items():
                 executor.submit(parallel_subnetwork_request, item, value)
-        app_log.info('Threads finished, proceeding')
+        app_log.info('Finishing: Using threads for remote subnetwork request')
 
         parameter_local_cidr = parameter_local_cidr_temp[0]
 
@@ -242,7 +246,7 @@ def verticalCreateService(service):
     # Validation for the Layer 2 network extension
     if service_type == 'L2':
 
-        app_log.info("L2 extension service to be done among the resources: " +
+        app_log.info("Starting: L2 extension service to be done among the resources: " +
                      (" ".join(str(value) for value in service_resources_list.values())))
 
         # Validating if the networks have the same CIDR
@@ -268,12 +272,15 @@ def verticalCreateService(service):
                      " , Number of sites: " + str(len(service_resources_list)) + " , IPs per site:" + str(host_per_site))
         base_index = 3
         site_index = 1
+
+        app_log.info("Starting: L2 CIDR allocation pool split.")
         while base_index <= ips_cidr_available and site_index <= len(service_resources_list):
             cidr_ranges.append(
                 str(cidr[base_index]) + "-" + str(cidr[base_index + host_per_site - 1]))
             base_index = base_index + int(host_per_site)
             site_index = site_index + 1
         cidr_ranges.append(str(cidr[base_index]) + "-" + str(cidr[ips_cidr_available]))
+        app_log.info("Finishing: L2 CIDR allocation pool split.")
 
         parameter_local_allocation_pool = cidr_ranges[0]
 
@@ -305,12 +312,13 @@ def verticalCreateService(service):
     # calling the interconnection service plugin to create the necessary objects
     
     workers3 = len(service_resources_list.keys())
-    app_log.info("Using threads for local interconnection create request. Starting.")
+    app_log.info("Starting: Using threads for local interconnection create request.")
     with concurrent.futures.ThreadPoolExecutor(max_workers=workers3) as executor:
         for k, v in service_resources_list.items():
             executor.submit(parallel_inters_creation_request, k, v)
-    app_log.info('Interconnection threads finished, proceeding')
+    app_log.info('Finishing: Using threads for local interconnection create request.')
 
+    app_log.info("Starting: Creating the service schema")
     # Create a service instance using the schema and the build service
     service_schema = ServiceSchema()
     new_service = service_schema.load(to_service, session=db.session).data
@@ -345,8 +353,12 @@ def verticalCreateService(service):
     new_service_params = service_params_schema.load(
         parameters, session=db.session).data
 
+    app_log.info("Finishing: Creating the service schema")
+
     # Adding the L2 Master object if the service type is L2
     if service_type == 'L2':
+
+        app_log.info("Starting: Adding the service master.")
         new_service_params.parameter_master = local_region_name
         new_service_params.parameter_master_auth = local_region_url[0:-12]+":7575"
 
@@ -392,8 +404,11 @@ def verticalCreateService(service):
 
         new_service_params.parameter_l2master.append(new_l2master_params)
 
+        app_log.info("Finishing: Adding the service master.")
+
     new_service.service_params.append(new_service_params)
 
+    app_log.info("Starting: Adding the interconnections to the service.")
     # Adding the interconnections to the service
     for element in local_interconnections_ids:
         interconnexion = {
@@ -404,8 +419,11 @@ def verticalCreateService(service):
             interconnexion, session=db.session).data
         new_service.service_interconnections.append(
             new_service_interconnections)
+    app_log.info("Finishing: Adding the interconnections to the service.")
 
     # Updating the DHCP pool ranges for the local deployment
+
+    app_log.info("Starting: Updating the DHCP pool ranges for the local deployment.")
     if service_type == 'L2':
         allocation_start = cidr_ranges[0].split("-", 1)[0]
         allocation_end = cidr_ranges[0].split("-", 1)[1]
@@ -418,8 +436,8 @@ def verticalCreateService(service):
         except:
             app_log.info("Exception when contacting the network adapter")
 
-    # TODO Do the threads here too
-    
+    app_log.info("Finishing: Updating the DHCP pool ranges for the local deployment.")
+ 
     # Sending remote inter-site create requests to the distant nodes
 
     def parallel_horizontal_request(obj, alloc_pool):
@@ -457,14 +475,14 @@ def verticalCreateService(service):
     #app_log.info(l2allocation_list)
 
     workers2 = len(service_resources_list.keys())
-    app_log.info("Using threads for horizontal creation request. Starting.")
+    app_log.info("Starting: Using threads for horizontal creation request.")
     with concurrent.futures.ThreadPoolExecutor(max_workers=workers2) as executor:
         for obj in service_resources_list.keys():
             if service_type == 'L2':    
                 executor.submit(parallel_horizontal_request, obj, l2allocation_list[obj])
             if service_type == 'L3':
                 executor.submit(parallel_horizontal_request, obj, "")
-    app_log.info('Horizontal threads finished, proceeding')    
+    app_log.info('Finishing: Using threads for horizontal creation request.')    
 
     # Add the service to the database
     db.session.add(new_service)
