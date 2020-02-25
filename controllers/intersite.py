@@ -226,8 +226,7 @@ def verticalCreateService(service):
 
         app_log.info("Starting: L3 routing service to be done among the resources: " +
                     (" ".join(str(value) for value in service_resources_list.values())))
-        app_log.info(subnetworks)
-
+        
         workers1 = len(service_resources_list.keys())
         app_log.info("Starting: Using threads for remote subnetwork request.")
         with concurrent.futures.ThreadPoolExecutor(max_workers=workers1) as executor:
@@ -1110,6 +1109,9 @@ def verticalDeleteService(global_id):
 # Handler for inter-site service creation request
 
 def horizontalCreateService(service):
+    start_time = time.time()
+    app_log.info('Starting time: %s', start_time)
+    app_log.info('Starting a new horizontal service creation request')
     local_region_name = service_utils.get_region_name()
     local_resource = ''
     service_name = service.get("name", None)
@@ -1151,6 +1153,7 @@ def horizontalCreateService(service):
         interface='public',
         region_name=local_region_name)
 
+    app_log.info('Starting: Saving Keystone information from catalogue')
     for obj in catalog_endpoints:
         if obj['name'] == 'keystone':
             for endpoint in obj['endpoints']:
@@ -1158,6 +1161,8 @@ def horizontalCreateService(service):
                     if endpoint['region'] == region_name and endpoint['interface'] == 'public':
                         service_remote_auth_endpoints[region_name] = endpoint['url']+'/v3'
                         break
+
+    app_log.info('Finishing: Saving Keystone information from catalogue')
 
     # calling the interconnection service plugin to create the necessary objects
     def parallel_inters_creation_request(k,v):
@@ -1185,12 +1190,13 @@ def horizontalCreateService(service):
     # calling the interconnection service plugin to create the necessary objects
     
     workers3 = len(service_resources_list.keys())
-    app_log.info("Using threads for local interconnection create request. Starting.")
+    app_log.info("Starting: Using threads for local interconnection create request.")
     with concurrent.futures.ThreadPoolExecutor(max_workers=workers3) as executor:
         for k, v in service_resources_list.items():
             executor.submit(parallel_inters_creation_request, k, v)
-    app_log.info('Interconnection threads finished, proceeding')
+    app_log.info("Finishing: Using threads for local interconnection create request.")
 
+    app_log.info("Starting: Creating the service schema")
     # Create a service instance using the schema and the build service
     service_schema = ServiceSchema()
     new_service = service_schema.load(to_service, session=db.session).data
@@ -1239,8 +1245,10 @@ def horizontalCreateService(service):
     db.session.add(new_service)
     db.session.commit()
 
-    # If the service is from L2 type, do the local DHCP change
+    app_log.info("Finishing: Creating the service schema")
 
+    # If the service is from L2 type, do the local DHCP change
+    app_log.info("Starting: Updating the DHCP pool ranges for the local deployment.")
     if service_type == 'L2':
 
         body = {'subnet': {'allocation_pools': [{'start': service_params['parameter_allocation_pool'].split(
@@ -1252,6 +1260,11 @@ def horizontalCreateService(service):
         app_log.info(str(subnet_id))
 
         dhcp_change = net_adap.put(url='/v2.0/subnets/'+subnet_id,json=body)
+    app_log.info("Finishing: Updating the DHCP pool ranges for the local deployment.")
+
+    end_time = time.time()
+    app_log.info('Ending time: %s', end_time)
+    app_log.info('Total time spent: %s', end_time - start_time)
 
     return service_schema.dump(new_service).data, 201
 
