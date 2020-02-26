@@ -1183,7 +1183,7 @@ def horizontalCreateService(service):
             except:
                 app_log.info("Exception when contacting the network adapter")
             
-            app_log.info(inter_temp)
+            #app_log.info(inter_temp)
             local_interconnections_ids.append(inter_temp.json()['interconnection']['id'])
             
 
@@ -1248,9 +1248,9 @@ def horizontalCreateService(service):
     app_log.info("Finishing: Creating the service schema")
 
     # If the service is from L2 type, do the local DHCP change
-    app_log.info("Starting: Updating the DHCP pool ranges for the local deployment.")
+    
     if service_type == 'L2':
-
+        app_log.info("Starting: Updating the DHCP pool ranges for the local deployment.")
         body = {'subnet': {'allocation_pools': [{'start': service_params['parameter_allocation_pool'].split(
                 "-", 1)[0], 'end': service_params['parameter_allocation_pool'].split("-", 1)[1]}]}}
 
@@ -1260,7 +1260,7 @@ def horizontalCreateService(service):
         app_log.info(str(subnet_id))
 
         dhcp_change = net_adap.put(url='/v2.0/subnets/'+subnet_id,json=body)
-    app_log.info("Finishing: Updating the DHCP pool ranges for the local deployment.")
+        app_log.info("Finishing: Updating the DHCP pool ranges for the local deployment.")
 
     end_time = time.time()
     app_log.info('Ending time: %s', end_time)
