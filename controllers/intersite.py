@@ -620,11 +620,7 @@ def verticalUpdateService(global_id, service):
                                 'remote_resource_id': remote_resource_to_delete['resource_uuid']}
                     
                     try:
-<<<<<<< HEAD
                         inter_del_list = net_adap.get(url='/v2.0/inter/interconnections/', json=filters).json()['interconnections']
-=======
-                        inter_del_list = net_adap.get(url='/v2.0/interc/interconnections/', json=filters).json()['interconnections']
->>>>>>> dev
                     except:
                         app_log.info("Exception when contacting the network adapter")
 
