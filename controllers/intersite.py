@@ -311,11 +311,13 @@ def verticalCreateService(service):
     # calling the interconnection service plugin to create the necessary objects
     
     workers3 = len(service_resources_list.keys())
+    start_interconnection_time = time.time()
     app_log.info("Starting: Using threads for local interconnection create request.")
     with concurrent.futures.ThreadPoolExecutor(max_workers=workers3) as executor:
         for k, v in service_resources_list.items():
             executor.submit(parallel_inters_creation_request, k, v)
-    app_log.info('Finishing: Using threads for local interconnection create request.')
+    end_interconnection_time = time.time()
+    app_log.info('Finishing: Using threads for local interconnection create request. Time: %s', (end_interconnection_time - start_interconnection_time))
 
     app_log.info("Starting: Creating the service schema")
     # Create a service instance using the schema and the build service
@@ -618,7 +620,11 @@ def verticalUpdateService(global_id, service):
                                 'remote_resource_id': remote_resource_to_delete['resource_uuid']}
                     
                     try:
+<<<<<<< HEAD
                         inter_del_list = net_adap.get(url='/v2.0/inter/interconnections/', json=filters).json()['interconnections']
+=======
+                        inter_del_list = net_adap.get(url='/v2.0/interc/interconnections/', json=filters).json()['interconnections']
+>>>>>>> dev
                     except:
                         app_log.info("Exception when contacting the network adapter")
 
@@ -1190,11 +1196,14 @@ def horizontalCreateService(service):
     # calling the interconnection service plugin to create the necessary objects
     
     workers3 = len(service_resources_list.keys())
+    start_interconnection_time = time.time()
     app_log.info("Starting: Using threads for local interconnection create request.")
     with concurrent.futures.ThreadPoolExecutor(max_workers=workers3) as executor:
         for k, v in service_resources_list.items():
             executor.submit(parallel_inters_creation_request, k, v)
-    app_log.info("Finishing: Using threads for local interconnection create request.")
+    end_interconnection_time = time.time()
+    app_log.info('Finishing: Using threads for local interconnection create request. Time: %s', (end_interconnection_time - start_interconnection_time))
+    
 
     app_log.info("Starting: Creating the service schema")
     # Create a service instance using the schema and the build service
