@@ -476,6 +476,7 @@ def verticalCreateService(service):
     #app_log.info(l2allocation_list)
 
     workers2 = len(service_resources_list.keys())
+    start_horizontal_time = time.time()
     app_log.info("Starting: Using threads for horizontal creation request.")
     with concurrent.futures.ThreadPoolExecutor(max_workers=workers2) as executor:
         for obj in service_resources_list.keys():
@@ -483,7 +484,8 @@ def verticalCreateService(service):
                 executor.submit(parallel_horizontal_request, obj, l2allocation_list[obj])
             if service_type == 'L3':
                 executor.submit(parallel_horizontal_request, obj, "")
-    app_log.info('Finishing: Using threads for horizontal creation request.')    
+    end_horizontal_time = time.time()
+    app_log.info('Finishing: Using threads for horizontal creation request.. Time: %s', (end_horizontal_time - start_horizontal_time))
 
     # Add the service to the database
     db.session.add(new_service)
