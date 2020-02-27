@@ -301,7 +301,7 @@ def verticalCreateService(service):
             }}
 
             try:
-                inter_temp = net_adap.post(url='/v2.0/interconnection/interconnections/', json=interconnection_data)
+                inter_temp = net_adap.post(url='/v2.0/inter/interconnections/', json=interconnection_data)
             except:
                 app_log.info("Exception when contacting the network adapter")
             
@@ -311,11 +311,13 @@ def verticalCreateService(service):
     # calling the interconnection service plugin to create the necessary objects
     
     workers3 = len(service_resources_list.keys())
+    start_interconnection_time = time.time()
     app_log.info("Starting: Using threads for local interconnection create request.")
     with concurrent.futures.ThreadPoolExecutor(max_workers=workers3) as executor:
         for k, v in service_resources_list.items():
             executor.submit(parallel_inters_creation_request, k, v)
-    app_log.info('Finishing: Using threads for local interconnection create request.')
+    end_interconnection_time = time.time()
+    app_log.info('Finishing: Using threads for local interconnection create request. Time: %s', (end_interconnection_time - start_interconnection_time))
 
     app_log.info("Starting: Creating the service schema")
     # Create a service instance using the schema and the build service
@@ -591,7 +593,7 @@ def verticalUpdateService(global_id, service):
                     inter = element['interconnexion_uuid']
 
                     try:
-                        inter_del = net_adap.delete('/v2.0/interconnection/interconnections/' + inter)
+                        inter_del = net_adap.delete('/v2.0/inter/interconnections/' + inter)
                     except:
                         app_log.info("Exception when contacting the network adapter")
 
@@ -618,7 +620,7 @@ def verticalUpdateService(global_id, service):
                                 'remote_resource_id': remote_resource_to_delete['resource_uuid']}
                     
                     try:
-                        inter_del_list = net_adap.get(url='/v2.0/interconnection/interconnections/', json=filters).json()['interconnections']
+                        inter_del_list = net_adap.get(url='/v2.0/interc/interconnections/', json=filters).json()['interconnections']
                     except:
                         app_log.info("Exception when contacting the network adapter")
 
@@ -627,7 +629,7 @@ def verticalUpdateService(global_id, service):
                         interconnection_uuid_to_delete = interco_delete['id']
 
                         try:
-                            inter_del = net_adap.delete('/v2.0/interconnection/interconnections/' + interconnection_uuid_to_delete)
+                            inter_del = net_adap.delete('/v2.0/inter/interconnections/' + interconnection_uuid_to_delete)
                         except:
                             app_log.info("Exception when contacting the network adapter")
 
@@ -1059,7 +1061,7 @@ def verticalDeleteService(global_id):
             inter = element['interconnexion_uuid']
             
             try:
-                inter_del = net_adap.delete(url='/v2.0/interconnection/interconnections/' + inter)
+                inter_del = net_adap.delete(url='/v2.0/inter/interconnections/' + inter)
             except:
                 app_log.info("Exception when contacting the network adapter")
 
@@ -1179,7 +1181,7 @@ def horizontalCreateService(service):
             }}
 
             try:
-                inter_temp = net_adap.post(url='/v2.0/interconnection/interconnections/', json=interconnection_data)
+                inter_temp = net_adap.post(url='/v2.0/inter/interconnections/', json=interconnection_data)
             except:
                 app_log.info("Exception when contacting the network adapter")
             
@@ -1190,11 +1192,14 @@ def horizontalCreateService(service):
     # calling the interconnection service plugin to create the necessary objects
     
     workers3 = len(service_resources_list.keys())
+    start_interconnection_time = time.time()
     app_log.info("Starting: Using threads for local interconnection create request.")
     with concurrent.futures.ThreadPoolExecutor(max_workers=workers3) as executor:
         for k, v in service_resources_list.items():
             executor.submit(parallel_inters_creation_request, k, v)
-    app_log.info("Finishing: Using threads for local interconnection create request.")
+    end_interconnection_time = time.time()
+    app_log.info('Finishing: Using threads for local interconnection create request. Time: %s', (end_interconnection_time - start_interconnection_time))
+    
 
     app_log.info("Starting: Creating the service schema")
     # Create a service instance using the schema and the build service
@@ -1606,7 +1611,7 @@ def horizontalDeleteService(global_id):
         for element in interconnections_delete:
             inter = element['interconnexion_uuid']
             
-            inter_del = net_adap.delete(url='/v2.0/interconnection/interconnections/' + inter)
+            inter_del = net_adap.delete(url='/v2.0/inter/interconnections/' + inter)
 
         db.session.delete(service)
         db.session.commit()
