@@ -16,7 +16,7 @@ paths:
     get:
       operationId: readRegionName
       tags:
-        - regions
+        - locals
       summary: Get the local region name
       description: Read the local region name
       x-swagger-router-controller: controllers.intersite
@@ -265,6 +265,31 @@ paths:
       responses:
         201:
           description: Successful create inter-site service operation
+    get:
+      operationId: horizontalVerification
+      tags:
+        - horizontal
+      summary: Horizontal request to verify remote items
+      description: Horizontal request to verify an inter-site Service 
+      x-swagger-router-controller: controllers.intersite
+      parameters:
+        - name: resource_cidr
+          in: query
+          description: data for inter-site verification
+          type: string
+          required: True
+        - name: service_type
+          in: query
+          description: Service type to valite the cidr
+          type: string
+          required: True
+      responses:
+        200:
+          description: Successfully done verification 
+          schema:
+            properties:
+              result:
+                type: string
 
   /intersite-horizontal/{global_id}:
     delete:

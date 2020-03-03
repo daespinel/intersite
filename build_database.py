@@ -74,11 +74,11 @@ if os.path.exists('service.db'):
 
 db.create_all()
 
-create_test = False
+create_test = True
 
 if(create_test):
     # Iterate over the service structure and populate the database
-    for service in SERVICES3:
+    for service in SERVICES1:
         s = Service(service_name=service['name'],
                     service_type=service['type'],
                     service_global=service['global'])

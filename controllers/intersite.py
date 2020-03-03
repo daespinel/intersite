@@ -44,7 +44,7 @@ def verticalReadAllService():
 
     :return:        sorted list of inter-site services
     """
-    # Create the list of people from our data
+    # Create the list of services from our data
     services = Service.query.order_by(Service.service_global).all()
 
     # Serialize the data for the response
@@ -245,7 +245,7 @@ def verticalCreateService(service):
         cidr = subnetwork_temp['cidr']
         parameter_local_cidr = str(cidr)
 
-
+        # Here I need to do the horizontal validation with remote modules
 
         # Validating if the networks have the same CIDR
         if not checkEqualElement(CIDRs):
@@ -1632,6 +1632,17 @@ def horizontalReadParameters(global_id):
     else:
         abort(404, "Service with ID {id} not found".format(id=id))
 
+
+def horizontalVerification(resource_cidr, service_type):
+    services = Service.query.outerjoin(Parameter, Service.service_id == Parameter.service_id).filter(Service.service_type == service_type, Parameter.parameter_local_cidr == resource_cidr).all()
+    answer = 'False'
+    if services is not None:
+        # Serialize the data for the response
+        service_schema = ServiceSchema(many=True)
+        data = service_schema.dump(services).data
+        if data != []:
+            answer =  'True'
+    return answer
 
 # Utils
 
