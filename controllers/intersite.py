@@ -166,7 +166,7 @@ def verticalCreateService(service):
                                                  for key in service_resources_list_search.keys())) + " are not found")
 
     subnetworks = {}
-    CIDRs = []
+    CIDRs_conditions = []
 
     # Retrieving the subnetwork information given the region name
     def parallel_subnetwork_request(item, value):
@@ -259,9 +259,8 @@ def verticalCreateService(service):
 
                 r = requests.get(remote_inter_instance, params=
                     remote_service, headers=headers)
-
-                app_log.info(r.url())
-                app_log.info(r.json())
+                #app_log.info(r.json())
+                CIDRs_conditions.append(r.json())
 
         workers2 = len(service_resources_list.keys())
         app_log.info("Starting: Using threads for horizontal verification request.")
@@ -270,17 +269,17 @@ def verticalCreateService(service):
                 executor.submit(parallel_horizontal_validation, obj)
         app_log.info('Finishing: Using threads for horizontal verification request.')    
 
-        # Validating if the networks have the same CIDR
-        if not checkEqualElement(CIDRs):
+        # Validating if the remote modules already possed an inter-site service with the cidr
+        if not checkEqualElement(CIDRs_conditions):
             abort(404, "ERROR: CIDR is not the same for all the resources")
 
         # test
         # CIDRs = [ipaddr.IPNetwork("20.0.0.0/23"),ipaddr.IPNetwork("20.0.0.0/24"),ipaddr.IPNetwork("20.0.0.0/24"),ipaddr.IPNetwork("20.0.0.0/24"),ipaddr.IPNetwork("20.0.0.0/24")]
         # service_resources_list = [5,4,2,5,6,7,5,5,5,8,5,2,6,5,8,4,5,8]
         
-        main_cidr = str(CIDRs[0])
-        main_cidr_base = ((str(CIDRs[0])).split("/", 1)[0])
-        main_cidr_prefix = ((str(CIDRs[0])).split("/", 1)[1])
+        main_cidr = parameter_local_cidr
+        main_cidr_base = (main_cidr.split("/", 1)[0])
+        main_cidr_prefix = (main_cidr.split("/", 1)[1])
         cidr_ranges = []
         # Available IPs are without the network address, the broadcast address, and the first address (for globally known DHCP)
         ips_cidr_available = 2**(32-int(main_cidr_prefix))-3
