@@ -44,7 +44,7 @@ def verticalReadAllService():
 
     :return:        sorted list of inter-site services
     """
-    # Create the list of people from our data
+    # Create the list of services from our data
     services = Service.query.order_by(Service.service_global).all()
 
     # Serialize the data for the response
@@ -81,7 +81,8 @@ def verticalCreateService(service):
     service_resources_list = dict((k.strip(), v.strip()) for k, v in (
         (item.split(',')) for item in service.get("resources", None)))
     service_resources_list_search = copy.deepcopy(service_resources_list)
-    # app_log.info(service_resources_list)
+    app_log.info('Resources list for the service')
+    app_log.info(service_resources_list)
     service_remote_auth_endpoints = {}
     service_remote_inter_endpoints = {}
     parameter_local_allocation_pool = ''
@@ -167,35 +168,6 @@ def verticalCreateService(service):
     subnetworks = {}
     CIDRs = []
 
-    '''
-    # Retrieving information for networks given the region name
-    def parallel_network_request(item, value):
-        net_adap_remote = Adapter(
-        auth=auth,
-        session=sess,
-        service_type='network',
-        interface='public',
-        region_name=item)
-
-        try:
-            network_temp = net_adap_remote.get('/v2.0/networks/' + value).json()
-        except:
-            app_log.info("Exception when contacting the network adapter")
-
-        subnet = network_temp['network']
-        subnetworks[item] = subnet['subnets'][0]
-    
-    
-    
-    workers = len(service_resources_list.keys())
-    app_log.info("Using threads for remote network request. Starting.")
-    with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
-        for item, value in service_resources_list.items():
-            executor.submit(parallel_network_request, item, value)
-
-    app_log.info('Threads finished, proceeding')    
-    '''    
-
     # Retrieving the subnetwork information given the region name
     def parallel_subnetwork_request(item, value):
         
@@ -248,6 +220,56 @@ def verticalCreateService(service):
         app_log.info("Starting: L2 extension service to be done among the resources: " +
                      (" ".join(str(value) for value in service_resources_list.values())))
 
+        app_log.info(network_temp_local)
+        app_log.info('The local resource uuid: ' + str(network_temp_local['subnets'][0]))
+
+        net_adap_local = Adapter(
+        auth=auth,
+        session=sess,
+        service_type='network',
+        interface='public',
+        region_name=local_region_name)
+
+        # Defining an empty dict for the subnetwork information
+        subnetwork_temp = {}
+
+        try:
+            subnetwork_temp = net_adap_local.get('/v2.0/subnets/' + str(network_temp_local['subnets'][0])).json()['subnet']
+        except:
+            app_log.info("Exception when contacting the network adapter")
+
+        app_log.info('The local subnetwork informations')
+        app_log.info(subnetwork_temp)
+
+        # Taking the information of the subnet CIDR
+        cidr = subnetwork_temp['cidr']
+        parameter_local_cidr = str(cidr)
+
+        # Here I need to do the horizontal validation with remote modules
+        def parallel_horizontal_validation(obj):
+            if obj != service_utils.get_region_name():
+                remote_inter_instance = service_remote_inter_endpoints[obj].strip(
+                    '9696/')
+                remote_inter_instance = remote_inter_instance + '7575/api/intersite-horizontal'
+
+                remote_service = {'resource_cidr': parameter_local_cidr,'service_type': service_type}
+                # send horizontal verification request
+                headers = {'Content-Type': 'application/json',
+                        'Accept': 'application/json'}
+
+                r = requests.get(remote_inter_instance, params=
+                    remote_service, headers=headers)
+
+                app_log.info(r.url())
+                app_log.info(r.json())
+
+        workers2 = len(service_resources_list.keys())
+        app_log.info("Starting: Using threads for horizontal verification request.")
+        with concurrent.futures.ThreadPoolExecutor(max_workers=workers2) as executor:
+            for obj in service_resources_list.keys():
+                executor.submit(parallel_horizontal_validation, obj)
+        app_log.info('Finishing: Using threads for horizontal verification request.')    
+
         # Validating if the networks have the same CIDR
         if not checkEqualElement(CIDRs):
             abort(404, "ERROR: CIDR is not the same for all the resources")
@@ -255,8 +277,7 @@ def verticalCreateService(service):
         # test
         # CIDRs = [ipaddr.IPNetwork("20.0.0.0/23"),ipaddr.IPNetwork("20.0.0.0/24"),ipaddr.IPNetwork("20.0.0.0/24"),ipaddr.IPNetwork("20.0.0.0/24"),ipaddr.IPNetwork("20.0.0.0/24")]
         # service_resources_list = [5,4,2,5,6,7,5,5,5,8,5,2,6,5,8,4,5,8]
-        cidr = CIDRs[0]
-        parameter_local_cidr = str(cidr)
+        
         main_cidr = str(CIDRs[0])
         main_cidr_base = ((str(CIDRs[0])).split("/", 1)[0])
         main_cidr_prefix = ((str(CIDRs[0])).split("/", 1)[1])
@@ -1636,6 +1657,23 @@ def horizontalReadParameters(global_id):
     else:
         abort(404, "Service with ID {id} not found".format(id=id))
 
+
+def horizontalVerification(resource_cidr, service_type):
+    start_time = time.time()
+    app_log.info('Starting time: %s', start_time)
+    app_log.info('Starting a new horizontal verification request')
+    services = Service.query.outerjoin(Parameter, Service.service_id == Parameter.service_id).filter(Service.service_type == service_type, Parameter.parameter_local_cidr == resource_cidr).all()
+    answer = 'False'
+    if services is not None:
+        # Serialize the data for the response
+        service_schema = ServiceSchema(many=True)
+        data = service_schema.dump(services).data
+        if data != []:
+            answer =  'True'
+    end_time = time.time()
+    app_log.info('Ending time: %s', end_time)
+    app_log.info('Total time spent: %s', end_time - start_time)
+    return answer
 
 # Utils
 
