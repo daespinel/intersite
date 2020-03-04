@@ -246,6 +246,29 @@ def verticalCreateService(service):
         parameter_local_cidr = str(cidr)
 
         # Here I need to do the horizontal validation with remote modules
+        def parallel_horizontal_validation(obj):
+            if obj != service_utils.get_region_name():
+                remote_inter_instance = service_remote_inter_endpoints[obj].strip(
+                    '9696/')
+                remote_inter_instance = remote_inter_instance + '7575/api/intersite-horizontal'
+
+                remote_service = {'resource_cidr': parameter_local_cidr,'service_type': service_type}
+                # send horizontal verification request
+                headers = {'Content-Type': 'application/json',
+                        'Accept': 'application/json'}
+
+                r = requests.get(remote_inter_instance, params=
+                    remote_service, headers=headers)
+
+                app_log.info(r.url())
+                app_log.info(r.json())
+
+        workers2 = len(service_resources_list.keys())
+        app_log.info("Starting: Using threads for horizontal verification request.")
+        with concurrent.futures.ThreadPoolExecutor(max_workers=workers2) as executor:
+            for obj in service_resources_list.keys():
+                executor.submit(parallel_horizontal_validation, obj)
+        app_log.info('Finishing: Using threads for horizontal verification request.')    
 
         # Validating if the networks have the same CIDR
         if not checkEqualElement(CIDRs):
@@ -1634,6 +1657,9 @@ def horizontalReadParameters(global_id):
 
 
 def horizontalVerification(resource_cidr, service_type):
+    start_time = time.time()
+    app_log.info('Starting time: %s', start_time)
+    app_log.info('Starting a new horizontal verification request')
     services = Service.query.outerjoin(Parameter, Service.service_id == Parameter.service_id).filter(Service.service_type == service_type, Parameter.parameter_local_cidr == resource_cidr).all()
     answer = 'False'
     if services is not None:
@@ -1642,6 +1668,9 @@ def horizontalVerification(resource_cidr, service_type):
         data = service_schema.dump(services).data
         if data != []:
             answer =  'True'
+    end_time = time.time()
+    app_log.info('Ending time: %s', end_time)
+    app_log.info('Total time spent: %s', end_time - start_time)
     return answer
 
 # Utils
