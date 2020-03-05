@@ -265,6 +265,18 @@ paths:
       responses:
         201:
           description: Successful create inter-site service operation
+          schema:
+            properties:
+              global_id:
+                type: string
+                description: ID of inter-site service
+              type:
+                type: string
+                description: Type of inter-site service
+              resources:
+                type: array
+                items:
+                  type: string
     get:
       operationId: horizontalVerification
       tags:
