@@ -273,10 +273,13 @@ paths:
               type:
                 type: string
                 description: Type of inter-site service
-              resources:
-                type: array
-                items:
-                  type: string
+              local_resource:
+                type: string
+                description: UUID of the local resource
+              local_region:
+                type: string
+                description: Name of the local region
+
     get:
       operationId: horizontalVerification
       tags:

@@ -505,7 +505,8 @@ def verticalCreateService(service):
                 remote_service), headers=headers)
 
             if service_type == 'L2':
-                remote_resources_ids.append(r.json())
+                remote_res = {'region': r.json()['local_region'],'resource':r.json()['local_resource']}
+                remote_resources_ids.append(remote_res)
 
     workers2 = len(service_resources_list.keys())
     start_horizontal_time = time.time()
@@ -1326,7 +1327,7 @@ def horizontalCreateService(service):
     db.session.add(new_service)
     db.session.commit()
 
-    answer_service = {'service': service_schema.dump(new_service).data, 'local_resource': local_resource}
+    answer_service = {'global_id':service_global , 'type':service_type ,'local_region':local_region_name , 'local_resource': local_resource}
 
     app_log.info("Finishing: Creating the service schema")
 
