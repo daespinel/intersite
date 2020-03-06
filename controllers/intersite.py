@@ -505,7 +505,6 @@ def verticalCreateService(service):
                 remote_service), headers=headers)
 
             if service_type == 'L2':
-                app_log.info('The remote answer is: ' + r.json())
                 remote_resources_ids.append(r.json())
 
     workers2 = len(service_resources_list.keys())
@@ -522,6 +521,7 @@ def verticalCreateService(service):
     app_log.info('Finishing: Using threads for horizontal creation request.. Time: %s',
                  (end_horizontal_time - start_horizontal_time))
 
+    app_log.info(remote_resources_ids)
     # For the L2 service type, update the resources compossing the service
 
     # For the L2 service type, create the interconnections to remote modules and add them to the service schema
@@ -1225,10 +1225,10 @@ def horizontalCreateService(service):
         except:
             app_log.info("Exception when contacting the network adapter")
         # Local subnetwork creation
-        network_inter_id = network_inter.json()['network']['id']
+        local_resource = network_inter.json()['network']['id']
         subnetwork_data = {'subnet': {
                 'name': service_name + '_subnet',
-                'network_id': network_inter_id,
+                'network_id': local_resource,
                 'ip_version': 4,
                 'cidr': service_params['parameter_local_cidr'],
             }}
@@ -1238,7 +1238,7 @@ def horizontalCreateService(service):
             app_log.info("Exception when contacting the network adapter")
 
         #Adding the local network identifier to the resources list
-        service_resources_list[local_region_name] = network_inter_id
+        service_resources_list[local_region_name] = local_resource
 
     # calling the interconnection service plugin to create the necessary objects
     def parallel_inters_creation_request(k, v):
@@ -1350,6 +1350,7 @@ def horizontalCreateService(service):
     app_log.info('Ending time: %s', end_time)
     app_log.info('Total time spent: %s', end_time - start_time)
 
+    
     return service_schema.dump(new_service).data, 201
 
 # Handler to update a service horizontal
