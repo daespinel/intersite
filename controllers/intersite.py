@@ -1351,7 +1351,7 @@ def horizontalCreateService(service):
     app_log.info('Total time spent: %s', end_time - start_time)
 
     
-    return service_schema.dump(new_service).data, 201
+    return service_schema.dump(new_service).data,local_resource, 201
 
 # Handler to update a service horizontal
 
