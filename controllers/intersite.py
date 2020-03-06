@@ -505,6 +505,7 @@ def verticalCreateService(service):
                 remote_service), headers=headers)
 
             if service_type == 'L2':
+                app_log.info('The remote answer is: ' + r.json())
                 remote_resources_ids.append(r.json())
 
     workers2 = len(service_resources_list.keys())
@@ -1237,7 +1238,7 @@ def horizontalCreateService(service):
             app_log.info("Exception when contacting the network adapter")
 
         #Adding the local network identifier to the resources list
-
+        service_resources_list[local_region_name] = network_inter_id
 
     # calling the interconnection service plugin to create the necessary objects
     def parallel_inters_creation_request(k, v):
