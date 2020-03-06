@@ -353,7 +353,7 @@ def verticalCreateService(service):
                 executor.submit(parallel_inters_creation_request, k, v)
         end_interconnection_time = time.time()
         app_log.info('Finishing: Using threads for local interconnection create request. Time: %s',
-                    (end_interconnection_time - start_interconnection_time))
+                     (end_interconnection_time - start_interconnection_time))
 
     app_log.info("Starting: Creating the service schema")
     # Create a service instance using the schema and the build service
@@ -457,7 +457,8 @@ def verticalCreateService(service):
     if service_type == 'L2':
         allocation_start = cidr_ranges[0].split("-", 1)[0]
         allocation_end = cidr_ranges[0].split("-", 1)[1]
-        app_log.info("Starting: Updating the DHCP pool ranges for the local deployment.")
+        app_log.info(
+            "Starting: Updating the DHCP pool ranges for the local deployment.")
         body = {'subnet': {'allocation_pools': [
                 {'start': allocation_start, 'end': allocation_end}]}}
 
@@ -467,10 +468,12 @@ def verticalCreateService(service):
         except:
             app_log.info("Exception when contacting the network adapter")
 
-        app_log.info("Finishing: Updating the DHCP pool ranges for the local deployment.")
+        app_log.info(
+            "Finishing: Updating the DHCP pool ranges for the local deployment.")
 
     remote_resources_ids = []
     # Sending remote inter-site create requests to the distant nodes
+
     def parallel_horizontal_request(obj, alloc_pool):
         if obj != service_utils.get_region_name():
             remote_inter_instance = service_remote_inter_endpoints[obj].strip(
@@ -503,8 +506,6 @@ def verticalCreateService(service):
 
             if service_type == 'L2':
                 remote_resources_ids.append(r.json())
-    #app_log.info("Preparing to use the following l2")
-    # app_log.info(l2allocation_list)
 
     workers2 = len(service_resources_list.keys())
     start_horizontal_time = time.time()
@@ -520,7 +521,11 @@ def verticalCreateService(service):
     app_log.info('Finishing: Using threads for horizontal creation request.. Time: %s',
                  (end_horizontal_time - start_horizontal_time))
 
+    # For the L2 service type, update the resources compossing the service
 
+    # For the L2 service type, create the interconnections to remote modules and add them to the service schema
+
+    # For the L2 service type, send the horizontal put request in order to provide remotes instances with the resources uuids for interconnections
 
     # Add the service to the database
     db.session.add(new_service)
@@ -1161,7 +1166,7 @@ def horizontalCreateService(service):
     service_name = service.get("name", None)
     service_type = service.get("type", None)
     service_params = ast.literal_eval(service.get("params", None)[0])
-    # app_log.info(service_params)
+    app_log.info(service_params)
     service_global = service.get("global", None)
     # service_resources = service.get("resources", None)
     service_resources_list = dict((k.strip(), v.strip()) for k, v in (
@@ -1208,6 +1213,32 @@ def horizontalCreateService(service):
 
     app_log.info('Finishing: Saving Keystone information from catalogue')
 
+    if service_type == 'L2':
+        # Local network creation
+        network_data = {'network': {
+                'name': service_name + '_net',
+                'admin_state_up': True,
+            }}
+        try:
+            network_inter = net_adap.post(url='/v2.0/networks', json=network_data)
+        except:
+            app_log.info("Exception when contacting the network adapter")
+        # Local subnetwork creation
+        network_inter_id = network_inter.json()['network']['id']
+        subnetwork_data = {'subnet': {
+                'name': service_name + '_subnet',
+                'network_id': network_inter_id,
+                'ip_version': 4,
+                'cidr': service_params['parameter_local_cidr'],
+            }}
+        try:
+            subnetwork_inter = net_adap.post(url='/v2.0/subnets', json=subnetwork_data)
+        except:
+            app_log.info("Exception when contacting the network adapter")
+
+        #Adding the local network identifier to the resources list
+
+
     # calling the interconnection service plugin to create the necessary objects
     def parallel_inters_creation_request(k, v):
         if local_region_name != k:
@@ -1233,17 +1264,18 @@ def horizontalCreateService(service):
                 inter_temp.json()['interconnection']['id'])
 
     # calling the interconnection service plugin to create the necessary objects
-
-    workers3 = len(service_resources_list.keys())
-    start_interconnection_time = time.time()
-    app_log.info(
-        "Starting: Using threads for local interconnection create request.")
-    with concurrent.futures.ThreadPoolExecutor(max_workers=workers3) as executor:
-        for k, v in service_resources_list.items():
-            executor.submit(parallel_inters_creation_request, k, v)
-    end_interconnection_time = time.time()
-    app_log.info('Finishing: Using threads for local interconnection create request. Time: %s',
-                 (end_interconnection_time - start_interconnection_time))
+    # At this point, this is done only for the L3 routing service
+    if service_type == 'L3':
+        workers3 = len(service_resources_list.keys())
+        start_interconnection_time = time.time()
+        app_log.info(
+            "Starting: Using threads for local interconnection create request.")
+        with concurrent.futures.ThreadPoolExecutor(max_workers=workers3) as executor:
+            for k, v in service_resources_list.items():
+                executor.submit(parallel_inters_creation_request, k, v)
+        end_interconnection_time = time.time()
+        app_log.info('Finishing: Using threads for local interconnection create request. Time: %s',
+                    (end_interconnection_time - start_interconnection_time))
 
     app_log.info("Starting: Creating the service schema")
     # Create a service instance using the schema and the build service
@@ -1297,7 +1329,7 @@ def horizontalCreateService(service):
 
     # If the service is from L2 type, do the local DHCP change
 
-    if service_type == 'L2':
+    if service_type == 'L4':
         app_log.info(
             "Starting: Updating the DHCP pool ranges for the local deployment.")
         body = {'subnet': {'allocation_pools': [{'start': service_params['parameter_allocation_pool'].split(
