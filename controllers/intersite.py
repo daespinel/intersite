@@ -50,7 +50,7 @@ def verticalReadAllService():
     # Serialize the data for the response
     service_schema = ServiceSchema(many=True)
     data = service_schema.dump(services).data
-    app_log.info('The data from service schema: ' + str(data))
+    #app_log.info('The data from service schema: ' + str(data))
     return data
 
 # Create a handler for our read (GET) one service by ID
@@ -1326,6 +1326,8 @@ def horizontalCreateService(service):
     db.session.add(new_service)
     db.session.commit()
 
+    answer_service = {'service': service_schema.dump(new_service).data, 'local_resource': local_resource}
+
     app_log.info("Finishing: Creating the service schema")
 
     # If the service is from L2 type, do the local DHCP change
@@ -1351,7 +1353,7 @@ def horizontalCreateService(service):
     app_log.info('Total time spent: %s', end_time - start_time)
 
     
-    return service_schema.dump(new_service).data,local_resource, 201
+    return answer_service, 201
 
 # Handler to update a service horizontal
 
