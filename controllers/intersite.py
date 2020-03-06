@@ -169,6 +169,7 @@ def verticalCreateService(service):
 
     subnetworks = {}
     CIDRs_conditions = []
+    CIDRs = []
 
     # Retrieving the subnetwork information given the region name
     def parallel_subnetwork_request(item, value):
@@ -438,10 +439,10 @@ def verticalCreateService(service):
     new_service.service_params.append(new_service_params)
     app_log.info("Finishing: Creating the service schema")
 
-    app_log.info("Starting: Adding the interconnections to the service.")
     # Adding the interconnections to the service
     # Here the process is done for the L3 service
     if service_type == 'L3':
+        app_log.info("Starting: Adding the interconnections to the service.")
         for element in local_interconnections_ids:
             interconnexion = {
                 'interconnexion_uuid': element
@@ -505,7 +506,7 @@ def verticalCreateService(service):
                 remote_service), headers=headers)
 
             if service_type == 'L2':
-                remote_res = {'region': r.json()['local_region'],'resource':r.json()['local_resource']}
+                remote_res = {r.json()['local_region']:r.json()['local_resource']}
                 remote_resources_ids.append(remote_res)
 
     workers2 = len(service_resources_list.keys())
@@ -522,12 +523,49 @@ def verticalCreateService(service):
     app_log.info('Finishing: Using threads for horizontal creation request.. Time: %s',
                  (end_horizontal_time - start_horizontal_time))
 
-    app_log.info(remote_resources_ids)
-    # For the L2 service type, update the resources compossing the service
+    if service_type == 'L2':
+        app_log.info(remote_resources_ids)
+        app_log.info(service_resources_list)
+        # For the L2 service type, update the resources compossing the service
+        for element in remote_resources_ids:
+            for key in element.keys():
+                service_resources_list[key] = element[key]
 
-    # For the L2 service type, create the interconnections to remote modules and add them to the service schema
+        # Adding the resources to the service
+        for k, v in service_resources_list.items():
+            resource = {
+                'resource_region': k,
+                'resource_uuid': v
+            }
+            service_resources_schema = ResourcesSchema()
+            new_service_resources = service_resources_schema.load(
+                resource, session=db.session).data
+            new_service.service_resources.append(new_service_resources)
+        # For the L2 service type, create the interconnections to remote modules and add them to the service schema
+        workers3 = len(service_resources_list.keys())
+        start_interconnection_time = time.time()
+        app_log.info(
+            "Starting: Using threads for local interconnection create request.")
+        with concurrent.futures.ThreadPoolExecutor(max_workers=workers3) as executor:
+            for k, v in service_resources_list.items():
+                executor.submit(parallel_inters_creation_request, k, v)
+        end_interconnection_time = time.time()
+        app_log.info('Finishing: Using threads for local interconnection create request. Time: %s',
+                     (end_interconnection_time - start_interconnection_time))
 
-    # For the L2 service type, send the horizontal put request in order to provide remotes instances with the resources uuids for interconnections
+        app_log.info("Starting: Adding the interconnections to the service.")
+        for element in local_interconnections_ids:
+            interconnexion = {
+                'interconnexion_uuid': element
+            }
+            service_interconnections_schema = InterconnectionsSchema()
+            new_service_interconnections = service_interconnections_schema.load(
+                interconnexion, session=db.session).data
+            new_service.service_interconnections.append(
+                new_service_interconnections)
+        app_log.info("Finishing: Adding the interconnections to the service.")
+
+        # For the L2 service type, send the horizontal put request in order to provide remotes instances with the resources uuids for interconnections
 
     # Add the service to the database
     db.session.add(new_service)
