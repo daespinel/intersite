@@ -370,7 +370,13 @@ paths:
               params:
                 type: array
                 items:
-                  type: string 
+                  type: string
+              post_create_refresh:
+                type: string 
+              name:
+                type: string
+              type:
+                type: string
       responses:
         200:
           description: Successfully update service
