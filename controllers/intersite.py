@@ -1462,8 +1462,10 @@ def horizontalUpdateService(global_id, service):
 
         app_log.info('actual list of resources',
                      str(service_resources_list_db))
-        app_log.info('resources to add', str(list_resources_add))
-        app_log.info('resources to delete', str(list_resources_remove))
+        if list_resources_add != []:
+            app_log.info('resources to add', str(list_resources_add))
+        if list_resources_remove != []:
+            app_log.info('resources to delete', str(list_resources_remove))
         search_local_resource_delete = False
         search_local_resource_uuid = ''
 
