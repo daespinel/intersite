@@ -569,7 +569,7 @@ def verticalCreateService(service):
                 remote_inter_instance = service_remote_inter_endpoints[obj].strip(
                     '9696/')
                 remote_inter_instance = remote_inter_instance + '7575/api/intersite-horizontal/' + str(random_id)
-                remote_service = {'name': service_name, 'type': service_type, 'params': [], 'global': random_id, 'resources': remote_l2_new_sites, 'post_create_refresh': True}
+                remote_service = {'name': service_name, 'type': service_type, 'params': [], 'global': random_id, 'resources': remote_l2_new_sites, 'post_create_refresh': 'True'}
                 headers = {'Content-Type': 'application/json',
                         'Accept': 'application/json'}
 
@@ -1459,7 +1459,7 @@ def horizontalUpdateService(global_id, service):
         to_service_resources_list = dict((k.strip(), v.strip()) for k, v in (
                 (item.split(',')) for item in service.get("resources", None)))
 
-        if service.get("post_create_refresh") == True:
+        if service.get("post_create_refresh") == 'True':
             app_log.info("Starting: Updating the service with post create refresh condition.")
 
             # Taking the information of the service resources list to save it into the resource schema
@@ -1467,6 +1467,12 @@ def horizontalUpdateService(global_id, service):
 
                 res_update = Resource.query.outerjoin(Service, Service.service_id == Resource.service_id).filter(Resource.service_id == data_from_db['service_id'], Resource.resource_region == update_resource_region).one_or_none()
                 res_update.resource_uuid = update_resource_uuid
+
+                res_update_schema = ResourcesSchema()
+                data_from_res = res_update_schema.dump(res_update).data
+                app_log.info(data_from_res)
+            
+            app_log.info(to_service_resources_list)
 
             # Using the already parsed information to create the interconnections
             workers = len(to_service_resources_list.keys())
@@ -1496,83 +1502,6 @@ def horizontalUpdateService(global_id, service):
 
             db.session.commit()
 
-            '''
-        #### The old way (in the former update methods)
-        for element in list_resources_add:
-                        resource = {
-                            'resource_region': element['resource_region'],
-                            'resource_uuid': element['resource_uuid']
-                        }
-                        service_resources_schema = ResourcesSchema()
-                        new_service_resources = service_resources_schema.load(
-                            resource, session=db.session).data
-                        service_update.service_resources.append(
-                            new_service_resources)
-
-                    # Adding the interconnections to the service
-                    for element in local_interconnections_ids:
-                        interconnexion = {
-                            'interconnexion_uuid': element
-                        }
-                        service_interconnections_schema = InterconnectionsSchema()
-                        new_service_interconnections = service_interconnections_schema.load(
-                            interconnexion, session=db.session).data
-                        service_update.service_interconnections.append(
-                            new_service_interconnections)
-
-                # Adding the parameter to the service
-                if(data_from_db['service_params'][0]['parameter_allocation_pool'] != new_params[1]):
-                    param_update = Parameter.query.filter(
-                        Parameter.service_id == data_from_db['service_id']).one_or_none()
-                    param_update_schema = ParamsSchema()
-                    data_from_param = param_update_schema.dump(param_update).data
-                    param_update.parameter_allocation_pool = new_params[1]
-
-        #### The vertical create way    
-        for element in remote_resources_ids:
-            for key in element.keys():
-                service_resources_list[key] = element[key]
-        app_log.info(service_resources_list)
-
-        remote_l2_new_sites = []
-        # Adding the resources to the service
-        for k, v in service_resources_list.items():
-            resource = {
-                'resource_region': k,
-                'resource_uuid': v
-            }
-            service_resources_schema = ResourcesSchema()
-            new_service_resources = service_resources_schema.load(
-                resource, session=db.session).data
-            new_service.service_resources.append(new_service_resources)
-            remote_l2_new_sites.append(k + "," + v)
-
-        app_log.info("Here we got the freshly created list of remote uuids" + str(remote_l2_new_sites))
-
-        # For the L2 service type, create the interconnections to remote modules and add them to the service schema
-        workers3 = len(service_resources_list.keys())
-        start_interconnection_time = time.time()
-        app_log.info(
-            "Starting: Using threads for local interconnection create request.")
-        with concurrent.futures.ThreadPoolExecutor(max_workers=workers3) as executor:
-            for k, v in service_resources_list.items():
-                executor.submit(parallel_inters_creation_request, k, v)
-        end_interconnection_time = time.time()
-        app_log.info('Finishing: Using threads for local interconnection create request. Time: %s',
-                     (end_interconnection_time - start_interconnection_time))
-
-        app_log.info("Starting: Adding the interconnections to the service.")
-        for element in local_interconnections_ids:
-            interconnexion = {
-                'interconnexion_uuid': element
-            }
-            service_interconnections_schema = InterconnectionsSchema()
-            new_service_interconnections = service_interconnections_schema.load(
-                interconnexion, session=db.session).data
-            new_service.service_interconnections.append(
-                new_service_interconnections)
-        app_log.info("Finishing: Adding the interconnections to the service.")
-            '''
         else:
             app_log.info("Starting: Updating the service with default behavior.")
             
@@ -1862,6 +1791,10 @@ def horizontalUpdateService(global_id, service):
                                     service_remote_inter_endpoints[item])
 
             app_log.info("Finishing: Updating the service with default behavior.")
+        
+        end_time = time.time()
+        app_log.info('Ending time: %s', end_time)
+        app_log.info('Total time spent: %s', end_time - start_time)
         return make_response("{id} successfully updated".format(id=global_id), 200)
 
     else:
