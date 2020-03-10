@@ -1459,6 +1459,14 @@ def horizontalUpdateService(global_id, service):
         to_service_resources_list = dict((k.strip(), v.strip()) for k, v in (
                 (item.split(',')) for item in service.get("resources", None)))
 
+        local_resource = ''
+
+        for k, v in to_service_resources_list.items():
+            if k == local_region_name:
+                local_resource = v
+                break
+
+
         if service.get("post_create_refresh") == 'True':
             app_log.info("Starting: Updating the service with post create refresh condition.")
 
@@ -1504,7 +1512,7 @@ def horizontalUpdateService(global_id, service):
 
         else:
             app_log.info("Starting: Updating the service with default behavior.")
-            
+            # TODO update all the mess of the default behavior
             service_resources_list_user = []
             new_params = service.get("params", None)
             #app_log.info(str(new_params))
