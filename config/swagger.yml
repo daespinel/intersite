@@ -298,6 +298,16 @@ paths:
           description: Service type to valite the cidr
           type: string
           required: True
+        - name: global_id
+          in: query
+          description: Service global ID
+          type: string
+          required: True
+        - name: verification_type
+          in: query
+          description: Type of verification definer
+          type: string
+          required: True  
       responses:
         200:
           description: Successfully done verification 
