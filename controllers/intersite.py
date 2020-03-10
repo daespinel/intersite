@@ -322,6 +322,7 @@ def verticalCreateService(service):
         # TODO add the post intersite-horizontal methods here
 
     def parallel_inters_creation_request(k, v):
+        app_log = logging.getLogger()
         if local_region_name != k:
             interconnection_data = {'interconnection': {
                 'name': service_name,
@@ -340,6 +341,7 @@ def verticalCreateService(service):
 
             local_interconnections_ids.append(
                 inter_temp.json()['interconnection']['id'])
+            app_log.info('We are inside the parallel thread')
 
     # Calling the interconnection service plugin to create the necessary objects
     # This action is called here if the service is an L3 service
@@ -1428,30 +1430,38 @@ def horizontalUpdateService(global_id, service):
     service_update = Service.query.filter(
         Service.service_global == global_id).one_or_none()
 
-    local_interconnections_ids = []
-
-    def parallel_inters_creation_request(k, v):
-        if local_region_name != k:
-            interconnection_data = {'interconnection': {
-                'name': service_name,
-                'remote_keystone': service_remote_auth_endpoints[k],
-                'remote_region': k,
-                'local_resource_id': local_resource,
-                'type': SERVICE_TYPE[service_type],
-                'remote_resource_id': v,
-            }}
-
-            try:
-                inter_temp = net_adap.post(
-                    url='/v2.0/inter/interconnections/', json=interconnection_data)
-            except:
-                app_log.info("Exception when contacting the network adapter")
-
-            local_interconnections_ids.append(
-                inter_temp.json()['interconnection']['id'])
-
     # Did we find a service?
     if service_update is not None:
+
+        service_remote_auth_endpoints = {}
+
+        auth = service_utils.get_auth_object(local_region_url)
+        sess = service_utils.get_session_object(auth)
+
+        # Authenticate
+        auth.get_access(sess)
+        auth_ref = auth.auth_ref
+
+        catalog_endpoints = auth_ref.service_catalog.catalog
+
+        net_adap = Adapter(
+            auth=auth,
+            session=sess,
+            service_type='network',
+            interface='public',
+            region_name=local_region_name)
+
+        # Saving info for Neutron and Keystone endpoints to be contacted based on keystone catalogue
+
+        app_log.info('Starting: Saving Keystone information from catalogue')
+        for obj in catalog_endpoints:
+            if obj['name'] == 'keystone':
+                for endpoint in obj['endpoints']:
+                    for region_name in service_resources_list.keys():
+                        if endpoint['region'] == region_name and endpoint['interface'] == 'public':
+                            service_remote_auth_endpoints[region_name] = endpoint['url']+'/v3'
+                            break
+        app_log.info('Ending: Saving Keystone information from catalogue')
 
         service_schema_temp = ServiceSchema()
         data_from_db = service_schema_temp.dump(service_update).data
@@ -1466,6 +1476,28 @@ def horizontalUpdateService(global_id, service):
                 local_resource = v
                 break
 
+
+        local_interconnections_ids = []
+
+        def parallel_inters_creation_request(k, v):
+            app_log = logging.getLogger()
+            if local_region_name != k:
+                interconnection_data = {'interconnection': {
+                    'name': data_from_db['service_name'],
+                    'remote_keystone': service_remote_auth_endpoints[k],
+                    'remote_region': k,
+                    'local_resource_id': local_resource,
+                    'type': SERVICE_TYPE[data_from_db['service_type']],
+                    'remote_resource_id': v,
+                }}
+                try:
+                    inter_temp = net_adap.post(
+                        url='/v2.0/inter/interconnections/', json=interconnection_data)
+                except:
+                    app_log.info("Exception when contacting the network adapter")
+
+                local_interconnections_ids.append(
+                    inter_temp.json()['interconnection']['id'])
 
         if service.get("post_create_refresh") == 'True':
             app_log.info("Starting: Updating the service with post create refresh condition.")
