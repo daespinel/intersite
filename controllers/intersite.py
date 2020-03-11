@@ -1148,6 +1148,7 @@ def verticalUpdateService(global_id, service):
 
 
 def verticalDeleteService(global_id):
+    app_log.info('Starting: Deleting a service vertical request.')
     service_remote_inter_endpoints = {}
     service = Service.query.filter(
         Service.service_global == global_id).one_or_none()
@@ -1174,18 +1175,6 @@ def verticalDeleteService(global_id):
             interface='public',
             region_name=local_region_name)
 
-        for element in interconnections_delete:
-            inter = element['interconnexion_uuid']
-
-            try:
-                inter_del = net_adap.delete(
-                    url='/v2.0/inter/interconnections/' + inter)
-            except:
-                app_log.info("Exception when contacting the network adapter")
-
-        db.session.delete(service)
-        db.session.commit()
-
         for obj in catalog_endpoints:
             if obj['name'] == 'neutron':
                 for endpoint in obj['endpoints']:
@@ -1197,21 +1186,24 @@ def verticalDeleteService(global_id):
                                                            ] = endpoint['url']
                             break
 
-        # app_log.info(service_remote_inter_endpoints)
         # Sending remote inter-site delete requests to the distant nodes
         # If the service is of L2 type, firstly we need to verify that remote created networks can be deleted
         delete_conditions = []
 
         def parallel_horizontal_validation(obj):
             app_log = logging.getLogger()
-            if obj != service_utils.get_region_name():
+            app_log.info(obj + local_region_name)
+            if obj != local_region_name:
+                app_log.info('sending horizontal verification request')
                 remote_inter_instance = service_remote_inter_endpoints[obj].strip(
                     '9696/')
                 remote_inter_instance = remote_inter_instance + '7575/api/intersite-horizontal'
-
-                remote_service = {
-                    'resource_cidr': '', 'service_type': service_type, 'global_id': global_id, 'verification_type': 'DELETE'}
+                app_log.info('remote inter instance: ' + remote_inter_instance)
+                remote_service = {'resource_cidr': '', 'service_type': service_data['service_type'], 'global_id': global_id, 'verification_type': 'DELETE'}
+                
+                app_log.info(remote_service)
                 # send horizontal verification request
+                
                 headers = {'Content-Type': 'application/json',
                            'Accept': 'application/json'}
 
@@ -1220,14 +1212,28 @@ def verticalDeleteService(global_id):
                 # app_log.info(r.json())
                 delete_conditions.append(r.json())
 
-        abort(404, "Finishing here for dev pourposes")
-
         workers = len(resources_list_to_delete)
         app_log.info("Starting: Using threads for horizontal delete validation request.")
         with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
             for obj in resources_list_to_delete:
-                executor.submit(parallel_horizontal_validation, obj)
+                executor.submit(parallel_horizontal_validation, obj['resource_region'])
         app_log.info('Ending: Using threads for horizontal delete validation request.')
+
+        abort(404, "Finishing here for dev pourposes")
+
+        # Deleting the interconnections
+        for element in interconnections_delete:
+            inter = element['interconnexion_uuid']
+
+            try:
+                inter_del = net_adap.delete(
+                    url='/v2.0/inter/interconnections/' + inter)
+            except:
+                app_log.info("Exception when contacting the network adapter")
+
+        # Locally deleting the service
+        db.session.delete(service)
+        db.session.commit()
 
         def parallel_horizontal_delete_request(obj):
             app_log = logging.getLogger()
@@ -1976,6 +1982,9 @@ def horizontalVerification(resource_cidr, service_type, global_id, verification_
                     break
 
             # Authenticate
+            auth = service_utils.get_auth_object(local_region_url)
+            sess = service_utils.get_session_object(auth)
+
             auth.get_access(sess)
             auth_ref = auth.auth_ref
 
@@ -1989,7 +1998,7 @@ def horizontalVerification(resource_cidr, service_type, global_id, verification_
             query_parameters = {'network_id': local_ressource, 'device_owner': 'compute:nova'}
 
             try:
-                port_list = net_adap_local.get(url='/v2.0/ports',json=query_parameters)
+                port_list = net_adap_local.get(url='/v2.0/ports', params=query_parameters)
             except:
                 app_log.info("Exception when contacting the network adapter")
 
