@@ -315,6 +315,8 @@ paths:
             properties:
               result:
                 type: string
+              information:
+                type: string
 
   /intersite-horizontal/{global_id}:
     delete:

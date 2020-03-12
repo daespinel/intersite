@@ -1155,107 +1155,120 @@ def verticalDeleteService(global_id):
     if service is not None:
         service_schema = ServiceSchema()
         service_data = service_schema.dump(service).data
-        resources_list_to_delete = service_data['service_resources']
-        # app_log.info(resources_list_to_delete)
-        interconnections_delete = service_data['service_interconnections']
 
-        auth = service_utils.get_auth_object(local_region_url)
-        sess = service_utils.get_session_object(auth)
+        # A service can only be deleted from the master instance
+        app_log.info(service_data['service_params'])
+        if service_data['service_params'][0]['parameter_master'] == local_region_name:
+            resources_list_to_delete = service_data['service_resources']
+            # app_log.info(resources_list_to_delete)
+            interconnections_delete = service_data['service_interconnections']
 
-        # Authenticate
-        auth.get_access(sess)
-        auth_ref = auth.auth_ref
+            auth = service_utils.get_auth_object(local_region_url)
+            sess = service_utils.get_session_object(auth)
 
-        catalog_endpoints = auth_ref.service_catalog.catalog
+            # Authenticate
+            auth.get_access(sess)
+            auth_ref = auth.auth_ref
 
-        net_adap = Adapter(
-            auth=auth,
-            session=sess,
-            service_type='network',
-            interface='public',
-            region_name=local_region_name)
+            catalog_endpoints = auth_ref.service_catalog.catalog
 
-        for obj in catalog_endpoints:
-            if obj['name'] == 'neutron':
-                for endpoint in obj['endpoints']:
-                    # app_log.info(endpoint)
-                    for region_name in resources_list_to_delete:
-                        # app_log.info(region_name)
-                        if endpoint['region'] == region_name['resource_region']:
-                            service_remote_inter_endpoints[region_name['resource_region']
-                                                           ] = endpoint['url']
-                            break
+            net_adap = Adapter(
+                auth=auth,
+                session=sess,
+                service_type='network',
+                interface='public',
+                region_name=local_region_name)
 
-        # Sending remote inter-site delete requests to the distant nodes
-        # If the service is of L2 type, firstly we need to verify that remote created networks can be deleted
-        delete_conditions = []
+            for obj in catalog_endpoints:
+                if obj['name'] == 'neutron':
+                    for endpoint in obj['endpoints']:
+                        # app_log.info(endpoint)
+                        for region_name in resources_list_to_delete:
+                            # app_log.info(region_name)
+                            if endpoint['region'] == region_name['resource_region']:
+                                service_remote_inter_endpoints[region_name['resource_region']
+                                                               ] = endpoint['url']
+                                break
 
-        def parallel_horizontal_validation(obj):
-            app_log = logging.getLogger()
-            app_log.info(obj + local_region_name)
-            if obj != local_region_name:
-                app_log.info('sending horizontal verification request')
-                remote_inter_instance = service_remote_inter_endpoints[obj].strip(
-                    '9696/')
-                remote_inter_instance = remote_inter_instance + '7575/api/intersite-horizontal'
-                app_log.info('remote inter instance: ' + remote_inter_instance)
-                remote_service = {'resource_cidr': '', 'service_type': service_data['service_type'], 'global_id': global_id, 'verification_type': 'DELETE'}
-                
-                app_log.info(remote_service)
-                # send horizontal verification request
-                
-                headers = {'Content-Type': 'application/json',
-                           'Accept': 'application/json'}
+            # Sending remote inter-site delete requests to the distant nodes
+            # If the service is of L2 type, firstly we need to verify that remote created networks can be deleted
+            delete_conditions = []
 
-                r = requests.get(remote_inter_instance,
-                                 params=remote_service, headers=headers)
-                # app_log.info(r.json())
-                delete_conditions.append(r.json())
+            def parallel_horizontal_validation(obj):
+                app_log = logging.getLogger()
+                if obj != local_region_name:
+                    remote_inter_instance = service_remote_inter_endpoints[obj].strip(
+                        '9696/')
+                    remote_inter_instance = remote_inter_instance + '7575/api/intersite-horizontal'
+                    remote_service = {
+                        'resource_cidr': '', 'service_type': service_data['service_type'], 'global_id': global_id, 'verification_type': 'DELETE'}
 
-        workers = len(resources_list_to_delete)
-        app_log.info("Starting: Using threads for horizontal delete validation request.")
-        with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
-            for obj in resources_list_to_delete:
-                executor.submit(parallel_horizontal_validation, obj['resource_region'])
-        app_log.info('Ending: Using threads for horizontal delete validation request.')
+                    app_log.info(remote_service)
+                    # send horizontal verification request
 
-        abort(404, "Finishing here for dev pourposes")
+                    headers = {'Content-Type': 'application/json',
+                               'Accept': 'application/json'}
 
-        # Deleting the interconnections
-        for element in interconnections_delete:
-            inter = element['interconnexion_uuid']
+                    r = requests.get(remote_inter_instance,
+                                     params=remote_service, headers=headers)
+                    app_log.info(r.json()['result'])
+                    delete_conditions.append(r.json())
 
-            try:
-                inter_del = net_adap.delete(
-                    url='/v2.0/inter/interconnections/' + inter)
-            except:
-                app_log.info("Exception when contacting the network adapter")
+            workers = len(resources_list_to_delete)
+            app_log.info(
+                "Starting: Using threads for horizontal delete validation request.")
+            with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
+                for obj in resources_list_to_delete:
+                    executor.submit(
+                        parallel_horizontal_validation, obj['resource_region'])
+            app_log.info(
+                'Ending: Using threads for horizontal delete validation request.')
 
-        # Locally deleting the service
-        db.session.delete(service)
-        db.session.commit()
+            app_log.info(checkEqualElement(delete_conditions))
 
-        def parallel_horizontal_delete_request(obj):
-            app_log = logging.getLogger()
-            remote_inter_instance = ''
-            if obj['resource_region'] != service_utils.get_region_name():
-                remote_inter_instance = service_remote_inter_endpoints[obj['resource_region']].strip(
-                    '9696/')
-                remote_inter_instance = remote_inter_instance + \
-                    '7575/api/intersite-horizontal/' + global_id
-                # send horizontal delete (service_remote_inter_endpoints[obj])
-                headers = {'Accept': 'text/html'}
-                r = requests.delete(remote_inter_instance, headers=headers)
+            abort(404, "Finishing here for dev pourposes")
 
-        workers = len(resources_list_to_delete)
-        app_log.info("Starting: Using threads for horizontal delete request.")
-        with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
-            for obj in resources_list_to_delete:
-                executor.submit(parallel_horizontal_delete_request, obj)
-        app_log.info('Ending: Using threads for horizontal delete request.')
+            # Deleting the interconnections
+            for element in interconnections_delete:
+                inter = element['interconnexion_uuid']
 
-        return make_response("{id} successfully deleted".format(id=global_id), 200)
+                try:
+                    inter_del = net_adap.delete(
+                        url='/v2.0/inter/interconnections/' + inter)
+                except:
+                    app_log.info(
+                        "Exception when contacting the network adapter")
 
+            # Locally deleting the service
+            db.session.delete(service)
+            db.session.commit()
+
+            def parallel_horizontal_delete_request(obj):
+                app_log = logging.getLogger()
+                remote_inter_instance = ''
+                if obj['resource_region'] != service_utils.get_region_name():
+                    remote_inter_instance = service_remote_inter_endpoints[obj['resource_region']].strip(
+                        '9696/')
+                    remote_inter_instance = remote_inter_instance + \
+                        '7575/api/intersite-horizontal/' + global_id
+                    # send horizontal delete (service_remote_inter_endpoints[obj])
+                    headers = {'Accept': 'text/html'}
+                    r = requests.delete(remote_inter_instance, headers=headers)
+
+            workers = len(resources_list_to_delete)
+            app_log.info(
+                "Starting: Using threads for horizontal delete request.")
+            with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
+                for obj in resources_list_to_delete:
+                    executor.submit(parallel_horizontal_delete_request, obj)
+            app_log.info(
+                'Ending: Using threads for horizontal delete request.')
+
+            return make_response("{id} successfully deleted".format(id=global_id), 200)
+
+        else:
+            abort(404, "This module is not the master for the service with ID {id}, please address this request to {region} module".format(
+                id=global_id, region=service_data['service_params'].parameter_master))
     else:
         abort(404, "Service with ID {id} not found".format(id=global_id))
 
@@ -1956,7 +1969,9 @@ def horizontalVerification(resource_cidr, service_type, global_id, verification_
     start_time = time.time()
     app_log.info('Starting time: %s', start_time)
     app_log.info('Starting a new horizontal verification request')
-    answer = 'False'
+    # Depending on the verification type, the answer will answer two different questions: Can you create your service side? Can you delete the service at your side?
+    # By default the answer will the True until something we found prouves contrary
+    answer = {'condition': 'True', 'information': ''}
     if verification_type == 'CREATE':
         services = Service.query.outerjoin(Parameter, Service.service_id == Parameter.service_id).filter(
             Service.service_type == service_type, Parameter.parameter_local_cidr == resource_cidr).all()
@@ -1965,7 +1980,7 @@ def horizontalVerification(resource_cidr, service_type, global_id, verification_
             service_schema = ServiceSchema(many=True)
             data = service_schema.dump(services).data
             if data != []:
-                answer = 'True'
+                answer['condition'], answer['information'] = 'False', 'The CIDR is already being used by other service'
 
     if verification_type == 'DELETE':
         service = Service.query.filter(Service.service_global == global_id).outerjoin(
@@ -1995,17 +2010,18 @@ def horizontalVerification(resource_cidr, service_type, global_id, verification_
                 interface='public',
                 region_name=local_region_name)
 
-            query_parameters = {'network_id': local_ressource, 'device_owner': 'compute:nova'}
+            query_parameters = {
+                'network_id': local_ressource, 'device_owner': 'compute:nova'}
 
+            port_list = {}
             try:
-                port_list = net_adap_local.get(url='/v2.0/ports', params=query_parameters)
+                port_list = net_adap.get(
+                    url='/v2.0/ports', params=query_parameters).json['ports']
             except:
                 app_log.info("Exception when contacting the network adapter")
 
-            app_log.info(port_list)
-            answer = 'True'
-
-            
+            if port_list != []:
+                answer['condition'], answer['information'] = 'False','Plugged ports existing'
 
     end_time = time.time()
     app_log.info('Ending time: %s', end_time)
