@@ -1227,7 +1227,7 @@ def verticalDeleteService(global_id):
                     r = requests.get(remote_inter_instance,
                                      params=remote_service, headers=headers)
                     app_log.info(r.json()['result'])
-                    delete_conditions.append(r.json())
+                    delete_conditions.append(r.json()['result'])
 
             workers = len(resources_list_to_delete)
             app_log.info(
@@ -1239,9 +1239,8 @@ def verticalDeleteService(global_id):
             app_log.info(
                 'Ending: Using threads for horizontal delete validation request.')
 
-            app_log.info(checkEqualElement(delete_conditions))
-
-            abort(404, "Finishing here for dev pourposes")
+            if not all(rest == 'True' for rest in delete_conditions):
+                abort(404, "Service can not be deleted, remote instances still have plugged ports")
 
             # Deleting the interconnections
             for element in interconnections_delete:
@@ -1283,7 +1282,7 @@ def verticalDeleteService(global_id):
 
         else:
             abort(404, "This module is not the master for the service with ID {id}, please address this request to {region} module".format(
-                id=global_id, region=service_data['service_params'].parameter_master))
+                id=global_id, region=service_data['service_params'][0]['parameter_master']))
     else:
         abort(404, "Service with ID {id} not found".format(id=global_id))
 
@@ -1958,6 +1957,15 @@ def horizontalDeleteService(global_id):
             inter_del = net_adap.delete(
                 url='/v2.0/inter/interconnections/' + inter)
 
+        local_resource = ''
+        for element in service_data['service_resources']:
+                if element['resource_region'] == local_region_name:
+                    local_resource = element['resource_uuid']
+                    break
+ 
+        network_del = net_adap.delete(
+                url='/v2.0/networks/' + local_resource)
+
         db.session.delete(service)
         db.session.commit()
 
@@ -2008,7 +2016,7 @@ def horizontalVerification(resource_cidr, service_type, global_id, verification_
             # TODO this kind of search takes time and it's done in almost every request, a better way will be to introduce the resource uuid in the service parameters, locally accesible
             for element in service_data['service_resources']:
                 if element['resource_region'] == local_region_name:
-                    local_ressource = element['resource_uuid']
+                    local_resource = element['resource_uuid']
                     break
 
             # Authenticate
@@ -2026,7 +2034,7 @@ def horizontalVerification(resource_cidr, service_type, global_id, verification_
                 region_name=local_region_name)
 
             query_parameters = {
-                'network_id': local_ressource, 'device_owner': 'compute:nova'}
+                'network_id': local_resource, 'device_owner': 'compute:nova'}
 
             port_list = {}
             try:
