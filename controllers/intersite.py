@@ -1240,7 +1240,8 @@ def verticalDeleteService(global_id):
                 'Ending: Using threads for horizontal delete validation request.')
 
             if not all(rest == 'True' for rest in delete_conditions):
-                abort(404, "Service can not be deleted, remote instances still have plugged ports")
+                abort(
+                    404, "Service can not be deleted, remote instances still have plugged ports")
 
             # Deleting the interconnections
             for element in interconnections_delete:
@@ -1959,12 +1960,12 @@ def horizontalDeleteService(global_id):
 
         local_resource = ''
         for element in service_data['service_resources']:
-                if element['resource_region'] == local_region_name:
-                    local_resource = element['resource_uuid']
-                    break
- 
+            if element['resource_region'] == local_region_name:
+                local_resource = element['resource_uuid']
+                break
+
         network_del = net_adap.delete(
-                url='/v2.0/networks/' + local_resource)
+            url='/v2.0/networks/' + local_resource)
 
         db.session.delete(service)
         db.session.commit()

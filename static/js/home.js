@@ -95,6 +95,9 @@ ns.controller = (function (m, v) {
             model.delete(service_global)
         .done(function(data){
             window.location = '/';
+        })
+        .fail(function (xhr, textStatus, errorThrown) {
+            error_handler(xhr, textStatus, errorThrown);
         });    
         };
        
