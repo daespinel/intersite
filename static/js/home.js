@@ -59,6 +59,14 @@ ns.view = (function () {
             setTimeout(function () {
                 $('.error').fadeOut();
             }, 2000)
+        },
+        notifaction: function (msg) {
+            $('.notification')
+                .text(msg)
+                .css('visibility', 'visible');
+            setTimeout(function () {
+                $('.notification').fadeOut();
+            }, 4000)
         }
     };
 }());
@@ -94,14 +102,14 @@ ns.controller = (function (m, v) {
         if(confirm("Are you sure to delete the service?")){
             model.delete(service_global)
         .done(function(data){
+            notification_handler(data);
             window.location = '/';
         })
         .fail(function (xhr, textStatus, errorThrown) {
             error_handler(xhr, textStatus, errorThrown);
+            //window.location = '/';
         });    
-        };
-       
-        
+        };    
     });
 
     
@@ -118,9 +126,16 @@ ns.controller = (function (m, v) {
     // generic error handler
     function error_handler(xhr, textStatus, errorThrown) {
         let error_msg = `${textStatus}: ${errorThrown} - ${xhr.responseJSON.detail}`;
-
+        //alert('Error message: '+error_msg);
         view.error(error_msg);
         console.log(error_msg);
+    }
+
+    function notification_handler(notificationThrown) {
+        let msg = `${notificationThrown}`;
+        //console.log('');
+        view.notification(msg);
+        //view.reset();
     }
 
     // handle application events

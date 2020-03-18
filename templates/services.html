@@ -61,9 +61,9 @@
 
                     <div class="form-group">
                         <label class="col-md-6" for="service_type">Type</label>
-                        <select id="service_type" name="type" class="form-control"s>
+                        <select id="service_type" name="type" class="form-control">
                             <option value="L2">Layer 2 network extension</option>
-                            <option value="L3">Layer 3 routing</option>
+                            <option value="L3" selected="selected">Layer 3 routing</option>
                         </select>
                     </div>
                     <input type="hidden" value="3" id="total_chq">
@@ -76,7 +76,7 @@
                         <table id="resources_container" class="resources_container table table-condensed  ">
                             <tr>
                               <td>
-                                <input id="service_resources1" type="text" class="service_resources form-control" placeholder="Resource Region name"/>
+                                <input id="service_resources1" name="local_res" type="text" class="service_resources form-control" placeholder="Resource Region name"/>
                               </td>
                               <td>
                                 <input id="service_resources2" type="text" class="service_resources form-control" placeholder="Resource uuid"/>

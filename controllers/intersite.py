@@ -1282,9 +1282,11 @@ def verticalDeleteService(global_id):
             return make_response("{id} successfully deleted".format(id=global_id), 200)
 
         else:
+            app_log.info('Ending: Using threads for horizontal delete request.')
             abort(404, "This module is not the master for the service with ID {id}, please address this request to {region} module".format(
                 id=global_id, region=service_data['service_params'][0]['parameter_master']))
     else:
+        app_log.info('Ending: Using threads for horizontal delete request.')
         abort(404, "Service with ID {id} not found".format(id=global_id))
 
 

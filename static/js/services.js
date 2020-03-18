@@ -1,5 +1,17 @@
 //$('#total_chq').val('3');
 // Create the namespace instance
+read_name()
+.done(function (data) {
+    // Here we put the data into the name of the PoC
+    //$("#input[name='local_res']").val(data);
+    document.getElementById('service_resources1').value = data;
+    document.getElementById('service_resources1').placeholder = data;
+    //console.log(data);
+    some_test = $("input[name='local_res']").val();
+    console.log(some_test);
+})
+
+    // Return the API
 let ns = {};
 
 // Create the model instance
@@ -29,8 +41,17 @@ ns.model = (function () {
                 data: JSON.stringify(service)
             };
             return $.ajax(ajax_options)
+        },
+
+        read_name: function() {
+            let ajax_options = {
+                type: 'GET',
+                url: '/api/region',
+                accepts: 'application/json',
+                dataType: 'json'
+            };
+            return $.ajax(ajax_options);
         }
-        
     };
 }());
 
@@ -45,7 +66,7 @@ ns.view = (function () {
         $service_name = $('#service_name'),
         $service_type = $('#service_type'),
         $service_params = $('#service_params'),
-        $service_resources = $('#service_resources'),
+        $service_resources1 = $('#service_resources1'),
         $service_resources2 = $('#service_resources2'),
         $service_interconnections = $('#service_interconnections'),
         $create = $('#create'),
@@ -61,8 +82,9 @@ ns.view = (function () {
             $service_params.val('');
             $('#total_chq').val('3');
             $service_interconnections.val('');
-            $service_type.val('').focus();
+            $service_type.val('L3').focus();
             $('#myForm :input').val('');
+            read_name();
         },
         set_button_state: function (state) {
             if (state === NEW_RESOURCE) {
@@ -84,6 +106,14 @@ ns.view = (function () {
             setTimeout(function () {
                 $('.error').fadeOut();
             }, 2000)
+        },
+        notification: function (msg) {
+            $('.notification')
+                .text(msg)
+                .css('visibility', 'visible');
+            setTimeout(function () {
+                $('.notification').fadeOut();
+            }, 4000)
         }
     };
 }());
@@ -99,7 +129,7 @@ ns.controller = (function (m, v) {
         $service_name = $('#service_name'),
         $service_type = $('#service_type'),
         $service_params = $('#service_params'),
-        $service_resources = $('#service_resources'),
+        $service_resources1 = $('#service_resources1'),
         $service_resources2 = $('#service_resources2'),
         $service_interconnections = $('#service_interconnections');
 
@@ -114,8 +144,14 @@ ns.controller = (function (m, v) {
         console.log('entering the met');
         alert(error_msg);
         view.reset();
-
     }
+    function notification_handler(notificationThrown) {
+        let msg = `${notificationThrown}`;
+        //console.log('');
+        view.notification(msg);
+        //view.reset();
+    }
+
     // initialize the button states
     view.set_button_state(view.NEW_RESOURCE);
 
@@ -216,8 +252,10 @@ ns.controller = (function (m, v) {
                 var answer_params = data['service_params'][0]['parameter_allocation_pool'];
                 var $output = "Service Created: \n Service global ID: "+ answer_global + "\n Service name: "+answer_name +"\n Service type: "+answer_type + "\n Service params: "+answer_params;
                 console.log(answer_params);
-                alert($output);
+                //alert($output);
+                notification_handler($output);
                 window.location = '/';
+                
             })
             .fail(function(xhr, textStatus, errorThrown) {
                 error_handler(xhr, textStatus, errorThrown);
