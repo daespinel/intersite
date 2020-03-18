@@ -3,12 +3,7 @@
 read_name()
 .done(function (data) {
     // Here we put the data into the name of the PoC
-    //$("#input[name='local_res']").val(data);
-    document.getElementById('service_resources1').value = data;
     document.getElementById('service_resources1').placeholder = data;
-    //console.log(data);
-    some_test = $("input[name='local_res']").val();
-    console.log(some_test);
 })
 
     // Return the API
@@ -58,6 +53,7 @@ ns.model = (function () {
 // Create the view instance
 ns.view = (function () {
     'use strict';
+    let $error = document.querySelector(".error");
 
     const NEW_RESOURCE = 0,
         EXISTING_RESOURCE = 1;
@@ -92,6 +88,8 @@ ns.view = (function () {
                 $service_type.prop('disabled', false);
                 $service_params.prop('disabled', false);
                 $service_interconnections.prop('disabled', false);
+                $('#service_name').removeAttr('disabled');
+                $('#myForm :input').removeAttr('disabled');
             } else if (state === EXISTING_RESOURCE) {
                 $create.prop('disabled', true);
                 $service_type.prop('disabled', true);
@@ -100,12 +98,20 @@ ns.view = (function () {
             }
         },
         error: function (error_msg) {
-            $('.error')
-                .text(error_msg)
-                .css('visibility', 'visible');
-            setTimeout(function () {
-                $('.error').fadeOut();
-            }, 2000)
+
+            $error.innerHTML = error_msg;
+            $error.classList.remove("hidden");
+            $error.classList.add("visible");
+            setTimeout(() => {
+                $error.classList.remove("visible");
+                $error.classList.add("hidden");
+            }, 4000);   
+            //$('.error')
+            //    .text(error_msg)
+            //    .css('visibility', 'visible');
+            //setTimeout(function () {
+            //    $('.error').fadeOut();
+            //}, 2000)
         },
         notification: function (msg) {
             $('.notification')
@@ -141,13 +147,13 @@ ns.controller = (function (m, v) {
     // generic error handler
     function error_handler(xhr, textStatus, errorThrown) {
         let error_msg = `${textStatus}: ${errorThrown} - ${xhr.responseJSON.detail}`;
-        console.log('entering the met');
-        alert(error_msg);
-        view.reset();
+        console.log(error_msg);
+        view.error(error_msg);
+        
     }
     function notification_handler(notificationThrown) {
         let msg = `${notificationThrown}`;
-        //console.log('');
+        console.log(msg);
         view.notification(msg);
         //view.reset();
     }
@@ -254,20 +260,24 @@ ns.controller = (function (m, v) {
                 console.log(answer_params);
                 //alert($output);
                 notification_handler($output);
-                window.location = '/';
+                //window.location = '/';
                 
             })
             .fail(function(xhr, textStatus, errorThrown) {
                 error_handler(xhr, textStatus, errorThrown);
+                //setTimeout(function () {console.log('pause')}, 2000);
+                //view.reset();
+                view.set_button_state(view.NEW_RESOURCE);
+                //$('.error').removeAttr('style');
+                //$('.error').css('visibility', 'hidden');
+                $('.notification').removeAttr('style');
             });
 
         
         } else {
             alert('Problem with the validation');
-            $('#service_name').prop('disabled',false);
             $('#service_name').removeAttr('disabled');
-            $('#service_type').prop('disabled',false);
-            $('#service_type').disabled=false;
+            $('#service_type').removeAttr('disabled');
             $('#create').prop('disabled',false);
             $('#create').removeAttr('disabled');
             $('#add_resource').prop('disabled',false);

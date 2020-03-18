@@ -111,3 +111,15 @@ tbody tr:hover {
 .fa-button-no-service {
     pointer-events:none;
 }
+
+
+.notification {
+   width: 50%;
+   margin-left: auto;
+   margin-right: auto;
+   padding: 5px;
+   border: 1px solid lightgrey;
+   border-radius: 3px;
+   background-color: #c1ffbb;
+   visibility: hidden;
+}

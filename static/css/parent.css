@@ -43,15 +43,25 @@
  }
  
  .error {
-     width: 50%;
-     margin-left: auto;
-     margin-right: auto;
-     padding: 5px;
-     border: 1px solid lightgrey;
-     border-radius: 3px;
-     background-color: #fbb;
-     visibility: hidden;
- }
+    width: 50%;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 5px;
+    border: 1px solid lightgrey;
+    border-radius: 3px;
+    background-color: #fbb;
+    opacity: 0;
+}
+
+.visible {
+    opacity: 1;
+    display: flex;
+}
+
+.hidden {
+    opacity: 0;
+    transition: visibility 0s 2s, opacity 2s linear;
+}
 
  .notification {
     width: 50%;

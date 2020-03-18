@@ -58,7 +58,7 @@ ns.view = (function () {
                 .css('visibility', 'visible');
             setTimeout(function () {
                 $('.error').fadeOut();
-            }, 2000)
+            }, 4000)
         },
         notifaction: function (msg) {
             $('.notification')
@@ -106,8 +106,8 @@ ns.controller = (function (m, v) {
             window.location = '/';
         })
         .fail(function (xhr, textStatus, errorThrown) {
+            window.location = '/';
             error_handler(xhr, textStatus, errorThrown);
-            //window.location = '/';
         });    
         };    
     });
