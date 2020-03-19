@@ -7,7 +7,9 @@ import re
 
 # Create the application instance
 app = connexion.App(__name__, specification_dir='./config/')
-logging.basicConfig(format='%(asctime)s.%(msecs)03d %(levelname)s %(message)s', datefmt='%Y-%m-%d,%H:%M:%S',level=logging.INFO)
+logging.basicConfig(format='%(asctime)s.%(msecs)03d %(levelname)s %(message)s',
+                    datefmt='%Y-%m-%d,%H:%M:%S', level=logging.INFO)
+
 
 def main():
     # Read the swagger.yml file to configure the endpoints
@@ -15,9 +17,11 @@ def main():
     host = service_utils.get_local_host()
     app.run(host=host, port=7575, debug=True)
 
+
 @app.route("/")
 def home():
     return render_template("home.html")
+
 
 @app.route("/services")
 @app.route("/services/<string:service_global>")
@@ -29,7 +33,19 @@ def services(service_global=""):
     """
     return render_template("services.html", service_global=service_global)
 
+
+@app.route("/service/<string:service_global>")
+def service(service_global):
+    """
+    This function responds to the browser URL
+    localhost:7575/service/<person_id>
+
+    :param service_global:   Id of the service to show notes for
+    :return:            the rendered template "service.html"
+    """
+    return render_template("service.html", service_global=service_global)
+
+
 # If we're running in stand alone mode, run the application
 if __name__ == '__main__':
     main()
-    

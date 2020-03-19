@@ -28,6 +28,12 @@ ns.model = (function () {
                 contentType: 'plain/text'
             };
             return $.ajax(ajax_options)
+        },
+        'readOne': function(service_global){
+            let ajax_options = {
+
+            };
+            return
         }
     };
 }());
@@ -52,22 +58,18 @@ ns.view = (function () {
             // Append the rows to the table tbody
             $table.append(html);
         },
-        error: function (error_msg) {
-            $('.error')
-                .text(error_msg)
-                .css('visibility', 'visible');
-            setTimeout(function () {
-                $('.error').fadeOut();
-            }, 4000)
+        error: function (msg) {
+            $.notify({message: msg},{type: 'danger'}, {delay:8000},{onClosed: this.redirecting()});
         },
         notifaction: function (msg) {
-            $('.notification')
-                .text(msg)
-                .css('visibility', 'visible');
-            setTimeout(function () {
-                $('.notification').fadeOut();
-            }, 4000)
+            $.notify({message: msg},{type: 'success'},{delay:8000},{onClosed: this.redirecting()});
+        },
+        redirecting: function () {
+            setTimeout(() => {
+                window.location = '/';
+            }, 9000);
         }
+
     };
 }());
 
@@ -103,16 +105,19 @@ ns.controller = (function (m, v) {
             model.delete(service_global)
         .done(function(data){
             notification_handler(data);
-            window.location = '/';
         })
         .fail(function (xhr, textStatus, errorThrown) {
-            window.location = '/';
             error_handler(xhr, textStatus, errorThrown);
         });    
         };    
     });
 
-    
+    $(document).on('click', '#tableservices tbody tr td button.service_update',function (e) {
+        let $target = $(e.target).parent().parent(),
+            service_global = $target.data('service_global');
+        console.log(service_global)
+        window.location = `/service/${service_global}`;    
+    });
 
 // handle application events
     //$('table').on('dblclick', 'tbody td.global', function (e) {
@@ -126,24 +131,13 @@ ns.controller = (function (m, v) {
     // generic error handler
     function error_handler(xhr, textStatus, errorThrown) {
         let error_msg = `${textStatus}: ${errorThrown} - ${xhr.responseJSON.detail}`;
-        //alert('Error message: '+error_msg);
         view.error(error_msg);
         console.log(error_msg);
     }
 
     function notification_handler(notificationThrown) {
         let msg = `${notificationThrown}`;
-        //console.log('');
-        view.notification(msg);
-        //view.reset();
+        view.notifaction(msg);
     }
-
-    // handle application events
-    //$('table').on('dblclick', 'tbody td.global', function (e) {
-    //    let $target = $(e.target).parent(),
-    //        service_global = $target.data('service_global');
-    //    window.location = `/services/${service_global}`;
-
-    //});
 
 }(ns.model, ns.view));

@@ -46,14 +46,14 @@ ns.model = (function () {
                 dataType: 'json'
             };
             return $.ajax(ajax_options);
-        }
+        },
+
     };
 }());
 
 // Create the view instance
 ns.view = (function () {
     'use strict';
-    let $error = document.querySelector(".error");
 
     const NEW_RESOURCE = 0,
         EXISTING_RESOURCE = 1;
@@ -97,29 +97,17 @@ ns.view = (function () {
                 $service_interconnections.prop('disabled', true);
             }
         },
-        error: function (error_msg) {
-
-            $error.innerHTML = error_msg;
-            $error.classList.remove("hidden");
-            $error.classList.add("visible");
-            setTimeout(() => {
-                $error.classList.remove("visible");
-                $error.classList.add("hidden");
-            }, 4000);   
-            //$('.error')
-            //    .text(error_msg)
-            //    .css('visibility', 'visible');
-            //setTimeout(function () {
-            //    $('.error').fadeOut();
-            //}, 2000)
+        error: function (msg) {
+            $.notify({message: msg},{type: 'danger'});
         },
         notification: function (msg) {
-            $('.notification')
-                .text(msg)
-                .css('visibility', 'visible');
-            setTimeout(function () {
-                $('.notification').fadeOut();
-            }, 4000)
+            $.notify({message: msg},{type: 'success'},{delay:8000},{onClosed: this.redirecting()});
+        },
+        redirecting: function () {
+            console.log('FUCK');
+            setTimeout(() => {
+                window.location = '/';
+            }, 9000);
         }
     };
 }());
@@ -153,8 +141,8 @@ ns.controller = (function (m, v) {
     }
     function notification_handler(notificationThrown) {
         let msg = `${notificationThrown}`;
-        console.log(msg);
         view.notification(msg);
+        console.log(msg);
         //view.reset();
     }
 
@@ -257,20 +245,12 @@ ns.controller = (function (m, v) {
                 var answer_type = data['service_type'];
                 var answer_params = data['service_params'][0]['parameter_allocation_pool'];
                 var $output = "Service Created: \n Service global ID: "+ answer_global + "\n Service name: "+answer_name +"\n Service type: "+answer_type + "\n Service params: "+answer_params;
-                console.log(answer_params);
-                //alert($output);
-                notification_handler($output);
-                //window.location = '/';
-                
+                notification_handler($output);      
             })
             .fail(function(xhr, textStatus, errorThrown) {
                 error_handler(xhr, textStatus, errorThrown);
-                //setTimeout(function () {console.log('pause')}, 2000);
-                //view.reset();
                 view.set_button_state(view.NEW_RESOURCE);
-                //$('.error').removeAttr('style');
-                //$('.error').css('visibility', 'hidden');
-                $('.notification').removeAttr('style');
+                
             });
 
         

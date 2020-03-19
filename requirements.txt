@@ -1,7 +1,7 @@
 connexion==2.6.0
 Flask==1.0.3
 flask-marshmallow==0.10.1
-Flask-SQLAlchemy==2.1
+Flask-SQLAlchemy==2.3.2
 ipaddr==2.2.0
 marshmallow==2.19.5
 marshmallow-sqlalchemy==0.17.0
