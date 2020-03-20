@@ -1,12 +1,11 @@
-//$('#total_chq').val('3');
 // Create the namespace instance
 read_name()
-.done(function (data) {
-    // Here we put the data into the name of the PoC
-    document.getElementById('service_resources1').placeholder = data;
-})
+    .done(function (data) {
+        // Here we put the data into the name of the PoC
+        document.getElementById('service_resources1').placeholder = data;
+    })
 
-    // Return the API
+// Return the API
 let ns = {};
 
 // Create the model instance
@@ -15,7 +14,6 @@ ns.model = (function () {
 
     // Return the API
     return {
-
         read: function () {
             let ajax_options = {
                 type: 'GET',
@@ -37,8 +35,7 @@ ns.model = (function () {
             };
             return $.ajax(ajax_options)
         },
-
-        read_name: function() {
+        read_name: function () {
             let ajax_options = {
                 type: 'GET',
                 url: '/api/region',
@@ -47,7 +44,6 @@ ns.model = (function () {
             };
             return $.ajax(ajax_options);
         },
-
     };
 }());
 
@@ -98,13 +94,12 @@ ns.view = (function () {
             }
         },
         error: function (msg) {
-            $.notify({message: msg},{type: 'danger'});
+            $.notify({ message: msg }, { type: 'danger' });
         },
         notification: function (msg) {
-            $.notify({message: msg},{type: 'success'},{delay:8000},{onClosed: this.redirecting()});
+            $.notify({ message: msg }, { type: 'success' }, { delay: 8000 }, { onClosed: this.redirecting() });
         },
         redirecting: function () {
-            console.log('FUCK');
             setTimeout(() => {
                 window.location = '/';
             }, 9000);
@@ -115,7 +110,6 @@ ns.view = (function () {
 // Create the controller
 ns.controller = (function (m, v) {
     'use strict';
-
     let model = m,
         view = v,
         $url_service_global = $('#url_service_global'),
@@ -129,7 +123,7 @@ ns.controller = (function (m, v) {
 
     // Get the data from the model after the controller is done initializing
     setTimeout(function () {
-        view.reset();   
+        view.reset();
     }, 100)
 
     // generic error handler
@@ -137,66 +131,51 @@ ns.controller = (function (m, v) {
         let error_msg = `${textStatus}: ${errorThrown} - ${xhr.responseJSON.detail}`;
         console.log(error_msg);
         view.error(error_msg);
-        
     }
     function notification_handler(notificationThrown) {
         let msg = `${notificationThrown}`;
         view.notification(msg);
         console.log(msg);
-        //view.reset();
     }
-
     // initialize the button states
     view.set_button_state(view.NEW_RESOURCE);
 
     // Validate input
     function validate(name, type, resources) {
-        var validate_name=name;
+        var validate_name = name;
         var validate_type = type;
         var validate_resources = resources;
-        
-        if(validate_name.length > 32){
-            //console.log('Problem with the name');
+
+        if (validate_name.length > 32) {
             return false;
         }
         //console.log(validate_type);
-        if(validate_type != 'L2'){
-            if(validate_type != 'L3'){
-                //console.log('problem with type');
+        if (validate_type != 'L2') {
+            if (validate_type != 'L3') {
                 return false;
             }
         }
-
-        if(validate_resources == ''){
-            //console.log('problem with resources');
+        if (validate_resources == '') {
             return false;
         }
-
         return true;
     }
 
-    $('#add_resource').click(function(e){
+    $('#add_resource').click(function (e) {
         var show_index = parseInt($('#total_chq').val());
         var new_chq_no = show_index + 1;
         var new_res_input = "<tr><td><input id='service_resources1' type='text' class='service_resources form-control' placeholder='Resource Region name'/></td><td><input id='service_resources2' type='text' class='service_resources form-control' placeholder='Resource uuid'/></td><td><span><button id='resource_delete' type='button' class='resource_delete btn btn-danger btn-xs' title='Delete'><i class='fa fa-trash-o fa-button-no-service'></i></button></span></td></tr>";
         $('#resources_container').append(new_res_input);
         $('#total_chq').val(new_chq_no);
-        //return false;
     });
 
-    $(document).on('click', '#resources_container tbody tr td button.resource_delete',function (e) {
+    $(document).on('click', '#resources_container tbody tr td button.resource_delete', function (e) {
         var target = $(e.target).parent().parent().parent();
         var last_chq_no = $('#total_chq').val();
-
         if (last_chq_no > 3) {
-            //console.log(valor);
-            //console.log(identi)
             target.remove()
-            //$('#service_resources' + last_index_1).remove();
-            //$('#service_resources' + last_index_2).remove();
             $('#total_chq').val(last_chq_no - 1);
         }
-        //return false;
     });
 
     // Create our event handlers
@@ -209,69 +188,64 @@ ns.controller = (function (m, v) {
         var table = document.getElementById('resources_container');
         var i;
         $('#myForm :input').prop('disabled', true);
-        var resources_array= [];
+        var resources_array = [];
         var resource_region_str = '';
         var resource_uuid_str = '';
-        for (i = 0; i < table.rows.length;i++){
+        for (i = 0; i < table.rows.length; i++) {
             var row = table.rows[i];
             var cells = row.cells;
             var c;
-            for (c=0;c<cells.length;c++){
+            for (c = 0; c < cells.length; c++) {
                 var cell = cells[c];
                 var inputElem = cell.children[0];
                 var isInput = inputElem instanceof HTMLInputElement;
-                if (isInput){
-                    //console.log(inputElem.value);
-                    if(inputElem.id=='service_resources1')
+                if (isInput) {
+                    if (inputElem.id == 'service_resources1')
                         resource_region_str = inputElem.value
-                    if(inputElem.id=='service_resources2')
+                    if (inputElem.id == 'service_resources2')
                         resource_uuid_str = inputElem.value
-                }            
+                }
             }
-            resources_array.push(resource_region_str+","+resource_uuid_str);            
+            resources_array.push(resource_region_str + "," + resource_uuid_str);
         }
 
         let name = $service_name.val(),
             type = $service_type.val();
 
-        //console.log(resources_array);
-
         e.preventDefault();
         if (validate(name, type, resources_array)) {
-            model.create({'name':name, 'type':type, 'resources':resources_array})
-            .done(function(data) {
-                var answer_global = data['service_global'];
-                var answer_name = data['service_name'];
-                var answer_type = data['service_type'];
-                var answer_params = data['service_params'][0]['parameter_allocation_pool'];
-                var $output = "Service Created: \n Service global ID: "+ answer_global + "\n Service name: "+answer_name +"\n Service type: "+answer_type + "\n Service params: "+answer_params;
-                notification_handler($output);      
-            })
-            .fail(function(xhr, textStatus, errorThrown) {
-                error_handler(xhr, textStatus, errorThrown);
-                view.set_button_state(view.NEW_RESOURCE);
-                
-            });
+            model.create({ 'name': name, 'type': type, 'resources': resources_array })
+                .done(function (data) {
+                    var answer_global = data['service_global'];
+                    var answer_name = data['service_name'];
+                    var answer_type = data['service_type'];
+                    var answer_params = data['service_params'][0]['parameter_allocation_pool'];
+                    var $output = "Service Created: \n Service global ID: " + answer_global + "\n Service name: " + answer_name + "\n Service type: " + answer_type + "\n Service params: " + answer_params;
+                    notification_handler($output);
+                })
+                .fail(function (xhr, textStatus, errorThrown) {
+                    error_handler(xhr, textStatus, errorThrown);
+                    view.set_button_state(view.NEW_RESOURCE);
 
-        
+                });
+
+
         } else {
             alert('Problem with the validation');
             $('#service_name').removeAttr('disabled');
             $('#service_type').removeAttr('disabled');
-            $('#create').prop('disabled',false);
+            $('#create').prop('disabled', false);
             $('#create').removeAttr('disabled');
-            $('#add_resource').prop('disabled',false);
+            $('#add_resource').prop('disabled', false);
             $('#add_resource').removeAttr('disabled');
             $('#myForm :input').prop('disabled', false);
             $('#myForm :input').removeAttr('disabled');
         }
 
     });
-
     $('#reset').click(function (e) {
         view.reset();
         view.set_button_state(view.NEW_RESOURCE);
     });
-
 
 }(ns.model, ns.view));
