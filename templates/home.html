@@ -78,11 +78,11 @@
             <td class="global">{{service_global}}</td>
             <td class="name">{{service_name}}</td>
             <td class="type">{{service_type}}</td>
-            <td class="params">{{#each service_params}} Allocation pool: {{parameter_allocation_pool}}<br> local CIDR: {{parameter_local_cidr}}<br> IP version: {{parameter_ipv}}<br> {{/each}}</td>
+            <td class="params">{{#each service_params}} Allocation pool: {{parameter_allocation_pool}}<br> local CIDR: {{parameter_local_cidr}}<br> IP version: {{parameter_ipv}}<br> <input type="hidden" value="{{parameter_master}}" id="service_master">{{/each}}</td>
             <td class="resources">{{#each service_resources}}{{resource_region}} {{resource_uuid}} <br> {{/each}}</td>
             <td class="interconnections">{{#each service_interconnections}}{{interconnexion_uuid}} <br> {{/each}}</td>
             <td>
-                <button id="service_update" class="service_update btn btn-info btn-xs" data-widget="update" data-toggle="tooltip" title="Update"><i class="fa fa-edit"></i></button>
+                <button id="service_update" class="service_update btn btn-info btn-xs" title="Update"><i class="fa fa-edit fa-button-no-service"></i></button>
                 <button id="service_delete" class="service_delete btn btn-danger btn-xs" title="Delete"><i class="fa fa-trash-o fa-button-no-service"></i></button>
             </td>
         </tr>

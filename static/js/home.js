@@ -1,7 +1,3 @@
-/*
- * JavaScript file for the Home page
- */
-
 // Create the namespace instance
 let ns = {};
 
@@ -73,11 +69,9 @@ ns.view = (function () {
     };
 }());
 
-
 // Create the controller instance
 ns.controller = (function (m, v) {
     'use strict';
-
     let model = m,
         view = v;
 
@@ -88,7 +82,6 @@ ns.controller = (function (m, v) {
         model.read()
             .done(function (data) {
                 view.build_table(data);
-                //console.log(data);
             })
             .fail(function (xhr, textStatus, errorThrown) {
                 error_handler(xhr, textStatus, errorThrown);
@@ -114,19 +107,14 @@ ns.controller = (function (m, v) {
 
     $(document).on('click', '#tableservices tbody tr td button.service_update',function (e) {
         let $target = $(e.target).parent().parent(),
-            service_global = $target.data('service_global');
-        console.log(service_global)
-        window.location = `/service/${service_global}`;    
+            service_global = $target.data('service_global'),
+            service_master = $target[0].childNodes[7].childNodes[7].value;
+        if(service_master == document.getElementById("title_que").value){
+            window.location = `/service/${service_global}`;
+        }else{
+            $.notify({message: "This is not the master for the service: It can not be updated here."},{type: 'danger'}, {delay:8000});
+        };    
     });
-
-// handle application events
-    //$('table').on('dblclick', 'tbody td.global', function (e) {
-    //    let $target = $(e.target).parent(),
-    //        service_global = $target.data('service_global');
-    //    window.location = `/services/${service_global}`;
-
-    //});
-
 
     // generic error handler
     function error_handler(xhr, textStatus, errorThrown) {
