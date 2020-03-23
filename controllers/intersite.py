@@ -398,6 +398,7 @@ def verticalCreateService(service):
     parameters = {
         'parameter_allocation_pool': parameter_local_allocation_pool,
         'parameter_local_cidr': parameter_local_cidr,
+        'parameter_local_resource': local_resource,
         'parameter_ipv': parameter_local_ipv,
         'parameter_master': local_region_name,
         'parameter_master_auth': local_region_url[0:-12]+":7575"
@@ -501,11 +502,11 @@ def verticalCreateService(service):
             remote_params = {
                 'parameter_allocation_pool': '',
                 'parameter_local_cidr': '',
+                'parameter_local_resource': '',
                 'parameter_ipv': parameter_local_ipv,
                 'parameter_master': local_region_name,
                 'parameter_master_auth': local_region_url[0:-12]+":7575"
             }
-            # TODO Need to check the cidr_ranges
             if service_type == 'L2':
                 remote_params['parameter_allocation_pool'] = alloc_pool
                 remote_params['parameter_local_cidr'] = parameter_local_cidr
@@ -631,23 +632,29 @@ def verticalCreateService(service):
 
 # TODO Need to refactor this, only modify using the master
 def verticalUpdateService(global_id, service):
-
+    start_time = time.time()
+    app_log.info('Starting time: %s', start_time)
+    app_log.info('Starting a new service update request.')
+    app_log.info('Starting: Validating service information.')
     service_update = Service.query.filter(
         Service.service_global == global_id).one_or_none()
 
     # Did we find a service?
     if service_update is not None:
-
+        
         service_schema_temp = ServiceSchema()
         data_from_db = service_schema_temp.dump(service_update).data
 
-        service_to_update_type = data_from_db['service_params'][0]['parameter_master']
-        # For the L2 service, check if the module is the master for that service. If it isn't, return abort to inform that it can't execute the request
-        if(data_from_db['service_type'] == 'L2'):
-            if(service_to_update_type != local_region_name):
-                app_log.info('This module is not the master of the service')
-                abort(404, "This module is not the master of the service, please redirect the request to: " +
-                      service_to_update_type + " module")
+        service_to_update_master = data_from_db['service_params'][0]['parameter_master']
+        # Check if the module is the master for that service. If it isn't, return abort to inform that it can't execute the request
+        if(service_to_update_master != local_region_name):
+            app_log.info('This module is not the master of the service.')
+            app_log.info('Ending: Validating service information.')
+            abort(404, "This module is not the master of the service, please redirect the request to: " +
+                    service_to_update_master + " module")
+
+        app_log.info('Ending: Validating service information.')
+        app_log.info('Starting: extracting information from the db and the user information.')
 
         to_service_resources_list = dict((k.strip(), v.strip()) for k, v in (
             (item.split(',')) for item in service.get("resources", None)))
@@ -658,11 +665,10 @@ def verticalUpdateService(global_id, service):
         # app_log.info(service_resources_list_user)
 
         service_resources_list_db = []
-        # app_log.info(data_from_db['service_resources'])
         for element in data_from_db['service_resources']:
             service_resources_list_db.append(
                 {'resource_uuid': element['resource_uuid'], 'resource_region': element['resource_region']})
-        # app_log.info(service_resources_list_db)
+        # We create two lists, the first one is for the resources that will be deleted, the second one is for the ones that will be added
         list_resources_remove = copy.deepcopy(service_resources_list_db)
         list_resources_add = []
         service_resources_list = []
@@ -671,33 +677,35 @@ def verticalUpdateService(global_id, service):
             contidion_temp = True
             for resource_component_2 in service_resources_list_db:
                 if resource_component == resource_component_2:
-                    # app_log.info(resource_component)
                     list_resources_remove.remove(resource_component_2)
                     contidion_temp = False
                     break
             if(contidion_temp == True):
                 list_resources_add.append(resource_component)
 
-        app_log.info('actual list of resources' +
+        app_log.info('Ending: extracting information from the db and the user information.')
+        app_log.info('INFO: Actual list of resources' +
                      str(service_resources_list_db))
-        app_log.info('resources to add' + str(list_resources_add))
-        app_log.info('resources to delete' + str(list_resources_remove))
-        search_local_resource_delete = False
-        search_local_resource_uuid = ''
-
+        app_log.info('INFO: Resources to add' + str(list_resources_add))
+        app_log.info('INFO: Resources to delete' + str(list_resources_remove))
+        
+        # We analyze if the user is really doing a change to the service by adding/removing resources.
         if(list_resources_remove == [] and list_resources_add == []):
-            abort(404, "No resources are added/deleted")
+            abort(404, "No resources are added/deleted.")
 
-        for element in service_resources_list_db:
-            if(local_region_name in element['resource_region']):
-                search_local_resource_uuid = element['resource_uuid']
-                break
+        app_log.info('Starting: Validating if the local resource is in the list.')
+        search_local_resource_delete = False
+        search_local_resource_uuid = data_from_db['service_params'][0]['parameter_local_resource']
 
-        # TODO change local_region_name for search_local_resource_uuid
         for element in list_resources_remove:
-            if(local_region_name in element['resource_region']):
+            if(search_local_resource_uuid in element['resource_uuid']):
                 search_local_resource_delete = True
 
+        app_log.info('Ending: Validating if the local resource is in the list.')
+        if search_local_resource_delete:
+            abort(404, 'The master local resource can not be deleted.')
+
+        app_log.info('Starting: Contacting keystone and creating net adapter.')
         auth = service_utils.get_auth_object(local_region_url)
         sess = service_utils.get_session_object(auth)
 
@@ -713,71 +721,41 @@ def verticalUpdateService(global_id, service):
             service_type='network',
             interface='public',
             region_name=local_region_name)
-
-        # If one of the resource is the local one, we only need to delete the entire service locally
-        # For the moment we're going to avoid this with L2 services
-        if(search_local_resource_delete):
-            if(service_to_update_type == 'L3'):
-                interconnections_delete = data_from_db['service_interconnections']
-                for element in interconnections_delete:
-
-                    inter = element['interconnexion_uuid']
-
-                    try:
-                        inter_del = net_adap.delete(
-                            '/v2.0/inter/interconnections/' + inter)
-                    except:
-                        app_log.info(
-                            "Exception when contacting the network adapter")
-
-                    for element in list_resources_remove:
-                        if(local_region_name in element['resource_region']):
-                            service_resources_list_db.remove(element)
-                            list_resources_remove.remove(element)
-                            break
-
-                db.session.delete(service_update)
-                db.session.commit()
-
-            else:
-                app_log.info(
-                    'The resource belonging to the master node can not be deleted, Please rework the request')
-                abort(
-                    404, 'The resource belonging to the master node can not be deleted, Please rework the request')
+        app_log.info('Ending: Contacting keystone and creating net adapter.')
 
         # First delete the interconnections between the local resource and the resources that are going to be deleted
         if (list_resources_remove):
-            # Do this if the local resource is not being deleted from the service
-            if (search_local_resource_delete != True):
-                for remote_resource_to_delete in list_resources_remove:
+            #TODO need to create a pool thread executor here
+            app_log.info('Starting: Deleting local interconnections  with to delete remote resources.')
+            for remote_resource_to_delete in list_resources_remove:
 
-                    filters = {'local_resource_id': search_local_resource_uuid,
-                               'remote_resource_id': remote_resource_to_delete['resource_uuid']}
+                filters = {'local_resource_id': search_local_resource_uuid,
+                            'remote_resource_id': remote_resource_to_delete['resource_uuid']}
+
+                try:
+                    inter_del_list = net_adap.get(
+                        url='/v2.0/inter/interconnections/', json=filters).json()['interconnections']
+                except:
+                    app_log.info(
+                        "Exception when contacting the network adapter")
+
+                if inter_del_list:
+                    interco_delete = inter_del_list.pop()
+                    interconnection_uuid_to_delete = interco_delete['id']
 
                     try:
-                        inter_del_list = net_adap.get(
-                            url='/v2.0/inter/interconnections/', json=filters).json()['interconnections']
+                        inter_del = net_adap.delete(
+                            '/v2.0/inter/interconnections/' + interconnection_uuid_to_delete)
                     except:
                         app_log.info(
                             "Exception when contacting the network adapter")
 
-                    if inter_del_list:
-                        interco_delete = inter_del_list.pop()
-                        interconnection_uuid_to_delete = interco_delete['id']
+                    interconnection_delete = Interconnexion.query.outerjoin(Service, Interconnexion.service_id == Service.service_id).filter(
+                        Interconnexion.interconnexion_uuid == interconnection_uuid_to_delete).filter(Interconnexion.service_id == data_from_db['service_id']).one_or_none()
 
-                        try:
-                            inter_del = net_adap.delete(
-                                '/v2.0/inter/interconnections/' + interconnection_uuid_to_delete)
-                        except:
-                            app_log.info(
-                                "Exception when contacting the network adapter")
-
-                        interconnection_delete = Interconnexion.query.outerjoin(Service, Interconnexion.service_id == Service.service_id).filter(
-                            Interconnexion.interconnexion_uuid == interconnection_uuid_to_delete).filter(Interconnexion.service_id == data_from_db['service_id']).one_or_none()
-
-                        if interconnection_delete:
-                            db.session.delete(interconnection_delete)
-                            db.session.commit()
+                    if interconnection_delete:
+                        db.session.delete(interconnection_delete)
+                        db.session.commit()
 
                 # app_log.info(remote_resource_to_delete['resource_uuid'])
                 resource_delete = Resource.query.outerjoin(Service, Resource.service_id == Service.service_id).filter(
@@ -788,6 +766,11 @@ def verticalUpdateService(global_id, service):
                 if resource_delete:
                     db.session.delete(resource_delete)
                     db.session.commit()
+                
+                app_log.info('Ending: Deleting local interconnections with to delete remote resources.')
+
+        app_log.info(
+        'Starting: Saving Neutron and Keystone information from catalogue.')
 
         service_remote_auth_endpoints = {}
         service_remote_inter_endpoints = {}
@@ -835,6 +818,9 @@ def verticalUpdateService(global_id, service):
                             service_remote_auth_endpoints[resource_delete['resource_region']
                                                           ] = endpoint['url'] + '/v3'
                             break
+
+        app_log.info(
+        'Ending: Saving Neutron and Keystone information from catalogue.')
 
         if bool(service_resources_list_search):
             abort(404, "ERROR: Regions " + (" ".join(str(key['resource_region'])
@@ -1302,7 +1288,7 @@ def horizontalCreateService(service):
     service_name = service.get("name", None)
     service_type = service.get("type", None)
     service_params = ast.literal_eval(service.get("params", None)[0])
-    app_log.info(service_params)
+    #app_log.info(service_params)
     service_global = service.get("global", None)
     # service_resources = service.get("resources", None)
     service_resources_list = dict((k.strip(), v.strip()) for k, v in (
@@ -1316,10 +1302,12 @@ def horizontalCreateService(service):
         'service_global': service_global
     }
 
-    for k, v in service_resources_list.items():
-        if k == local_region_name:
-            local_resource = v
-            break
+    # Extracting the local resource if the service is of type L3
+    if service_type == 'L3':
+        for k, v in service_resources_list.items():
+            if k == local_region_name:
+                local_resource = v
+                break
 
     # Saving info for Keystone endpoints to be contacted based on keystone catalog
     auth = service_utils.get_auth_object(local_region_url)
@@ -1452,6 +1440,8 @@ def horizontalCreateService(service):
         subnetwork_temp = net_adap.get('/v2.0/subnets/' + subnet_id).json()
         subnet = subnetwork_temp['subnet']
         service_params['parameter_local_cidr'] = subnet['cidr']
+    # Since every kind of service has a local resource, we store it without the loop
+    service_params['parameter_local_resource'] = local_resource
 
     service_params_schema = ParamsSchema()
     new_service_params = service_params_schema.load(

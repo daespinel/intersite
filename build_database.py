@@ -36,7 +36,7 @@ SERVICES1 = [
         "name": "Service1",
         "type": "L2",
         "global": "a842c6f0-44a2-bc21-568a56c54de0",
-        "params": ["10.0.0.3-10.0.0.108", "10.0.0.0/24", "v4", "RegionTwo", "http://192.168.57.6:7575"],
+        "params": ["10.0.0.3-10.0.0.108", "10.0.0.0/24","3b8360e6-e29a-4063-a8bc-7bbd0785d08b", "v4", "RegionOne", "http://192.168.57.6:7575"],
         "l2allocs": [{"first_ip": "10.0.0.3", "last_ip": "10.0.0.108", "site": "RegionOne"}, {"first_ip": "10.0.0.109", "last_ip": "10.0.0.153", "site": "RegionTwo"}, {"first_ip": "10.0.0.110", "last_ip": "10.0.0.253", "site": "free"}],
         "resources": [("3b8360e6-e29a-4063-a8bc-7bbd0785d08b", "RegionOne"), ("829c3a52-c7de-4430-b721-fb85b7dcf60f", "RegionTwo")],
         "interconnections": ["z1"]
@@ -87,10 +87,10 @@ if(create_test):
             s.service_resources.append(
                 Resource(resource_region=region_name, resource_uuid=resource_uuid))
 
-        param_allocation, param_local_cidr, param_ipv, param_master, param_master_auth = service.get(
-            "params")[0], service.get("params")[1], service.get("params")[2], service.get("params")[3], service.get("params")[4]
+        param_allocation, param_local_cidr, param_local_resource, param_ipv, param_master, param_master_auth = service.get(
+            "params")[0], service.get("params")[1], service.get("params")[2], service.get("params")[3], service.get("params")[4], service.get("params")[5]
         param = Parameter(parameter_allocation_pool=param_allocation,
-                        parameter_local_cidr=param_local_cidr, parameter_ipv=param_ipv, parameter_master=param_master, parameter_master_auth=param_master_auth)
+                        parameter_local_cidr=param_local_cidr, parameter_local_resource=param_local_resource, parameter_ipv=param_ipv, parameter_master=param_master, parameter_master_auth=param_master_auth)
         
         if('l2allocs' in service.keys()):
             l2master = L2Master()

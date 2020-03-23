@@ -30,6 +30,15 @@ ns.model = (function () {
 
             };
             return
+        },
+        'read_name': function() {
+            let ajax_options = {
+                type: 'GET',
+                url: '/api/region',
+                accepts: 'application/json',
+                dataType: 'json'
+            };
+            return $.ajax(ajax_options);
         }
     };
 }());
@@ -109,11 +118,17 @@ ns.controller = (function (m, v) {
         let $target = $(e.target).parent().parent(),
             service_global = $target.data('service_global'),
             service_master = $target[0].childNodes[7].childNodes[7].value;
-        if(service_master == document.getElementById("title_que").value){
-            window.location = `/service/${service_global}`;
-        }else{
-            $.notify({message: "This is not the master for the service: It can not be updated here."},{type: 'danger'}, {delay:8000});
-        };    
+        read_name()
+        .done(function (data) {
+            console.log(data)
+            if(service_master == data){
+                window.location = `/service/${service_global}`;
+            }else{
+                $.notify({message: "This is not the master for the service: It can not be updated here."},{type: 'danger'}, {delay:8000});
+            };
+        })
+        
+            
     });
 
     // generic error handler
