@@ -60,6 +60,7 @@ class Resource(db.Model):
                             primary_key=True)
     resource_region = db.Column(db.String(64))
     resource_uuid = db.Column(db.String(64))
+    resource_cidr = db.Column(db.String(64))
     service_id = db.Column(db.Integer, db.ForeignKey('service.service_id'))
 
 
@@ -69,7 +70,8 @@ class Interconnexion(db.Model):
                                   primary_key=True)
     interconnexion_uuid = db.Column(db.String(64))
     service_id = db.Column(db.Integer, db.ForeignKey('service.service_id'))
-
+    resource_id = db.Column(db.Integer, db.ForeignKey('resource.resource_id'))
+    resource = db.relationship('Resource')
 
 class L2Master(db.Model):
     __tablename__ = "l2master"
@@ -212,6 +214,7 @@ class SResourcesSchema(ma.ModelSchema):
     service_id = fields.Int()
     resource_region = fields.Str()
     resource_uuid = fields.Str()
+    resource_cidr = fields.Str()
 
 
 class ResourcesSchema(ma.ModelSchema):
@@ -240,6 +243,7 @@ class SInterconnectionsSchema(ma.ModelSchema):
     """
     interconnexion_id = fields.Int()
     service_id = fields.Int()
+    resource_id = fields.Int()
     interconnexion_uuid = fields.Str()
 
 
@@ -259,6 +263,7 @@ class InterconnectionsServiceSchema(ma.ModelSchema):
     This class exists to get around a recursion issue
     """
     service_id = fields.Int()
+    resource_id = fields.Int()
     #service_name = fields.Str()
     #service_type = fields.Str()
     #service_global = fields.Str()
