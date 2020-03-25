@@ -188,7 +188,8 @@ def verticalCreateService(service):
         # Retrieving the subnetwork information given the region name
         def parallel_subnetwork_request(item, value):
             app_log = logging.getLogger()
-            app_log.info('Starting thread at: ')
+            starting_time = time.time()
+            app_log.info('Starting thread at time:  %s', starting_time)
             net_adap_remote = Adapter(
                 auth=auth,
                 session=sess,
@@ -237,9 +238,9 @@ def verticalCreateService(service):
                      (' ' .join(str(value) for value in service_resources_list.values())))
 
         app_log.info('Starting(L2): Retrieving the local subnetwork informations.')
-        app_log.info(network_temp_local)
-        app_log.info('The local resource uuid: ' +
-                     str(network_temp_local['subnets'][0]))
+        #app_log.info(network_temp_local)
+        #app_log.info('The local resource uuid: ' +
+        #             str(network_temp_local['subnets'][0]))
 
         net_adap_local = Adapter(
             auth=auth,
@@ -257,8 +258,8 @@ def verticalCreateService(service):
         except:
             app_log.info("Exception when contacting the network adapter")
 
-        app_log.info('The local subnetwork informations')
-        app_log.info(subnetwork_temp)
+        #app_log.info('The local subnetwork informations')
+        #app_log.info(subnetwork_temp)
 
         # Taking the information of the subnet CIDR
         cidr = ipaddress.ip_network(subnetwork_temp['cidr'])
@@ -270,8 +271,10 @@ def verticalCreateService(service):
         # We do the horizontal validation with remote modules
         def parallel_horizontal_validation(obj):
             app_log = logging.getLogger()
-            app_log.info('Starting thread at time: ' + time.time())
-            if obj != service_utils.get_region_name():
+            starting_time = time.time()
+            app_log.info('Starting thread at time:  %s', starting_time)
+            print("fuck" + str(obj))
+            if obj != local_region_name:
                 remote_inter_instance = service_remote_inter_endpoints[obj].strip(
                     '9696/')
                 remote_inter_instance = remote_inter_instance + '7575/api/intersite-horizontal'
@@ -282,7 +285,6 @@ def verticalCreateService(service):
                            'Accept': 'application/json'}
                 r = requests.get(remote_inter_instance,
                                  params=remote_service, headers=headers)
-                # app_log.info(r.json())
                 CIDRs_conditions.append(r.json()['condition'])
 
         app_log.info(
@@ -338,7 +340,8 @@ def verticalCreateService(service):
 
     def parallel_inters_creation_request(k, v):
         app_log = logging.getLogger()
-        app_log.info('Starting an interconnection thread')
+        starting_time = time.time()
+        app_log.info('Starting thread at time:  %s', starting_time)
         if local_region_name != k:
             interconnection_data = {'interconnection': {
                 'name': service_name,
@@ -491,6 +494,8 @@ def verticalCreateService(service):
     # Sending remote inter-site create requests to the distant nodes
     def parallel_horizontal_request(obj, alloc_pool):
         app_log = logging.getLogger()
+        starting_time = time.time()
+        app_log.info('Starting thread at time:  %s', starting_time)
         if obj != service_utils.get_region_name():
             remote_inter_instance = service_remote_inter_endpoints[obj].strip(
                 '9696/')
@@ -592,7 +597,8 @@ def verticalCreateService(service):
         # For the L2 service type, send the horizontal put request in order to provide remotes instances with the resources uuids for interconnections
         def parallel_horizontal_put_request(obj):
             app_log = logging.getLogger()
-            app_log.info('Starting a thread for horizontal PUT')
+            starting_time = time.time()
+            app_log.info('Starting thread at time:  %s', starting_time)
             if obj != service_utils.get_region_name():
                 remote_inter_instance = service_remote_inter_endpoints[obj].strip(
                     '9696/')
@@ -630,7 +636,7 @@ def verticalCreateService(service):
 
 # Handler to update an existing service
 
-# TODO Need to refactor this, only modify using the master
+# TODO DOING Need to refactor this, only modify using the master 
 def verticalUpdateService(global_id, service):
     start_time = time.time()
     app_log.info('Starting time: %s', start_time)
@@ -648,7 +654,7 @@ def verticalUpdateService(global_id, service):
         service_to_update_master = data_from_db['service_params'][0]['parameter_master']
         # Check if the module is the master for that service. If it isn't, return abort to inform that it can't execute the request
         if(service_to_update_master != local_region_name):
-            app_log.info('This module is not the master of the service.')
+            app_log.info('ALERT: This module is not the master of the service.')
             app_log.info('Finishing: Validating service information.')
             abort(404, "This module is not the master of the service, please redirect the request to: " +
                   service_to_update_master + " module")
@@ -734,7 +740,8 @@ def verticalUpdateService(global_id, service):
 
             def parallel_inters_delete_request(resource_delete):
                 app_log = logging.getLogger()
-                app_log.info('Starting an interconnection delete thread')
+                starting_time = time.time()
+                app_log.info('Starting thread at time:  %s', starting_time)
 
                 filters = {'local_resource_id': local_resource,
                            'remote_resource_id': resource_delete['resource_uuid']}
@@ -764,25 +771,26 @@ def verticalUpdateService(global_id, service):
                         db.session.delete(interconnection_delete)
                         db.session.commit()
                 # The same procedure is applied to the resource to be deleted locally
-                resource_delete = Resource.query.outerjoin(Service, Resource.service_id == Service.service_id).filter(
-                    Service.service_id == data_from_db['service_id']).filter(Resource.resource_uuid == remote_resource_to_delete['resource_uuid']).one_or_none()
-
-                service_resources_list_db.remove(remote_resource_to_delete)
+                resource_to_delete = Resource.query.outerjoin(Service, Resource.service_id == Service.service_id).filter(
+                    Service.service_id == data_from_db['service_id']).filter(Resource.resource_uuid == resource_delete['resource_uuid']).one_or_none()
+                app_log.info(resource_to_delete)
+                service_resources_list_db.remove(resource_delete)
 
                 if resource_delete:
-                    db.session.delete(resource_delete)
+                    db.session.delete(resource_to_delete)
                     db.session.commit()
 
+            app_log.info(list_resources_remove) ### I'M HERE
             app_log.info(
                 'Starting: Deleting local interconnections  with to delete remote resources.')
-            workers = len(list_resources_remove.keys())
+            workers3 = len(list_resources_remove)
             start_interconnection_delete_time = time.time()
             with concurrent.futures.ThreadPoolExecutor(max_workers=workers3) as executor:
                 for resource in list_resources_remove:
                     executor.submit(parallel_inters_delete_request, resource)
             end_interconnection_delete_time = time.time()
             app_log.info('Finishing: Using threads for local interconnection create request. Time: %s',
-                         (end_interconnection_time - start_interconnection_time))
+                         (end_interconnection_delete_time - start_interconnection_delete_time))
 
         app_log.info(
             'Starting: Saving Neutron and Keystone information from catalogue.')
@@ -859,7 +867,8 @@ def verticalUpdateService(global_id, service):
             # Retrieving the subnetwork information given the region name
             def parallel_subnetwork_request(item, value):
                 app_log = logging.getLogger()
-                app_log.info('Starting thread at: ' + time.time())
+                starting_time = time.time()
+                app_log.info('Starting thread at time:  %s', starting_time)
                 global parameter_local_cidr
 
                 net_adap_remote = Adapter(
@@ -1237,6 +1246,8 @@ def verticalDeleteService(global_id):
 
             def parallel_horizontal_validation(obj):
                 app_log = logging.getLogger()
+                starting_time = time.time()
+                app_log.info('Starting thread at time:  %s', starting_time)
                 if obj != local_region_name:
                     remote_inter_instance = service_remote_inter_endpoints[obj].strip(
                         '9696/')
@@ -1283,6 +1294,8 @@ def verticalDeleteService(global_id):
 
             def parallel_horizontal_delete_request(obj):
                 app_log = logging.getLogger()
+                starting_time = time.time()
+                app_log.info('Starting thread at time:  %s', starting_time)
                 remote_inter_instance = ''
                 if obj['resource_region'] != service_utils.get_region_name():
                     remote_inter_instance = service_remote_inter_endpoints[obj['resource_region']].strip(
@@ -1405,6 +1418,8 @@ def horizontalCreateService(service):
     # calling the interconnection service plugin to create the necessary objects
     def parallel_inters_creation_request(k, v):
         app_log = logging.getLogger()
+        starting_time = time.time()
+        app_log.info('Starting thread at time:  %s', starting_time)
         if local_region_name != k:
             interconnection_data = {'interconnection': {
                 'name': service_name,
@@ -1578,6 +1593,8 @@ def horizontalUpdateService(global_id, service):
 
         def parallel_inters_creation_request(k, v):
             app_log = logging.getLogger()
+            starting_time = time.time()
+            app_log.info('Starting thread at time:  %s', starting_time)
             if local_region_name != k:
                 interconnection_data = {'interconnection': {
                     'name': data_from_db['service_name'],
@@ -1987,10 +2004,10 @@ def horizontalDeleteService(global_id):
             inter_del = net_adap.delete(
                 url='/v2.0/inter/interconnections/' + inter)
 
-        local_resource = service_data['service_parameters'][0]['parameter_local_resource']
-
-        network_del = net_adap.delete(
-            url='/v2.0/networks/' + local_resource)
+        if service_data['service_type'] == 'L2':
+            local_resource = service_data['service_params'][0]['parameter_local_resource']
+            network_del = net_adap.delete(
+                url='/v2.0/networks/' + local_resource)
 
         db.session.delete(service)
         db.session.commit()
