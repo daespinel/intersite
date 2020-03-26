@@ -1,4 +1,4 @@
-python_client/
+python-client/
 results/
 env/
 *.pyc
