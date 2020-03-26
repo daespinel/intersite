@@ -75,7 +75,7 @@ if os.path.exists('service.db'):
 
 db.create_all()
 
-create_test = True
+create_test = False
 
 if(create_test):
     # Iterate over the service structure and populate the database

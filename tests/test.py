@@ -96,7 +96,7 @@ def main(argv):
     #print(cidrs_region_network_information)
 
     test_type1 = "L3"
-    test_type2 = "L4"
+    test_type2 = "L2"
     
     test_sizes_temps = (opts[0][1])
     test_sizes = test_sizes_temps.split(',')
@@ -166,22 +166,15 @@ def main(argv):
                             condition1 = False
                             break
 
-
                 print(i)
                 print(resources)
                 print(regions)
                 print(keys)
-                #for i in range(test_size):
-                #   for obj,val in cidrs_region_network_information.items():
-                #        print(obj,val)
-                        #while(condition):
-
 
                 service.resources = resources
-                
+
                 #start = time.clock()
                 start = time.time()
-
                 try:
                     # Horizontal request to create an inter-site Service POST
                     api_response = api_instance.vertical_create_service(service)
@@ -208,9 +201,6 @@ def main(argv):
 
         if(test_type2 == "L2"):
             file_results = open("results/Results_" + test_type2 + "_" + str(test_size)  + "_" +str(datetime.datetime.now().strftime("%H:%M:%S")),"w+")
-            #file_results.write("L2\n")
-            #file_results.write(str(test_size)+"\n")
-            #file_results.write(str(test_number)+"\n")
             for i in range(test_number):
                 seed(datetime.datetime.now())
                 selected_index = randint(1,len(regions_list))
@@ -225,7 +215,6 @@ def main(argv):
                 service.name = "Inter-site network test " + str(i)
                 
                 condition = True
-                keys = []
                 regions = []
                 resources = []
 
@@ -237,9 +226,7 @@ def main(argv):
                         second_element = random.randint(1,len(cidrs_region_network_information[key]))
                         element = cidrs_region_network_information[key][second_element-1]
                         if element['region_name'] == host['region_name']:
-                            #print(key)
-                            #print(element)
-                            keys.append(key)
+
                             regions.append(element['region_name'])
                             resources.append(element['region_name']+","+element['net_uuid'])
                             condition = False
@@ -249,31 +236,21 @@ def main(argv):
                 for j in range(test_size-1):
                     #print(j)
                     condition = True
-                    condition1 = True
-                    while (condition and condition1):
+                    while (condition):
                         seed(datetime.datetime.now())
-                        second_element = random.randint(1,len(cidrs_region_network_information[key]))
-                        #print(second_element)
-                        element = cidrs_region_network_information[key][second_element-1]
-                        if element['region_name'] not in regions and key in keys :
-                            #print(key)
-                            #print(element)
-                            regions.append(element['region_name'])
-                            resources.append(element['region_name']+","+element['net_uuid'])
+                        new_index = randint(1,len(regions_list))
+                        new_host = regions_list[new_index-1]
+                        #print(host['region_name'])
+                        if new_host['region_name'] not in regions:
+                            regions.append(new_host['region_name'])
+                            resources.append(new_host['region_name']+",")
                             condition = False
-                            condition1 = False
                             break
-
 
                 print(i)
                 print(resources)
                 print(regions)
                 print(keys)
-                #for i in range(test_size):
-                #   for obj,val in cidrs_region_network_information.items():
-                #        print(obj,val)
-                        #while(condition):
-
 
                 service.resources = resources
                 api_responde = ""
