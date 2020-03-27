@@ -1,6 +1,6 @@
 import os
 from config import db
-from service import Service, Resource, Interconnexion, Parameter, L2AllocationPool, L2Master
+from service import Service, Resource, Interconnexion, Parameter, L2AllocationPool, LMaster
 
 # Data to initialize database with
 local_region_name = "RegionOne"
@@ -99,12 +99,12 @@ if(create_test):
                         parameter_local_cidr=param_local_cidr, parameter_local_resource=param_local_resource, parameter_ipv=param_ipv, parameter_master=param_master, parameter_master_auth=param_master_auth)
         
         if('l2allocs' in service.keys()):
-            l2master = L2Master()
+            lmaster = LMaster()
             for allocationpool in service.get("l2allocs"):
 
                 allocation_first_ip, allocation_last_ip, allocation_site = allocationpool.get("first_ip"), allocationpool.get("last_ip"), allocationpool.get("site")
-                l2master.l2master_l2allocationpools.append(L2AllocationPool(l2allocationpool_first_ip=allocation_first_ip, l2allocationpool_last_ip=allocation_last_ip, l2allocationpool_site = allocation_site))
-            param.parameter_l2master.append(l2master)
+                lmaster.lmaster_l2allocationpools.append(L2AllocationPool(l2allocationpool_first_ip=allocation_first_ip, l2allocationpool_last_ip=allocation_last_ip, l2allocationpool_site = allocation_site))
+            param.parameter_lmaster.append(lmaster)
         s.service_params.append(param)
         
         #

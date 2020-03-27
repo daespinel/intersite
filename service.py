@@ -44,12 +44,12 @@ class Parameter(db.Model):
     parameter_ipv = db.Column(db.String(64))
     parameter_master = db.Column(db.String(64))
     parameter_master_auth = db.Column(db.String(64))
-    parameter_l2master = db.relationship(
-        'L2Master',
+    parameter_lmaster = db.relationship(
+        'LMaster',
         backref='parameter',
         cascade='all, delete, delete-orphan',
         single_parent=True,
-        order_by='desc(L2Master.l2master_id)'
+        order_by='desc(LMaster.lmaster_id)'
     )
     service_id = db.Column(db.Integer, db.ForeignKey('service.service_id'))
 
@@ -73,16 +73,23 @@ class Interconnexion(db.Model):
     resource_id = db.Column(db.Integer, db.ForeignKey('resource.resource_id'))
     resource = db.relationship('Resource')
 
-class L2Master(db.Model):
-    __tablename__ = "l2master"
-    l2master_id  = db.Column(db.Integer,
+class LMaster(db.Model):
+    __tablename__ = "lmaster"
+    lmaster_id  = db.Column(db.Integer,
                                   primary_key=True)
-    l2master_l2allocationpools = db.relationship(
+    lmaster_l2allocationpools = db.relationship(
         'L2AllocationPool',
-        backref='l2master',
+        backref='lmaster',
         cascade='all, delete, delete-orphan',
         single_parent=True,
         order_by='desc(L2AllocationPool.l2allocationpool_id)'
+    )
+    lmaster_l3cidrs = db.relationship(
+        'L3Cidrs',
+        backref='lmaster',
+        cascade='all, delete, delete-orphan',
+        single_parent=True,
+        order_by='desc(L3Cidrs.l3cidrs_id)'
     )
     parameter_id = db.Column(
         db.Integer, db.ForeignKey('parameter.parameter_id'))
@@ -95,13 +102,25 @@ class L2AllocationPool(db.Model):
     l2allocationpool_first_ip = db.Column(db.String(64))
     l2allocationpool_last_ip = db.Column(db.String(64))
     l2allocationpool_site = db.Column(db.String(64))
-    l2master_id = db.Column(
-        db.Integer, db.ForeignKey('l2master.l2master_id'))
+    lmaster_id = db.Column(
+        db.Integer, db.ForeignKey('lmaster.lmaster_id'))
 
     def get_string_allocation_pool(self):
         answer = self.l2allocationpool_first_ip + "-" + self.l2allocationpool_last_ip
         return answer
 
+class L3Cidrs(db.Model):
+    __tablename__ = "l3cidrs"
+    l3cidrs_id = db.Column(db.Integer,
+                                    primary_key=True)
+    l3cidrs_cidr = db.Column(db.String(64))
+    l3cidrs_site = db.Column(db.String(64))
+    lmaster_id = db.Column(
+        db.Integer, db.ForeignKey('lmaster.lmaster_id'))
+
+    def get_string_cidr(self):
+        answer = self.l3cidrs_cidr
+        return answer
 
 # Service schemas for model read and write
 # Service associated schema
@@ -132,8 +151,8 @@ class SParamsSchema(ma.ModelSchema):
     parameter_ipv = fields.Str()
     parameter_master = fields.Str()
     parameter_master_auth = fields.Str()
-    parameter_l2master = fields.Nested(
-        'SL2MasterSchema', default=[], many=True)
+    parameter_lmaster = fields.Nested(
+        'SLMasterSchema', default=[], many=True)
 
 
 class ParamsSchema(ma.ModelSchema):
@@ -144,7 +163,7 @@ class ParamsSchema(ma.ModelSchema):
         model = Parameter
         sqla_session = db.session
     service = fields.Nested('ParamsServiceSchema', default=None)
-    parameter_l2master = fields.Nested('SL2MasterSchema', default=[], many=False)
+    parameter_lmaster = fields.Nested('SLMasterSchema', default=[], many=False)
 
 class ParamsServiceSchema(ma.ModelSchema):
     """
@@ -155,32 +174,36 @@ class ParamsServiceSchema(ma.ModelSchema):
     #service_type = fields.Str()
     #service_global = fields.Str()
 
-class SL2MasterSchema(ma.ModelSchema):
+class SLMasterSchema(ma.ModelSchema):
     """
     This class exists to get around a recursion issue
     """
-    l2master_id  = fields.Int()
+    lmaster_id  = fields.Int()
     parameter_id = fields.Int()
-    l2master_l2allocationpools = fields.Nested(
+    lmaster_l2allocationpools = fields.Nested(
         'SL2AllocationPoolSchema', default=[], many=True)
+    lmaster_l3cidrs = fields.Nested(
+        'SL3CidrsSchema', default=[], many=True)
 
-class L2MasterParamsSchema(ma.ModelSchema):
+class LMasterParamsSchema(ma.ModelSchema):
     """
     This class exists to get around a recursion issue
     """
     parameter_id = fields.Int()
     service_id = fields.Int()
 
-class L2MasterSchema(ma.ModelSchema):
+class LMasterSchema(ma.ModelSchema):
     def __init__(self, **kwargs):
         super().__init__(strict=True, **kwargs)
 
     class Meta:
-        model = L2Master
+        model = LMaster
         sqla_session = db.session
-    params = fields.Nested('L2MasterParamsSchema', default=None)
-    l2master_l2allocationpools = fields.Nested(
+    params = fields.Nested('LMasterParamsSchema', default=None)
+    lmaster_l2allocationpools = fields.Nested(
         'SL2AllocationPoolSchema', default=[], many=True)
+    lmaster_l3cidrs = fields.Nested(
+        'SL3CidrsSchema', default=[], many=True)
 
 class SL2AllocationPoolSchema(ma.ModelSchema):
     """
@@ -190,7 +213,7 @@ class SL2AllocationPoolSchema(ma.ModelSchema):
     l2allocationpool_first_ip = fields.String()
     l2allocationpool_last_ip = fields.String()
     l2allocationpool_site = fields.String()
-    l2master_id = fields.Int()
+    lmaster_id = fields.Int()
 
 class L2AllocationPoolSchema(ma.ModelSchema):
     def __init__(self, **kwargs):
@@ -199,11 +222,33 @@ class L2AllocationPoolSchema(ma.ModelSchema):
     class Meta:
         model = L2AllocationPool
         sqla_session = db.session
-    l2master = fields.Nested('L2AllocationPoolL2MasterSchema', default=None)
+    lmaster = fields.Nested('L2AllocationPoolLMasterSchema', default=None)
 
-class L2AllocationPoolL2MasterSchema(ma.ModelSchema):
+class L2AllocationPoolLMasterSchema(ma.ModelSchema):
     parameter_id = fields.Int()
-    l2master_id = fields.Int()
+    lmaster_id = fields.Int()
+
+class SL3CidrsSchema(ma.ModelSchema):
+    """
+    This class exists to get around a recursion issue
+    """
+    l3cidrs_id = fields.Int()
+    l3cidrs_site = fields.String()
+    l3cidrs_cidr = fields.String()
+    lmaster_id = fields.Int()
+
+class L3CidrsSchema(ma.ModelSchema):
+    def __init__(self, **kwargs):
+        super().__init__(strict=True, **kwargs)
+
+    class Meta:
+        model = L3Cidrs
+        sqla_session = db.session
+    lmaster = fields.Nested('L3CidrsLMasterSchema', default=None)
+
+class L3CidrsLMasterSchema(ma.ModelSchema):
+    parameter_id = fields.Int()
+    lmaster_id = fields.Int()
 
 # Resources associated schemas
 class SResourcesSchema(ma.ModelSchema):
