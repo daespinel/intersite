@@ -2,8 +2,9 @@ from flask import make_response, abort
 from keystoneauth1.adapter import Adapter
 from random import seed
 from random import randint
-from service import Service, ServiceSchema, Resource, Interconnexion, Parameter, LMaster, L2AllocationPool, ParamsSchema, ResourcesSchema, InterconnectionsSchema, LMasterSchema, L2AllocationPoolSchema, L3CidrsSchema
+from service import Service, ServiceSchema, Resource, Interconnexion, Parameter, LMaster, L2AllocationPool, L3Cidrs, ParamsSchema, ResourcesSchema, InterconnectionsSchema, LMasterSchema, L2AllocationPoolSchema, L3CidrsSchema
 from config import db
+from sqlalchemy import exc
 import common.utils as service_utils
 import copy
 import math
@@ -761,20 +762,12 @@ def verticalUpdateService(global_id, service):
                 app_log = logging.getLogger()
                 starting_time = time.time()
                 app_log.info('Starting thread at time:  %s', starting_time)
-
-                filters = {'local_resource_id': local_resource,
-                           'remote_resource_id': resource_delete['resource_uuid']}
-                # TODO look after this because it is not necessary to do the first request if we keep the information of the interconnection related to the resources
-                try:
-                    inter_del_list = net_adap.get(
-                        url='/v2.0/inter/interconnections/', json=filters).json()['interconnections']
-                except:
-                    app_log.info(
-                        "Exception when contacting the network adapter")
-
-                if inter_del_list:
-                    interco_delete = inter_del_list.pop()
-                    interconnection_uuid_to_delete = interco_delete['id']
+                interconnection_db_delete = Interconnexion.query.outerjoin(Service, Interconnexion.service_id == Service.service_id).outerjoin(Resource, Resource.service_id == Service.service_id).filter(Resource.resource_uuid == resource_delete['resource_uuid']).filter(Interconnexion.service_id == data_from_db['service_id']).filter(Interconnexion.resource_id == Resource.resource_id).one_or_none()
+                if interconnection_db_delete:
+                    interconnection_schema_temp = InterconnectionsSchema()
+                    data_from_inter = interconnection_schema_temp.dump(interconnection_db_delete).data
+                    interconnection_uuid_to_delete = data_from_inter['interconnexion_uuid']
+                    #app_log.info(data_from_inter)
                     # We delete the interconnexion with the given uuid 
                     try:
                         inter_del = net_adap.delete(
@@ -783,19 +776,27 @@ def verticalUpdateService(global_id, service):
                         app_log.info(
                             "Exception when contacting the network adapter")
                     # Once we do the request to Neutron, we do the query to delete the interconnexion locally
-                    interconnection_delete = Interconnexion.query.outerjoin(Service, Interconnexion.service_id == Service.service_id).filter(
-                        Interconnexion.interconnexion_uuid == interconnection_uuid_to_delete).filter(Interconnexion.service_id == data_from_db['service_id']).one_or_none()
-
-                    if interconnection_delete:
-                        db.session.delete(interconnection_delete)
-                        db.session.commit()
+                    db.session.delete(interconnection_db_delete)
+                    db.session.commit()
                 # The same procedure is applied to the resource to be deleted locally
-                resource_to_delete = Resource.query.outerjoin(Service, Resource.service_id == Service.service_id).filter(
-                    Service.service_id == data_from_db['service_id']).filter(Resource.resource_uuid == resource_delete['resource_uuid']).one_or_none()
-                app_log.info(resource_to_delete)
+                resource_to_delete = Resource.query.outerjoin(Service, Resource.service_id == Service.service_id).filter(Service.service_id == data_from_db['service_id']).filter(Resource.resource_uuid == resource_delete['resource_uuid']).one_or_none()
+                #r_temp_schema = ResourcesSchema()
+                #data_from_res = r_temp_schema.dump(resource_to_delete).data
+                #app_log.info(data_from_res)
                 service_resources_list_db.remove(resource_delete)
-
-                if resource_delete:
+                if resource_to_delete:
+                    if data_from_db['service_type'] == 'L3':
+                        app_log.info('Entering the L3 service type')
+                        l3cidrs_to_delete = L3Cidrs.query.outerjoin(LMaster, LMaster.lmaster_id == L3Cidrs.lmaster_id).outerjoin(Parameter, Parameter.parameter_id == LMaster.parameter_id).outerjoin(Service, Service.service_id == Parameter.service_id).filter(Service.service_id == data_from_db['service_id']).filter(L3Cidrs.l3cidrs_site == resource_delete['resource_region']).one_or_none()
+                        #l_temp_schema = L3CidrsSchema()
+                        #data_from_l3 = l_temp_schema.dump(l3cidrs_to_delete).data
+                        #app_log.info(data_from_l3)
+                        if l3cidrs_to_delete:
+                            db.session.delete(l3cidrs_to_delete)
+                            db.session.commit()
+                    if data_from_db['service_type'] == 'L2':
+                        app_log.info('Entering the L2 service type')
+                        #TODO delete the L2 allocation pools and add them to the free pools
                     db.session.delete(resource_to_delete)
                     db.session.commit()
 
@@ -925,7 +926,6 @@ def verticalUpdateService(global_id, service):
                 app_log.info('Finishing: Using threads for remote subnetwork request')
 
                 # I'M HERE: Need to extract information of the actual list and of the new list
-                # TODO Update the L3Cidrs delete when deleting a resource
                 # TODO Update the L2AllocationPool when deleting a resource
                 app_log.info("Starting: Doing IP range validation for L3 service.")
                 parameter_local_cidr = data_from_db['service_params'][0]['parameter_local_cidr']
