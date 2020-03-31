@@ -57,8 +57,9 @@ def main(argv):
     for obj in catalog_endpoints:
         if obj['name'] == 'neutron':
             for endpoint in obj['endpoints']:
-                obj = {'region_name' : endpoint["region"], 'url' : endpoint["url"]}
-                regions_list.append(obj)
+                if endpoint["region"] == "RegionOne" or endpoint["region"] == "RegionTwo":
+                    obj = {'region_name' : endpoint["region"], 'url' : endpoint["url"]}
+                    regions_list.append(obj)
 
     #print(regions_list)
 
@@ -172,7 +173,7 @@ def main(argv):
                 print(keys)
 
                 service.resources = resources
-
+                api_response = ''
                 #start = time.clock()
                 start = time.time()
                 try:
@@ -253,7 +254,7 @@ def main(argv):
                 print(keys)
 
                 service.resources = resources
-                api_responde = ""
+                api_response = ""
                 start = time.time()
                 try:
                     # Horizontal request to create an inter-site Service POST

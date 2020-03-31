@@ -780,36 +780,35 @@ def verticalUpdateService(global_id, service):
                     db.session.commit()
                 # The same procedure is applied to the resource to be deleted locally
                 resource_to_delete = Resource.query.outerjoin(Service, Resource.service_id == Service.service_id).filter(Service.service_id == data_from_db['service_id']).filter(Resource.resource_uuid == resource_delete['resource_uuid']).one_or_none()
-                #r_temp_schema = ResourcesSchema()
-                #data_from_res = r_temp_schema.dump(resource_to_delete).data
-                #app_log.info(data_from_res)
                 service_resources_list_db.remove(resource_delete)
+                # We do a per service division because in every case we need to do different actions
                 if resource_to_delete:
                     if data_from_db['service_type'] == 'L3':
-                        app_log.info('Entering the L3 service type')
+                        app_log.info('Starting: Deleting the L3 CIDRs of the remote resources.')
                         l3cidrs_to_delete = L3Cidrs.query.outerjoin(LMaster, LMaster.lmaster_id == L3Cidrs.lmaster_id).outerjoin(Parameter, Parameter.parameter_id == LMaster.parameter_id).outerjoin(Service, Service.service_id == Parameter.service_id).filter(Service.service_id == data_from_db['service_id']).filter(L3Cidrs.l3cidrs_site == resource_delete['resource_region']).one_or_none()
-                        #l_temp_schema = L3CidrsSchema()
-                        #data_from_l3 = l_temp_schema.dump(l3cidrs_to_delete).data
-                        #app_log.info(data_from_l3)
                         if l3cidrs_to_delete:
                             db.session.delete(l3cidrs_to_delete)
                             db.session.commit()
+                        app_log.info('Finishing: Deleting the L3 CIDRs of the remote resources.')
                     if data_from_db['service_type'] == 'L2':
-                        app_log.info('Entering the L2 service type')
+                        app_log.info('Starting: Deleting the L2 allocation pools of the remote resources.')
+                        l2allocation_to_delete = L2AllocationPool.query.outerjoin(LMaster, LMaster.lmaster_id == L2AllocationPool.lmaster_id).outerjoin(Parameter, Parameter.parameter_id == LMaster.parameter_id).outerjoin(Service, Service.service_id == Parameter.service_id).filter(Service.service_id == data_from_db['service_id']).filter(L2AllocationPool.l2allocationpool_site == resource_delete['resource_region']).one_or_none()
+                        l2allocation_to_delete.l2allocationpool_site == "free"
+                        app_log.info('Finishing: Deleting the L2 allocation pools of the remote resources.')
                         #TODO delete the L2 allocation pools and add them to the free pools
                     db.session.delete(resource_to_delete)
                     db.session.commit()
 
             app_log.info(list_resources_remove) 
             app_log.info(
-                'Starting: Deleting local interconnections with to delete remote resources.')
+                'Starting: Deleting local interconnections and resources.')
             workers3 = len(list_resources_remove)
             start_interconnection_delete_time = time.time()
             with concurrent.futures.ThreadPoolExecutor(max_workers=workers3) as executor:
                 for resource in list_resources_remove:
                     executor.submit(parallel_inters_delete_request, resource)
             end_interconnection_delete_time = time.time()
-            app_log.info('Finishing: Deleting local interconnections with to delete remote resources. Time: %s',
+            app_log.info('Finishing: Deleting local interconnections and resources. Time: %s',
                          (end_interconnection_delete_time - start_interconnection_delete_time))
 
         app_log.info(
@@ -823,7 +822,6 @@ def verticalUpdateService(global_id, service):
             service_resources_list_db)
 
         for obj in catalog_endpoints:
-            
             if obj['name'] == 'neutron':
                 for endpoint in obj['endpoints']:
                     # Storing information of Neutrons of actual resource list, resources to add and resources to delete
@@ -926,7 +924,7 @@ def verticalUpdateService(global_id, service):
                 app_log.info('Finishing: Using threads for remote subnetwork request')
 
                 # I'M HERE: Need to extract information of the actual list and of the new list
-                # TODO Update the L2AllocationPool when deleting a resource
+                
                 app_log.info("Starting: Doing IP range validation for L3 service.")
                 parameter_local_cidr = data_from_db['service_params'][0]['parameter_local_cidr']
                 # Doing the IP range validation to avoid overlapping problems
@@ -936,7 +934,6 @@ def verticalUpdateService(global_id, service):
                             (str(a)) + " and "+(str(b)) + " overlap")
 
                 app_log.info("Finishing: Doing IP range validation for L3 service.")
-
 
                 service_resources_list_params.append(
                         {'resource_region': local_region_name, 'param': data_from_db['resource_params'][0]['parameter_local_cidr']})
@@ -1213,6 +1210,9 @@ def verticalUpdateService(global_id, service):
                 remote_service), headers=headers)
             # service_data = service_schema.dump(service_update)
 
+        end_time = time.time()
+        app_log.info('Finishing time: %s', end_time)
+        app_log.info('Total time spent: %s', end_time - start_time)
         return make_response("{id} successfully updated".format(id=global_id), 200)
 
     else:
@@ -1734,7 +1734,6 @@ def horizontalUpdateService(global_id, service):
                     search_local_resource_uuid = element['resource_uuid']
                     break
 
-            # TODO change local_region_name for search_local_resource_uuid
             for element in list_resources_remove:
                 if(local_region_name in element['resource_region']):
                     search_local_resource_delete = True
@@ -2076,14 +2075,8 @@ def horizontalVerification(resource_cidr, service_type, global_id, verification_
         if service is not None:
             service_schema = ServiceSchema()
             service_data = service_schema.dump(service).data
-
-            local_resource = ''
-            # TODO this kind of search takes time and it's done in almost every request, a better way will be to introduce the resource uuid in the service parameters, locally accesible
-            for element in service_data['service_resources']:
-                if element['resource_region'] == local_region_name:
-                    local_resource = element['resource_uuid']
-                    break
-
+            local_resource = data['service_params'][0]['parameter_local_resource']
+            
             # Authenticate
             auth = service_utils.get_auth_object(local_region_url)
             sess = service_utils.get_session_object(auth)
