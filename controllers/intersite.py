@@ -794,6 +794,7 @@ def verticalUpdateService(global_id, service):
                         app_log.info('Starting: Deleting the L2 allocation pools of the remote resources.')
                         l2allocation_to_delete = L2AllocationPool.query.outerjoin(LMaster, LMaster.lmaster_id == L2AllocationPool.lmaster_id).outerjoin(Parameter, Parameter.parameter_id == LMaster.parameter_id).outerjoin(Service, Service.service_id == Parameter.service_id).filter(Service.service_id == data_from_db['service_id']).filter(L2AllocationPool.l2allocationpool_site == resource_delete['resource_region']).one_or_none()
                         l2allocation_to_delete.l2allocationpool_site == "free"
+                        db.session.commit()
                         app_log.info('Finishing: Deleting the L2 allocation pools of the remote resources.')
                         #TODO delete the L2 allocation pools and add them to the free pools
                     db.session.delete(resource_to_delete)
@@ -2075,7 +2076,7 @@ def horizontalVerification(resource_cidr, service_type, global_id, verification_
         if service is not None:
             service_schema = ServiceSchema()
             service_data = service_schema.dump(service).data
-            local_resource = data['service_params'][0]['parameter_local_resource']
+            local_resource = service_data['service_params'][0]['parameter_local_resource']
             
             # Authenticate
             auth = service_utils.get_auth_object(local_region_url)

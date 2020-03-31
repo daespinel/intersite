@@ -227,7 +227,7 @@ def main(argv):
                         second_element = random.randint(1,len(cidrs_region_network_information[key]))
                         element = cidrs_region_network_information[key][second_element-1]
                         if element['region_name'] == host['region_name']:
-
+                            keys.append(key)
                             regions.append(element['region_name'])
                             resources.append(element['region_name']+","+element['net_uuid'])
                             condition = False
