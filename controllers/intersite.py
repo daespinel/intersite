@@ -1163,6 +1163,7 @@ def verticalUpdateService(global_id, service):
         abort(404, "For devs pouposes")
         # Sending remote inter-site create requests to the distant nodes
         # TODO update this method
+
         def parallel_horizontal_request(method, obj, alloc_pool):
             app_log = logging.getLogger()
             starting_time = time.time()
@@ -1173,7 +1174,7 @@ def verticalUpdateService(global_id, service):
                 remote_inter_instance = remote_inter_instance + '7575/api/intersite-horizontal'
 
                 if method == 'POST':
-                    #TODO implement the post request
+                    # TODO implement the post request
                     remote_params = {
                         'parameter_allocation_pool': '',
                         'parameter_local_cidr': '',
@@ -1187,11 +1188,11 @@ def verticalUpdateService(global_id, service):
                         remote_params['parameter_local_cidr'] = parameter_local_cidr
 
                     remote_service = {'name': service_name, 'type': service_type, 'params': [str(remote_params)
-                                                                                            ],
-                                    'global': random_id, 'resources': service.get("resources", None)}
+                                                                                             ],
+                                      'global': random_id, 'resources': service.get("resources", None)}
                     # send horizontal (service_remote_inter_endpoints[obj])
                     headers = {'Content-Type': 'application/json',
-                            'Accept': 'application/json'}
+                               'Accept': 'application/json'}
 
                     r = requests.post(remote_inter_instance, data=json.dumps(
                         remote_service), headers=headers)
@@ -1202,13 +1203,13 @@ def verticalUpdateService(global_id, service):
                         remote_resources_ids.append(remote_res)
                 if method == 'PUT':
                     app_log.info('what')
-                    #TODO implement the put request
+                    # TODO implement the put request
 
-                
         # Sending remote inter-site create requests to the distant nodes starting by the POST
         # TODO update this part to send post put and delete requests
         start_horizontal_time = time.time()
-        app_log.info("Starting: Using threads for horizontal creation request.")
+        app_log.info(
+            "Starting: Using threads for horizontal creation request.")
         service_resource_total_list = service_resources_list + list_resources_remove
         workers2 = len(service_resources_total_list)
         with concurrent.futures.ThreadPoolExecutor(max_workers=workers2) as executor:
@@ -1222,12 +1223,14 @@ def verticalUpdateService(global_id, service):
                             executor.submit(parallel_horizontal_request, "POST",
                                             obj, l2allocation_list[obj])
                         if service_type == 'L3':
-                            executor.submit(parallel_horizontal_request, "POST", obj, "")
+                            executor.submit(
+                                parallel_horizontal_request, "POST", obj, "")
                     else:
-                        executor.submit(parallel_horizontal_request, "PUT", obj, "")
+                        executor.submit(
+                            parallel_horizontal_request, "PUT", obj, "")
         end_horizontal_time = time.time()
         app_log.info('Finishing: Using threads for horizontal creation request.. Time: %s',
-                    (end_horizontal_time - start_horizontal_time))
+                     (end_horizontal_time - start_horizontal_time))
 
         end_time = time.time()
         app_log.info('Finishing time: %s', end_time)
