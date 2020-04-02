@@ -1,5 +1,6 @@
 from flask import make_response, abort
 from keystoneauth1.adapter import Adapter
+from keystoneauth1.exceptions import ClientException
 from random import seed
 from random import randint
 from service import Service, ServiceSchema, Resource, Interconnexion, Parameter, LMaster, L2AllocationPool, L3Cidrs, ParamsSchema, ResourcesSchema, InterconnectionsSchema, LMasterSchema, L2AllocationPoolSchema, L3CidrsSchema
@@ -20,6 +21,7 @@ import ast
 from flask.logging import default_handler
 import threading
 import concurrent.futures
+import sys
 from threading import Lock
 
 
@@ -141,8 +143,8 @@ def verticalCreateService(service):
     try:
         network_temp_local = net_adap.get(
             '/v2.0/networks/' + local_resource).json()['network']
-    except:
-        app_log.info("Exception when contacting the network adapter")
+    except ClientException as e:
+        abort(404, "Exception when contacting the network adapter: " + e.message)
 
     if (network_temp_local == ''):
         abort(404, "There is no local resource for the service")
@@ -200,8 +202,8 @@ def verticalCreateService(service):
 
             try:
                 subnetworks_temp = net_adap_remote.get('/v2.0/subnets/').json()
-            except:
-                app_log.info("Exception when contacting the network adapter")
+            except ClientException as e:
+                app_log.info("Exception when contacting the network adapter: " + e.message)
 
             for subnetwork in subnetworks_temp['subnets']:
                 if (item == local_region_name):
@@ -260,8 +262,8 @@ def verticalCreateService(service):
         try:
             subnetwork_temp = net_adap_local.get(
                 '/v2.0/subnets/' + str(network_temp_local['subnets'][0])).json()['subnet']
-        except:
-            app_log.info("Exception when contacting the network adapter")
+        except ClientException as e:
+            app_log.info("Exception when contacting the network adapter: " + e.message)
 
         #app_log.info('The local subnetwork informations')
         # app_log.info(subnetwork_temp)
@@ -360,10 +362,10 @@ def verticalCreateService(service):
             try:
                 inter_temp = net_adap.post(
                     url='/v2.0/inter/interconnections/', json=interconnection_data)
-            except:
-                app_log.info("Exception when contacting the network adapter")
+            except ClientException as e:
+                app_log.info("Exception when contacting the network adapter: "  + e.message)
 
-            local_interconnections_ids.append([v,
+            local_interconnections_ids.append([uuid,
                                                inter_temp.json()['interconnection']['id']])
 
     # Calling the interconnection service plugin to create the necessary objects
@@ -402,7 +404,7 @@ def verticalCreateService(service):
 
             to_delete_object = ""
             for interco in local_interconnections_ids:
-                if interco[0] == v:
+                if interco[0] == uuid:
                     interconnexion = {
                         'interconnexion_uuid': interco[1],
                         'resource': new_service_resources
@@ -509,8 +511,8 @@ def verticalCreateService(service):
         try:
             dhcp_change = net_adap.put(
                 url='/v2.0/subnets/'+str(network_temp_local['subnets'][0]), json=body)
-        except:
-            app_log.info("Exception when contacting the network adapter")
+        except ClientException as e:
+            app_log.info("Exception when contacting the network adapter: "  + e.message)
 
         app_log.info(
             "Finishing(L2): Updating the DHCP pool ranges for the local deployment.")
@@ -786,9 +788,9 @@ def verticalUpdateService(global_id, service):
                     try:
                         inter_del = net_adap.delete(
                             '/v2.0/inter/interconnections/' + interconnection_uuid_to_delete)
-                    except:
+                    except ClientException as e:
                         app_log.info(
-                            "Exception when contacting the network adapter")
+                            "Exception when contacting the network adapter: " + e.message)
                     # Once we do the request to Neutron, we do the query to delete the interconnexion locally
                     db.session.delete(interconnection_db_delete)
                     db.session.commit()
@@ -921,9 +923,9 @@ def verticalUpdateService(global_id, service):
                 try:
                     subnetworks_temp = net_adap_remote.get(
                         '/v2.0/subnets/').json()
-                except:
+                except ClientException as e:
                     app_log.info(
-                        "Exception when contacting the network adapter")
+                        "Exception when contacting the network adapter: " + e.message)
 
                 for subnetwork in subnetworks_temp['subnets']:
                     if(item["resource_uuid"] == subnetwork['network_id']):
@@ -1082,9 +1084,9 @@ def verticalUpdateService(global_id, service):
                     try:
                         inter_temp = net_adap.post(
                             url='/v2.0/inter/interconnections/', json=interconnection_data)
-                    except:
+                    except ClientException as e:
                         app_log.info(
-                            "Exception when contacting the network adapter")
+                            "Exception when contacting the network adapter: " + e.message)
 
                     local_interconnections_ids.append([obj["resource_uuid"],
                                                        inter_temp.json()['interconnection']['id']])
@@ -1329,9 +1331,9 @@ def verticalDeleteService(global_id):
                 try:
                     inter_del = net_adap.delete(
                         url='/v2.0/inter/interconnections/' + inter)
-                except:
+                except ClientException as e:
                     app_log.info(
-                        "Exception when contacting the network adapter")
+                        "Exception when contacting the network adapter" + e.message)
 
             # Locally deleting the service
             db.session.delete(service)
@@ -1441,8 +1443,8 @@ def horizontalCreateService(service):
         try:
             network_inter = net_adap.post(
                 url='/v2.0/networks', json=network_data)
-        except:
-            app_log.info("Exception when contacting the network adapter")
+        except ClientException as e:
+            app_log.info("Exception when contacting the network adapter: " + e.message)
         # Local subnetwork creation
         local_resource = network_inter.json()['network']['id']
         subnetwork_data = {'subnet': {
@@ -1454,8 +1456,8 @@ def horizontalCreateService(service):
         try:
             subnetwork_inter = net_adap.post(
                 url='/v2.0/subnets', json=subnetwork_data)
-        except:
-            app_log.info("Exception when contacting the network adapter")
+        except ClientException as e:
+            app_log.info("Exception when contacting the network adapter" + e.message)
 
         # Adding the local network identifier to the resources list
         service_resources_list[local_region_name] = local_resource
@@ -1465,23 +1467,24 @@ def horizontalCreateService(service):
         app_log = logging.getLogger()
         starting_time = time.time()
         app_log.info('Starting thread at time:  %s', starting_time)
+        app_log.info(region + " " + uuid)
         if local_region_name != region:
             interconnection_data = {'interconnection': {
                 'name': service_name,
                 'remote_keystone': service_remote_auth_endpoints[region],
                 'remote_region': region,
                 'local_resource_id': local_resource,
-                'type': SERVICE_TYPE[service_type],
+                'type': service_type,
                 'remote_resource_id': uuid,
             }}
-
+            app_log.info(interconnection_data)
             try:
                 inter_temp = net_adap.post(
                     url='/v2.0/inter/interconnections/', json=interconnection_data)
-            except:
-                app_log.info("Exception when contacting the network adapter")
+            except ClientException as e:
+                app_log.info("Exception when contacting the network adapter: " + e.message)
 
-            # app_log.info(inter_temp)
+            app_log.info(inter_temp)
             local_interconnections_ids.append(
                 inter_temp.json()['interconnection']['id'])
 
@@ -1652,9 +1655,9 @@ def horizontalUpdateService(global_id, service):
                 try:
                     inter_temp = net_adap.post(
                         url='/v2.0/inter/interconnections/', json=interconnection_data)
-                except:
+                except ClientException as e:
                     app_log.info(
-                        "Exception when contacting the network adapter")
+                        "Exception when contacting the network adapter: " + e.message)
 
                 local_interconnections_ids.append(
                     inter_temp.json()['interconnection']['id'])
@@ -1773,15 +1776,9 @@ def horizontalUpdateService(global_id, service):
                     try:
                         inter_del = (
                             neutron_client.delete_interconnection(inter))
+                    except ClientException as e:
+                        app_log.info("Can't connect to neutron: " + e.message)
 
-                    except neutronclient_exc.ConnectionFailed:
-                        app_log.info("Can't connect to neutron %s" %
-                                     service_remote_inter_endpoints[item])
-                    except neutronclient_exc.Unauthorized:
-                        app_log.info("Connection refused to neutron %s" %
-                                     service_remote_inter_endpoints[item])
-                    except neutronclient_exc.NotFound:
-                        app_log.info("Element not found %s" % inter)
 
                     for element in list_resources_remove:
                         if(local_region_name in element['resource_region']):
@@ -1825,15 +1822,8 @@ def horizontalUpdateService(global_id, service):
                                     db.session.delete(interconnection_delete)
                                     db.session.commit()
 
-                        except neutronclient_exc.ConnectionFailed:
-                            app_log.info("Can't connect to neutron %s" %
-                                         service_remote_inter_endpoints[item])
-                        except neutronclient_exc.Unauthorized:
-                            app_log.info("Connection refused to neutron %s" %
-                                         service_remote_inter_endpoints[item])
-                        except neutronclient_exc.NotFound:
-                            app_log.info("Element not found %s" %
-                                         inter_del_list)
+                        except ClientException as e:
+                            app_log.info("Can't connect to neutron: " + e.message)
 
                         # app_log.info(remote_resource_to_delete['resource_uuid'])
                         resource_delete = Resource.query.outerjoin(Service, Resource.service_id == Service.service_id).filter(
@@ -1922,12 +1912,8 @@ def horizontalUpdateService(global_id, service):
                                 local_interconnections_ids.append(
                                     inter_temp['interconnection']['id'])
 
-                            except neutronclient_exc.ConnectionFailed:
-                                app_log.info("Can't connect to neutron %s" %
-                                             service_remote_inter_endpoints[item])
-                            except neutronclient_exc.Unauthorized:
-                                app_log.info("Connection refused to neutron %s" %
-                                             service_remote_inter_endpoints[item])
+                            except ClientException as e:
+                                app_log.info("Can't connect to neutron: " + e.message)
 
                     for element in list_resources_add:
                         resource = {
@@ -1975,13 +1961,8 @@ def horizontalUpdateService(global_id, service):
                         )
                         subnet = network_temp['network']
                         local_subnetwork_id = subnet['subnets'][0]
-
-                    except neutronclient_exc.ConnectionFailed:
-                        app_log.info("Can't connect to neutron %s" %
-                                     service_remote_inter_endpoints[item])
-                    except neutronclient_exc.Unauthorized:
-                        app_log.info("Connection refused to neutron %s" %
-                                     service_remote_inter_endpoints[item])
+                    except ClientException as e:
+                        app_log.info("Can't connect to neutron: " + e.message)
 
                     new_local_range = new_params[1]
                     allocation_start = new_local_range.split("-", 1)[0]
@@ -1994,12 +1975,8 @@ def horizontalUpdateService(global_id, service):
                                 local_subnetwork_id, body=body)
                         )
                         # app_log.info(inter_temp)
-                    except neutronclient_exc.ConnectionFailed:
-                        app_log.info("Can't connect to neutron %s" %
-                                     service_remote_inter_endpoints[item])
-                    except neutronclient_exc.Unauthorized:
-                        app_log.info("Connection refused to neutron %s" %
-                                     service_remote_inter_endpoints[item])
+                    except ClientException as e:
+                        app_log.info("Can't connect to neutron: " + e.message)
 
             app_log.info(
                 "Finishing: Updating the service with default behavior.")
@@ -2121,8 +2098,8 @@ def horizontalVerification(resource_cidr, service_type, global_id, verification_
             try:
                 port_list = net_adap.get(
                     url='/v2.0/ports', params=query_parameters).json['ports']
-            except:
-                app_log.info("Exception when contacting the network adapter")
+            except ClientException as e:
+                app_log.info("Exception when contacting the network adapter: " + e.message)
 
             if port_list != []:
                 answer['condition'], answer['information'] = 'False', 'Plugged ports existing'
