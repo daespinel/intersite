@@ -603,16 +603,16 @@ def verticalCreateService(service):
                 'resource_uuid': uuid
             }
             new_service_resources = Resource(
-                resource_region=k, resource_uuid=v)
+                resource_region=region, resource_uuid=uuid)
             #service_resources_schema = ResourcesSchema()
             # new_service_resources = service_resources_schema.load(
             #    resource, session=db.session).data
             new_service.service_resources.append(new_service_resources)
-            remote_l2_new_sites.append(k + "," + v)
+            remote_l2_new_sites.append(region + "," + uuid)
 
             to_delete_object = ""
             for interco in local_interconnections_ids:
-                if interco[0] == v:
+                if interco[0] == uuid:
                     new_service_interconnections = Interconnexion(
                         interconnexion_uuid=str(interco[1]), resource=new_service_resources)
                     new_service.service_interconnections.append(
@@ -698,9 +698,9 @@ def verticalUpdateService(global_id, service):
         to_service_resources_list = dict((region.strip(), uuid.strip()) for region, uuid in (
             (item.split(',')) for item in service.get("resources", None)))
         service_resources_list_user = []
-        for key, value in to_service_resources_list.items():
+        for region, uuid in to_service_resources_list.items():
             service_resources_list_user.append(
-                {'resource_uuid': value, 'resource_region': key})
+                {'resource_uuid': uuid, 'resource_region': region})
         # app_log.info(service_resources_list_user)
 
         service_resources_list_db = []
@@ -1716,9 +1716,9 @@ def horizontalUpdateService(global_id, service):
             new_params = service.get("params", None)
             # app_log.info(str(new_params))
 
-            for key, value in to_service_resources_list.items():
+            for region, uuid in to_service_resources_list.items():
                 service_resources_list_user.append(
-                    {'resource_uuid': value, 'resource_region': key})
+                    {'resource_uuid': uuid, 'resource_region': region})
 
             service_resources_list_db = []
             for element in data_from_db['service_resources']:
