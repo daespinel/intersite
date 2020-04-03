@@ -2097,7 +2097,7 @@ def horizontalVerification(resource_cidr, service_type, global_id, verification_
             port_list = []
             try:
                 port_list = net_adap.get(
-                    url='/v2.0/ports', params=query_parameters).json['ports']
+                    url='/v2.0/ports', params=query_parameters).json()['ports']
             except ClientException as e:
                 app_log.info("Exception when contacting the network adapter: " + e.message)
 
