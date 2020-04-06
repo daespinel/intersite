@@ -203,7 +203,8 @@ def verticalCreateService(service):
             try:
                 subnetworks_temp = net_adap_remote.get('/v2.0/subnets/').json()
             except ClientException as e:
-                app_log.info("Exception when contacting the network adapter: " + e.message)
+                app_log.info(
+                    "Exception when contacting the network adapter: " + e.message)
 
             for subnetwork in subnetworks_temp['subnets']:
                 if (item == local_region_name):
@@ -263,7 +264,8 @@ def verticalCreateService(service):
             subnetwork_temp = net_adap_local.get(
                 '/v2.0/subnets/' + str(network_temp_local['subnets'][0])).json()['subnet']
         except ClientException as e:
-            app_log.info("Exception when contacting the network adapter: " + e.message)
+            app_log.info(
+                "Exception when contacting the network adapter: " + e.message)
 
         #app_log.info('The local subnetwork informations')
         # app_log.info(subnetwork_temp)
@@ -363,7 +365,8 @@ def verticalCreateService(service):
                 inter_temp = net_adap.post(
                     url='/v2.0/inter/interconnections/', json=interconnection_data)
             except ClientException as e:
-                app_log.info("Exception when contacting the network adapter: "  + e.message)
+                app_log.info(
+                    "Exception when contacting the network adapter: " + e.message)
 
             local_interconnections_ids.append([uuid,
                                                inter_temp.json()['interconnection']['id']])
@@ -512,7 +515,8 @@ def verticalCreateService(service):
             dhcp_change = net_adap.put(
                 url='/v2.0/subnets/'+str(network_temp_local['subnets'][0]), json=body)
         except ClientException as e:
-            app_log.info("Exception when contacting the network adapter: "  + e.message)
+            app_log.info(
+                "Exception when contacting the network adapter: " + e.message)
 
         app_log.info(
             "Finishing(L2): Updating the DHCP pool ranges for the local deployment.")
@@ -1077,7 +1081,7 @@ def verticalUpdateService(global_id, service):
                         'remote_keystone': service_remote_auth_endpoints[obj["resource_region"]],
                         'remote_region': obj["resource_region"],
                         'local_resource_id': local_resource,
-                        'type': data_from_db["service_type"],
+                        'type': SERVICE_TYPE[data_from_db["service_type"]],
                         'remote_resource_id': obj["resource_uuid"],
                     }}
 
@@ -1169,19 +1173,20 @@ def verticalUpdateService(global_id, service):
         def parallel_horizontal_request(method, obj, alloc_pool):
             app_log = logging.getLogger()
             starting_time = time.time()
-            app_log.info('Starting thread at time:  %s', starting_time)
+            app_log.info(
+                'Starting parallel horizontal request thread at time:  %s', starting_time)
             if obj != local_region_name:
                 remote_inter_instance = service_remote_inter_endpoints[obj].strip(
                     '9696/')
                 remote_inter_instance = remote_inter_instance + '7575/api/intersite-horizontal'
 
                 if method == 'POST':
-                    # TODO implement the post request
+                    # TODO implement the post request, this is used for resources freshly added to the service
                     remote_params = {
                         'parameter_allocation_pool': '',
                         'parameter_local_cidr': '',
                         'parameter_local_resource': '',
-                        'parameter_ipv': parameter_local_ipv,
+                        'parameter_ipv': data_from_db['parameter_local_ipv'],
                         'parameter_master': local_region_name,
                         'parameter_master_auth': local_region_url[0:-12]+":7575"
                     }
@@ -1189,9 +1194,9 @@ def verticalUpdateService(global_id, service):
                         remote_params['parameter_allocation_pool'] = alloc_pool
                         remote_params['parameter_local_cidr'] = parameter_local_cidr
 
-                    remote_service = {'name': service_name, 'type': service_type, 'params': [str(remote_params)
-                                                                                             ],
-                                      'global': random_id, 'resources': service.get("resources", None)}
+                    remote_service = {'name': data_from_db['service_name'], 'type': data_from_db['service_type'], 'params': [str(remote_params)
+                                                                                                                             ],
+                                      'global': data_from_db['service_global'], 'resources': service_resources_list}
                     # send horizontal (service_remote_inter_endpoints[obj])
                     headers = {'Content-Type': 'application/json',
                                'Accept': 'application/json'}
@@ -1208,7 +1213,7 @@ def verticalUpdateService(global_id, service):
                     # TODO implement the put request
 
         # Sending remote inter-site create requests to the distant nodes starting by the POST
-        # TODO update this part to send post put and delete requests
+        # TODO update this part to send post and put requests
         start_horizontal_time = time.time()
         app_log.info(
             "Starting: Using threads for horizontal creation request.")
@@ -1444,7 +1449,8 @@ def horizontalCreateService(service):
             network_inter = net_adap.post(
                 url='/v2.0/networks', json=network_data)
         except ClientException as e:
-            app_log.info("Exception when contacting the network adapter: " + e.message)
+            app_log.info(
+                "Exception when contacting the network adapter: " + e.message)
         # Local subnetwork creation
         local_resource = network_inter.json()['network']['id']
         subnetwork_data = {'subnet': {
@@ -1457,7 +1463,8 @@ def horizontalCreateService(service):
             subnetwork_inter = net_adap.post(
                 url='/v2.0/subnets', json=subnetwork_data)
         except ClientException as e:
-            app_log.info("Exception when contacting the network adapter" + e.message)
+            app_log.info(
+                "Exception when contacting the network adapter" + e.message)
 
         # Adding the local network identifier to the resources list
         service_resources_list[local_region_name] = local_resource
@@ -1474,7 +1481,7 @@ def horizontalCreateService(service):
                 'remote_keystone': service_remote_auth_endpoints[region],
                 'remote_region': region,
                 'local_resource_id': local_resource,
-                'type': service_type,
+                'type': SERVICE_TYPE[service_type],
                 'remote_resource_id': uuid,
             }}
             app_log.info(interconnection_data)
@@ -1482,7 +1489,8 @@ def horizontalCreateService(service):
                 inter_temp = net_adap.post(
                     url='/v2.0/inter/interconnections/', json=interconnection_data)
             except ClientException as e:
-                app_log.info("Exception when contacting the network adapter: " + e.message)
+                app_log.info(
+                    "Exception when contacting the network adapter: " + e.message)
 
             app_log.info(inter_temp)
             local_interconnections_ids.append(
@@ -1779,7 +1787,6 @@ def horizontalUpdateService(global_id, service):
                     except ClientException as e:
                         app_log.info("Can't connect to neutron: " + e.message)
 
-
                     for element in list_resources_remove:
                         if(local_region_name in element['resource_region']):
                             service_resources_list_db.remove(element)
@@ -1823,7 +1830,8 @@ def horizontalUpdateService(global_id, service):
                                     db.session.commit()
 
                         except ClientException as e:
-                            app_log.info("Can't connect to neutron: " + e.message)
+                            app_log.info(
+                                "Can't connect to neutron: " + e.message)
 
                         # app_log.info(remote_resource_to_delete['resource_uuid'])
                         resource_delete = Resource.query.outerjoin(Service, Resource.service_id == Service.service_id).filter(
@@ -1913,7 +1921,8 @@ def horizontalUpdateService(global_id, service):
                                     inter_temp['interconnection']['id'])
 
                             except ClientException as e:
-                                app_log.info("Can't connect to neutron: " + e.message)
+                                app_log.info(
+                                    "Can't connect to neutron: " + e.message)
 
                     for element in list_resources_add:
                         resource = {
@@ -2099,7 +2108,8 @@ def horizontalVerification(resource_cidr, service_type, global_id, verification_
                 port_list = net_adap.get(
                     url='/v2.0/ports', params=query_parameters).json()['ports']
             except ClientException as e:
-                app_log.info("Exception when contacting the network adapter: " + e.message)
+                app_log.info(
+                    "Exception when contacting the network adapter: " + e.message)
 
             if port_list != []:
                 answer['condition'], answer['information'] = 'False', 'Plugged ports existing'
