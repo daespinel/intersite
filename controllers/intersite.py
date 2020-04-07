@@ -220,8 +220,8 @@ def verticalCreateService(service):
 
         app_log.info(
             "Starting(L3): Using threads for remote subnetwork request.")
-        workers1 = len(service_resources_list.keys())
-        with concurrent.futures.ThreadPoolExecutor(max_workers=workers1) as executor:
+        workers = len(service_resources_list.keys())
+        with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
             for item, value in service_resources_list.items():
                 executor.submit(parallel_subnetwork_request, item, value)
         app_log.info(
@@ -298,8 +298,8 @@ def verticalCreateService(service):
 
         app_log.info(
             "Starting(L2): Using threads for horizontal verification request.")
-        workers2 = len(service_resources_list.keys())
-        with concurrent.futures.ThreadPoolExecutor(max_workers=workers2) as executor:
+        workers = len(service_resources_list.keys())
+        with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
             for obj in service_resources_list.keys():
                 executor.submit(parallel_horizontal_validation, obj)
         app_log.info(
@@ -376,9 +376,9 @@ def verticalCreateService(service):
     if service_type == 'L3':
         app_log.info(
             "Starting(L3): Using threads for local interconnection create request.")
-        workers3 = len(service_resources_list.keys())
+        workers = len(service_resources_list.keys())
         start_interconnection_time = time.time()
-        with concurrent.futures.ThreadPoolExecutor(max_workers=workers3) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
             for region, uuid in service_resources_list.items():
                 executor.submit(parallel_inters_creation_request, region, uuid)
         end_interconnection_time = time.time()
@@ -563,8 +563,8 @@ def verticalCreateService(service):
 
     start_horizontal_time = time.time()
     app_log.info("Starting: Using threads for horizontal creation request.")
-    workers2 = len(service_resources_list.keys())
-    with concurrent.futures.ThreadPoolExecutor(max_workers=workers2) as executor:
+    workers = len(service_resources_list.keys())
+    with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
         for obj in service_resources_list.keys():
             if service_type == 'L2':
                 executor.submit(parallel_horizontal_request,
@@ -589,9 +589,9 @@ def verticalCreateService(service):
         # For the L2 service type, create the interconnections to remote modules and add them to the service schema
         app_log.info(
             "Starting(L2): Using threads for local interconnection create request.")
-        workers3 = len(service_resources_list.keys())
+        workers = len(service_resources_list.keys())
         start_interconnection_time = time.time()
-        with concurrent.futures.ThreadPoolExecutor(max_workers=workers3) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
             for region, uuid in service_resources_list.items():
                 executor.submit(parallel_inters_creation_request, region, uuid)
         end_interconnection_time = time.time()
@@ -651,9 +651,9 @@ def verticalCreateService(service):
 
         app_log.info(
             "Starting(L2): Using threads for horizontal put request.")
-        workers4 = len(service_resources_list.keys())
+        workers = len(service_resources_list.keys())
         start_horizontal_put_time = time.time()
-        with concurrent.futures.ThreadPoolExecutor(max_workers=workers4) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
             for k_remote in service_resources_list.keys():
                 executor.submit(parallel_horizontal_put_request, k_remote)
         end_horizontal_put_time = time.time()
@@ -830,9 +830,9 @@ def verticalUpdateService(global_id, service):
             app_log.info(list_resources_remove)
             app_log.info(
                 'Starting: Deleting local interconnections and resources.')
-            workers3 = len(list_resources_remove)
+            workers = len(list_resources_remove)
             start_interconnection_delete_time = time.time()
-            with concurrent.futures.ThreadPoolExecutor(max_workers=workers3) as executor:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
                 for resource in list_resources_remove:
                     executor.submit(parallel_inters_delete_request, resource)
             end_interconnection_delete_time = time.time()
@@ -951,8 +951,8 @@ def verticalUpdateService(global_id, service):
                 app_log.info(list_resources_add)
                 app_log.info(
                     "Starting(L3): Using threads for remote subnetwork request.")
-                workers1 = len(list_resources_add)
-                with concurrent.futures.ThreadPoolExecutor(max_workers=workers1) as executor:
+                workers = len(list_resources_add)
+                with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
                     for item in list_resources_add:
                         executor.submit(parallel_new_subnetwork_request, item)
                 app_log.info(
@@ -1010,8 +1010,8 @@ def verticalUpdateService(global_id, service):
 
                 app_log.info(
                     "Starting(L2): Using threads for horizontal verification request with new modules.")
-                workers2 = len(service_resources_list.keys())
-                with concurrent.futures.ThreadPoolExecutor(max_workers=workers2) as executor:
+                workers = len(service_resources_list.keys())
+                with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
                     for obj in list_resources_add:
                         executor.submit(parallel_horizontal_validation, obj)
                 app_log.info(
@@ -1102,9 +1102,9 @@ def verticalUpdateService(global_id, service):
             if service_type == 'L3':
                 app_log.info(
                     "Starting(L3): Using threads for local interconnection create request.")
-                workers3 = len(list_resources_add)
+                workers = len(list_resources_add)
                 start_interconnection_time = time.time()
-                with concurrent.futures.ThreadPoolExecutor(max_workers=workers3) as executor:
+                with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
                     for obj in list_resources_add:
                         executor.submit(parallel_inters_creation_request, obj)
                 end_interconnection_time = time.time()
@@ -1226,8 +1226,8 @@ def verticalUpdateService(global_id, service):
         app_log.info(
             "Starting: Using threads for horizontal creation request.")
         service_resources_total_list = service_resources_list + list_resources_remove
-        workers2 = len(service_resources_total_list)
-        with concurrent.futures.ThreadPoolExecutor(max_workers=workers2) as executor:
+        workers = len(service_resources_total_list)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
             for obj in service_resources_total_list:
                 if obj in list_resources_remove:
                     executor.submit(parallel_horizontal_put_request, 'DELETE',
@@ -1507,11 +1507,11 @@ def horizontalCreateService(service):
     # calling the interconnection service plugin to create the necessary objects
     # At this point, this is done only for the L3 routing service
     if service_type == 'L3':
-        workers3 = len(service_resources_list.keys())
+        workers = len(service_resources_list.keys())
         start_interconnection_time = time.time()
         app_log.info(
             "Starting: Using threads for local interconnection create request.")
-        with concurrent.futures.ThreadPoolExecutor(max_workers=workers3) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
             for region, uuid in service_resources_list.items():
                 executor.submit(parallel_inters_creation_request, region, uuid)
         end_interconnection_time = time.time()
@@ -1776,29 +1776,37 @@ def horizontalUpdateService(global_id, service):
 
             # If one of the resource is the local one, we only need to delete the entire service locally
             if(search_local_resource_delete):
-                # TODO change this method to use parallel requests
-                interconnections_delete = data_from_db['service_interconnections']
-                for element in interconnections_delete:
-                    inter = element['interconnexion_uuid']
-                    neutron_client = service_utils.get_neutron_client(
-                        service_utils.get_local_keystone(),
-                        service_utils.get_region_name()
-                    )
+                # TODO change this method to use parallel requests and change the def
+                def parallel_inters_delete_request(inter_delete):
+                    app_log = logging.getLogger()
+                    starting_time = time.time()
+                    app_log.info('Starting interconnection delete thread at time:  %s', starting_time)
                     try:
-                        inter_del = (
-                            neutron_client.delete_interconnection(inter))
+                        inter_del = net_adap.delete(
+                            '/v2.0/inter/interconnections/' + inter_delete)
                     except ClientException as e:
-                        app_log.info("Can't connect to neutron: " + e.message)
+                        app_log.info(
+                            "Exception when contacting the network adapter: " + e.message)
+                    # Once we do the request to Neutron, we do the query to delete the interconnexion locally
 
-                    for element in list_resources_remove:
-                        if(local_region_name in element['resource_region']):
-                            service_resources_list_db.remove(element)
-                            list_resources_remove.remove(element)
-                            break
-
+                interconnections_delete = data_from_db['service_interconnections']
+                app_log.info(
+                'Starting: Deleting local interconnections and resources.')
+                workers = len(list_resources_remove)
+                start_interconnection_delete_time = time.time()
+                with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
+                    for interco in interconnections_delete:
+                        executor.submit(parallel_inters_delete_request, interco)
+                end_interconnection_delete_time = time.time()
+                app_log.info('Finishing: Deleting local interconnections and resources. Time: %s',
+                            (end_interconnection_delete_time - start_interconnection_delete_time))
+                
                 db.session.delete(service_update)
                 db.session.commit()
 
+                end_time = time.time()
+                app_log.info('Finishing time: %s', end_time)
+                app_log.info('Total time spent: %s', end_time - start_time)
                 return make_response("{id} successfully updated".format(id=global_id), 200)
 
             else:
