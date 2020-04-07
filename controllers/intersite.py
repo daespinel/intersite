@@ -1129,7 +1129,9 @@ def verticalUpdateService(global_id, service):
 
                     to_delete_object = ""
                     for interco in local_interconnections_ids:
-                        if interco[0] == element["resource_region"]:
+                        app_log.info(interco)
+                        #I'M HERE
+                        if interco[0] == element['resource_uuid']:
                             interconnexion = {
                                 'interconnexion_uuid': interco[1],
                                 'resource': new_service_resources
@@ -1178,20 +1180,23 @@ def verticalUpdateService(global_id, service):
             if obj['resource_region'] != local_region_name:
                 remote_inter_instance = service_remote_inter_endpoints[obj['resource_region']].strip(
                     '9696/')
-                remote_inter_instance = remote_inter_instance + '7575/api/intersite-horizontal/'
+                remote_inter_instance = remote_inter_instance + '7575/api/intersite-horizontal'
                 headers = {'Content-Type': 'application/json',
                            'Accept': 'application/json'}
-
+                app_log.info('this is causing some troubles')
+                
                 if method == 'CREATE':
                     # TODO implement the post request, this is used for resources freshly added to the service
+                    app_log.info(method)    
                     remote_params = {
                         'parameter_allocation_pool': '',
                         'parameter_local_cidr': '',
                         'parameter_local_resource': '',
-                        'parameter_ipv': data_from_db['parameter_local_ipv'],
+                        'parameter_ipv': data_from_db['service_params'][0]['parameter_ipv'],
                         'parameter_master': local_region_name,
                         'parameter_master_auth': local_region_url[0:-12]+":7575"
                     }
+                    app_log.info(remote_params)
                     if service_type == 'L2':
                         remote_params['parameter_allocation_pool'] = alloc_pool
                         remote_params['parameter_local_cidr'] = parameter_local_cidr
@@ -1199,7 +1204,7 @@ def verticalUpdateService(global_id, service):
                     remote_service = {'name': data_from_db['service_name'], 'type': service_type, 'params': [str(remote_params)
                                                                                                              ],
                                       'global': data_from_db['service_global'], 'resources': service_resources_list}
-
+# TODO change the service resource list for a string because at the other side we understand it as string only
                     r = requests.post(remote_inter_instance, data=json.dumps(
                         remote_service), headers=headers)
 
@@ -1209,14 +1214,14 @@ def verticalUpdateService(global_id, service):
                         remote_resources_ids.append(remote_res)
 
                 if method == 'DELETE':
-                    remote_inter_instance = remote_inter_instance + \
+                    remote_inter_instance = remote_inter_instance + "/" +\
                         str(data_from_db['service_global'])
                     remote_service = {'name': data_from_db['service_name'], 'type': service_type, 'params': ['', '', ''],
                                       'global': data_from_db['service_global'], 'resources': [], 'post_create_refresh': 'False'}
                     r = requests.put(remote_inter_instance, data=json.dumps(
                         remote_service), headers=headers)
                 if method == 'PUT':
-                    remote_inter_instance = remote_inter_instance + \
+                    remote_inter_instance = remote_inter_instance + "/" +\
                         str(data_from_db['service_global'])
                     remote_service = {'name': data_from_db['service_name'], 'type': service_type, 'params': ['', '', ''],
                                       'global': data_from_db['service_global'], 'resources': service_resources_list, 'post_create_refresh': 'False'}
@@ -1237,11 +1242,11 @@ def verticalUpdateService(global_id, service):
                 else:
                     if obj in list_resources_add:
                         if service_type == 'L2':
-                            executor.submit(parallel_horizontal_put_request, 'POST',
+                            executor.submit(parallel_horizontal_put_request, 'CREATE',
                                             obj, l2allocation_list[obj])
                         if service_type == 'L3':
                             executor.submit(
-                                parallel_horizontal_put_request, 'POST', obj, "")
+                                parallel_horizontal_put_request, 'CREATE', obj, "")
                     else:
                         executor.submit(
                             parallel_horizontal_put_request, 'PUT', obj, "")
@@ -1799,7 +1804,7 @@ def horizontalUpdateService(global_id, service):
                 with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
                     for interco in interconnections_delete:
                         executor.submit(
-                            parallel_inters_delete_request, interco['interconneion_uuid'])
+                            parallel_inters_delete_request, interco['interconnexion_uuid'])
                 end_interconnection_delete_time = time.time()
                 app_log.info('Finishing: Deleting local interconnections and resources. Time: %s',
                              (end_interconnection_delete_time - start_interconnection_delete_time))
@@ -1976,7 +1981,7 @@ def horizontalUpdateService(global_id, service):
 
                         to_delete_object = ""
                         for interco in local_interconnections_ids:
-                            if interco[0] == element["resource_region"]:
+                            if interco[0] == element["resource_uuid"]:
                                 interconnexion = {
                                     'interconnexion_uuid': interco[1],
                                     'resource': new_service_resources
