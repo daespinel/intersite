@@ -1213,7 +1213,7 @@ def verticalUpdateService(global_id, service):
                 if method == 'DELETE':
                     remote_inter_instance = remote_inter_instance + str(data_from_db['service_global'])
                     remote_service = {'name': data_from_db['service_name'], 'type': service_type, 'params': ['','',''],
-                                      'global': data_from_db['service_global'], 'resources': []}    
+                                      'global': data_from_db['service_global'], 'resources': [], 'post_create_refresh': 'False'}    
                     r = requests.put(remote_inter_instance, data=json.dumps(
                         remote_service), headers=headers)
                 if method == 'PUT':
@@ -1604,12 +1604,15 @@ def horizontalUpdateService(global_id, service):
     start_time = time.time()
     app_log.info('Starting time: %s', start_time)
     app_log.info('Starting a new horizontal update request')
+    app_log.info('Starting: Validating service information.')
     service_update = Service.query.filter(
         Service.service_global == global_id).one_or_none()
 
     # Did we find a service?
     if service_update is not None:
-
+        app_log.info('Finishing: Validating service information.')
+        app_log.info(
+            'Starting: extracting information from the db and the user information.')
         service_remote_auth_endpoints = {}
 
         auth = service_utils.get_auth_object(local_region_url)
@@ -1635,9 +1638,10 @@ def horizontalUpdateService(global_id, service):
             (item.split(',')) for item in service.get("resources", None)))
 
         local_resource = data_from_db['service_params'][0]['parameter_local_resource']
+        app_log.info(
+            'Finishing: extracting information from the db and the user information.')
 
         # Saving info for Neutron and Keystone endpoints to be contacted based on keystone catalogue
-
         app_log.info('Starting: Saving Keystone information from catalogue')
         for obj in catalog_endpoints:
             if obj['name'] == 'keystone':
@@ -2006,6 +2010,7 @@ def horizontalUpdateService(global_id, service):
         return make_response("{id} successfully updated".format(id=global_id), 200)
 
     else:
+        app_log.info('Finishing: Validating service information.')
         abort(404, "Service with ID {id} not found".format(id=global_id))
 
 
