@@ -5,22 +5,8 @@ from random import randint
 import time
 from datetime import datetime
 
-def checkEqualElement(iterator):
-    iterator = iter(iterator)
-    try:
-        first = next(iterator)
-    except StopIteration:
-        return True,"something"
-    return all(first == rest for rest in iterator),"else"
+resources = [{'region_name':'RegionOne', 'region_uuid':'123456'},{'region_name':'RegionTwo','region_uuid':'456789'}]
 
-CIDRs_conditions = ['False', 'False', 'False']
+resources_str_list = (",".join(str(resource) for resource in ("\"" + str(element['region_name'] + "," + element['region_uuid'] + "\"") for element in resources)))
 
-print(str(checkEqualElement(CIDRs_conditions)[0]) + '  ' + checkEqualElement(CIDRs_conditions)[1])
-
-if not checkEqualElement(CIDRs_conditions)[0]:
-    print("ERROR: CIDR is not the same for all the resources")
-
-print(all(rest[1]  == 'True' for rest in CIDRs_conditions))
-
-test_array = []
-
+print(resources_str_list)
