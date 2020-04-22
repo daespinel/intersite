@@ -67,38 +67,57 @@ host_per_site = math.floor(host_per_site/2)
 print("CIDR: " + str(main_cidr) + ", total available IPs: " + str(ips_cidr_total) + ", real available: " + str(ips_cidr_available) +
                 " , new number of sites: " + str(len(list_resources_add)) + " , IPs per site:" + str(host_per_site))
 base_index = 3
+index = 0
 host_per_site_count = 0
+new_allocated_pools = {}
 
 for new_resource in list_resources_add:
+    new_allocated_pools[new_resource['resource_region']] = []
     host_per_site_count = 0
-    
+    host_count_temp = 0
+    new_initial_ip = ''
+    new_final_ip = ''
     while host_per_site_count < host_per_site and base_index <= ips_cidr_total+1:
         ip_to_inspect = cidr[base_index]
         print(ip_to_inspect)
         condition_granted, first_used, last_used = is_allocated(ip_to_inspect,sorted_already_used_pools)
+        # If the condition is 1, it means that the analyzed IP lies in an already allocated pool
         if condition_granted == 1:
             difference = int(last_used) - int(ip_to_inspect)
-            #print(difference)
             base_index = base_index + difference + 1
+            if host_count_temp != 0:
+                print('saving the information of IPs')
+                new_allocated_pools[new_resource['resource_region']].extend([str(new_initial_ip), str(new_final_ip)])
+            host_count_temp = 0
         else:
             base_index = base_index + 1 
             host_per_site_count = host_per_site_count + 1
-            print(host_per_site_count)
-            new_initial_ip = ip_to_inspect   
-        
+            print('host per site count ' + str(host_per_site_count))
+            if new_initial_ip == '' or host_count_temp == 0:
+                new_initial_ip = ip_to_inspect
+            host_count_temp = host_count_temp + 1
+            new_final_ip = ip_to_inspect
+            print('host count temp ' + str(host_count_temp))
+            if host_count_temp == host_per_site:
+                print('saving the information of IPs')
+                new_allocated_pools[new_resource['resource_region']].extend([str(new_initial_ip), str(new_final_ip)])
+            else:
+                if host_per_site_count == host_per_site:
+                    print('saving the information of IPs')
+                    new_allocated_pools[new_resource['resource_region']].extend([str(new_initial_ip), str(new_final_ip)])
+    print('new initial ip: ' + str(new_initial_ip))
+    print('new final ip: ' + str(new_final_ip))
+    index = index + 1
     
-'''
-while base_index <= ips_cidr_available and site_index <= len(list_resources_add):
-    app_log.info('the cidr in this case is: ' + str(cidr))
-    cidr_ranges.append(
-        str(cidr[base_index]) + "-" + str(cidr[base_index + host_per_site - 1]))
-    base_index = base_index + int(host_per_site)
-    site_index = site_index + 1
-cidr_ranges.append(str(cidr[base_index]) +
-                    "-" + str(cidr[ips_cidr_available]))
+print(new_allocated_pools)
 
-parameter_local_allocation_pool = cidr_ranges[0]
-'''
+for object_alloc,alloc_list in new_allocated_pools.items():
+    print(object_alloc + str(alloc_list))
+    for i in range(0, int(len(alloc_list)/2)+1,2 ):
+        print(alloc_list[i])
+        print(alloc_list[i+1])
+    
+
 #app_log.info('Next ranges will be used:')
 # for element in cidr_ranges:
 #    app_log.info(element)

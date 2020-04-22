@@ -6,6 +6,9 @@ from random import randint
 from service import Service, ServiceSchema, Resource, Interconnexion, Parameter, LMaster, L2AllocationPool, L3Cidrs, ParamsSchema, ResourcesSchema, InterconnectionsSchema, LMasterSchema, L2AllocationPoolSchema, L3CidrsSchema
 from config import db
 from sqlalchemy import exc
+from flask.logging import default_handler
+from threading import Lock
+from operator import itemgetter
 import common.utils as service_utils
 import copy
 import math
@@ -18,12 +21,9 @@ import time
 import requests
 import logging
 import ast
-from flask.logging import default_handler
 import threading
 import concurrent.futures
 import sys
-from threading import Lock
-
 
 app_log = logging.getLogger()
 # Data to serve with our API
@@ -678,7 +678,6 @@ def verticalUpdateService(global_id, service):
         service_schema_temp = ServiceSchema()
         data_from_db = service_schema_temp.dump(service_update).data
         service_type = data_from_db['service_type']
-
         service_to_update_master = data_from_db['service_params'][0]['parameter_master']
         # Check if the module is the master for that service. If it isn't, return abort to inform that it can't execute the request
         if(service_to_update_master != local_region_name):
@@ -1014,8 +1013,24 @@ def verticalUpdateService(global_id, service):
                 app_log.info(
                     "Finishing(L2): Validating if remote modules already posses a service with the cidr.")
 
+                def is_allocated(ip_address, pool_dicts_list):
+                    condition = -1
+                    initial = ''
+                    end = ''
+                    for pool_dict in pool_dicts_list:
+                        initial = ipaddress.IPv4Address(
+                            pool_dict['l2allocationpool_first_ip'])
+                        end = ipaddress.IPv4Address(
+                            pool_dict['l2allocationpool_last_ip'])
+                        if ip_address >= initial and ip_address <= end:
+                            print('address inside allocation pool')
+                            condition = 1
+                            break
+                    return condition, initial, end
+
                 app_log.info("Starting(L2): L2 CIDR allocation pool split.")
                 main_cidr = parameter_local_cidr
+                cidr = ipaddress.ip_network(parameter_local_cidr)
                 main_cidr_base = (main_cidr.split("/", 1)[0])
                 main_cidr_prefix = (main_cidr.split("/", 1)[1])
                 cidr_ranges = []
@@ -1024,15 +1039,19 @@ def verticalUpdateService(global_id, service):
                 ips_cidr_available = copy.deepcopy(ips_cidr_total)
                 already_used_pools = data_from_db['service_params'][0][
                     'parameter_lmaster'][0]['lmaster_l2allocationpools']
+                sorted_already_used_pools = sorted(already_used_pools, key=lambda k: int(
+                    ipaddress.IPv4Address(k['l2allocationpool_first_ip'])))
+                #sorted_already_used_pools = sorted(already_used_pools, key=itemgetter('l2allocationpool_first_ip'))
+                app_log.info(sorted_already_used_pools)
 
                 for allocation_pool in already_used_pools:
                     used_ips = int(ipaddress.IPv4Address(allocation_pool["l2allocationpool_last_ip"])) - \
                         int(ipaddress.IPv4Address(
                             allocation_pool["l2allocationpool_first_ip"]))
                     ips_cidr_available = ips_cidr_available - used_ips
-                    print('Already used IPS: ' + str(used_ips))
-                    print(allocation_pool["l2allocationpool_last_ip"])
-                    print(allocation_pool["l2allocationpool_first_ip"])
+                    app_log.info('Already used IPS: ' + str(used_ips))
+                    app_log.info(allocation_pool["l2allocationpool_last_ip"])
+                    app_log.info(allocation_pool["l2allocationpool_first_ip"])
                 app_log.info('Total available IPs: ' + str(ips_cidr_available))
                 # If no more addresses are available, we can not proceed
                 if ips_cidr_available == 0:
@@ -1042,30 +1061,61 @@ def verticalUpdateService(global_id, service):
                         404, "ERROR: Less number of IPs than the number of sites to add are available")
                 host_per_site = math.floor(
                     ips_cidr_available/len(list_resources_add))
+                host_per_site = math.floor(host_per_site/4)
 
-                host_per_site = math.floor(host_per_site/2)
-                app_log.info("CIDR: " + str(main_cidr) + ", available IPs: " + str(ips_cidr_available) +
+                app_log.info("CIDR: " + str(main_cidr) + ", total available IPs: " + str(ips_cidr_total) + ", real available: " + str(ips_cidr_available) +
                              " , new number of sites: " + str(len(list_resources_add)) + " , IPs per site:" + str(host_per_site))
                 base_index = 3
-                site_index = 1
-                #abort(404, "For devs pouposes")
-                # I'M HERE
-                # TODO find a way to create the allocation pools dynamically
-                '''
-                while base_index <= ips_cidr_available and site_index <= len(list_resources_add):
-                    app_log.info('the cidr in this case is: ' + str(cidr))
-                    cidr_ranges.append(
-                        str(cidr[base_index]) + "-" + str(cidr[base_index + host_per_site - 1]))
-                    base_index = base_index + int(host_per_site)
-                    site_index = site_index + 1
-                cidr_ranges.append(str(cidr[base_index]) +
-                                   "-" + str(cidr[ips_cidr_available]))
+                index = 0
+                host_per_site_count = 0
+                new_allocated_pools = {}
 
-                parameter_local_allocation_pool = cidr_ranges[0]
-                '''
-                #app_log.info('Next ranges will be used:')
-                # for element in cidr_ranges:
-                #    app_log.info(element)
+                for new_resource in list_resources_add:
+                    new_allocated_pools[new_resource['resource_region']] = []
+                    host_per_site_count = 0
+                    host_count_temp = 0
+                    new_initial_ip = ''
+                    new_final_ip = ''
+                    while host_per_site_count < host_per_site and base_index <= ips_cidr_total+1:
+                        ip_to_inspect = cidr[base_index]
+                        app_log.info(ip_to_inspect)
+                        condition_granted, first_used, last_used = is_allocated(
+                            ip_to_inspect, sorted_already_used_pools)
+                        # If the condition is 1, it means that the analyzed IP lies in an already allocated pool
+                        if condition_granted == 1:
+                            difference = int(last_used) - int(ip_to_inspect)
+                            base_index = base_index + difference + 1
+                            if host_count_temp != 0:
+                                app_log.info('saving the information of IPs')
+                                new_allocated_pools[new_resource['resource_region']].extend(
+                                    [str(new_initial_ip), str(new_final_ip)])
+                            host_count_temp = 0
+                        else:
+                            base_index = base_index + 1
+                            host_per_site_count = host_per_site_count + 1
+                            app_log.info('host per site count ' +
+                                         str(host_per_site_count))
+                            if new_initial_ip == '' or host_count_temp == 0:
+                                new_initial_ip = ip_to_inspect
+                            host_count_temp = host_count_temp + 1
+                            new_final_ip = ip_to_inspect
+                            app_log.info('host count temp ' +
+                                         str(host_count_temp))
+                            if host_count_temp == host_per_site:
+                                app_log.info('saving the information of IPs')
+                                new_allocated_pools[new_resource['resource_region']].extend(
+                                    [str(new_initial_ip), str(new_final_ip)])
+                            else:
+                                if host_per_site_count == host_per_site:
+                                    app_log.info(
+                                        'saving the information of IPs')
+                                    new_allocated_pools[new_resource['resource_region']].extend(
+                                        [str(new_initial_ip), str(new_final_ip)])
+                    app_log.info('new initial ip: ' + str(new_initial_ip))
+                    app_log.info('new final ip: ' + str(new_final_ip))
+                    index = index + 1
+
+                app_log.info(new_allocated_pools)
 
                 app_log.info("Finishing(L2): L2 CIDR allocation pool split.")
 
@@ -1290,6 +1340,31 @@ def verticalUpdateService(global_id, service):
                             break
                 app_log.info(service_resources_list)
                 app_log.info("Finishing(L2): Updating the resources list.")
+                to_update_lmaster = LMaster.query.outerjoin(Parameter, Parameter.parameter_lmaster == LMaster.lmaster_id).filter(Parameter.service_id == data_from_db['service_id']).one_or_none()
+                res_update = Resource.query.outerjoin(Service, Service.service_id == Resource.service_id).filter(
+                    Resource.service_id == data_from_db['service_id'], Resource.resource_region == update_resource_region).one_or_none()
+                app_log.info(
+                    "Starting(L2): Adding the L2 service master allocation pools.")
+                service_l2allocation_pool_schema = L2AllocationPoolSchema()
+                for object_alloc, alloc_list in new_allocated_pools.items():
+                    print(object_alloc + str(alloc_list))
+                    for i in range(0, int(len(alloc_list)/2)+1, 2):
+                        print(alloc_list[i])
+                        print(alloc_list[i+1])
+                        app_log.info(
+                            "Here we are selecting the allocation pools, the object is: " + str(object_region))
+                        construct_alloc_pool = {
+                            'l2allocationpool_first_ip': alloc_list[i],
+                            'l2allocationpool_last_ip': alloc_list[i+1],
+                            'l2allocationpool_site': object_alloc
+                        }
+                        new_l2allocation_pool_params = service_l2allocation_pool_schema.load(
+                            construct_alloc_pool, session=db.session).data
+                        to_update_lmaster.lmaster_l2allocationpools.append(
+                            new_l2allocation_pool_params)
+                db.session.commit()
+                app_log.info(
+                    "Finishing(L2): Adding the l2 service master allocation pools.")
 
                 # For the L2 service type, create the interconnections to remote modules and add them to the service schema
                 app_log.info(
@@ -1331,6 +1406,8 @@ def verticalUpdateService(global_id, service):
                 app_log.info(
                     "The remote L2 objects are the following: " + str(remote_l2_new_sites))
                 db.session.commit()
+                app_log.info(
+                    "Finishing(L2): Updating the resources and interconnections composing the service.")
                 # I'M HERE
                 # Calling again the horizontal put to send the freshly updated list of resources to remote sites
                 app_log.info(
