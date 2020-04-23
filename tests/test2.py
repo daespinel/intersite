@@ -123,3 +123,10 @@ for object_alloc,alloc_list in new_allocated_pools.items():
 #    app_log.info(element)
 
 print("Finishing(L2): L2 CIDR allocation pool split.")
+
+service_params={}
+service_params['parameter_allocation_pool']='10.0.0.49-10.0.0.64;10.0.0.70-10.0.0.71;'
+
+splitted_allocs = service_params['parameter_allocation_pool'].split(';')
+splitted_allocs.pop()
+print(splitted_allocs)

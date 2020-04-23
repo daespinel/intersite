@@ -359,7 +359,7 @@ def verticalCreateService(service):
                 parameter_local_allocation_pool = cidr_ranges[cidr_range]
             app_log.info(to_add_l2allocation_pool)
             sorted_allocation_pools.append(to_add_l2allocation_pool)
-            l2allocation_list[object_region] = cidr_ranges[cidr_range]
+            l2allocation_list[object_region] = cidr_ranges[cidr_range] + ";"
             cidr_range = cidr_range + 1
 
         app_log.info("Finishing(L2): L2 CIDR allocation pool split.")
@@ -1116,7 +1116,16 @@ def verticalUpdateService(global_id, service):
                     index = index + 1
 
                 app_log.info(new_allocated_pools)
-
+                # We define the L2 Allocation pools list as a dict in order to acces it from the parallel threads
+                l2allocation_list = {}
+                for alloc_pool_temp_key, alloc_list_value in new_allocated_pools.items():
+                    alloc_list_str = ''
+                    for i in range(0, int(len(alloc_list_value)/2)+1, 2):
+                        alloc_list_str = alloc_list_str + \
+                            str(alloc_list_value[i]) + '-' + \
+                            str(alloc_list_value[i+1]) + ';'
+                    l2allocation_list[alloc_pool_temp_key] = alloc_list_str
+                app_log.info(l2allocation_list)
                 app_log.info("Finishing(L2): L2 CIDR allocation pool split.")
 
             def parallel_inters_creation_request(obj):
@@ -1194,8 +1203,9 @@ def verticalUpdateService(global_id, service):
                     "Finishing(L3): Adding the resources and interconnections to the service.")
                 app_log.info(
                     "Starting(L3): Adding the L3 service master cidrs.")
-                service_lmaster = LMaster.query.outerjoin(Parameter, Parameter.parameter_id == LMaster.lmaster_id).outerjoin(
+                service_lmaster = LMaster.query.outerjoin(Parameter, Parameter.parameter_id == LMaster.parameter_id).outerjoin(
                     Service, Service.service_id == Parameter.service_id).filter(Service.service_id == data_from_db['service_id']).one_or_none()
+
                 service_l3cidrs_schema = L3CidrsSchema()
                 for element in new_CIDRs:
                     to_add_l3cidr = {
@@ -1289,6 +1299,7 @@ def verticalUpdateService(global_id, service):
         #    (element['resource_region'] + "," + element['resource_uuid']) for element in service_resources_list)))]
         # print(resources_to_string)
         # TEST to
+        '''
         to_add_l2allocation_pool = {
             'l2allocationpool_first_ip': '10.0.0.200',
             'l2allocationpool_last_ip': '10.0.0.210',
@@ -1297,7 +1308,7 @@ def verticalUpdateService(global_id, service):
         l2allocation_list = {}
         l2allocation_list['RegionTwo'] = str(to_add_l2allocation_pool['l2allocationpool_first_ip']) + '-' + str(
             to_add_l2allocation_pool['l2allocationpool_last_ip'])
-
+        '''
         workers = len(service_resources_total_list)
         with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
             for obj in service_resources_total_list:
@@ -1340,9 +1351,8 @@ def verticalUpdateService(global_id, service):
                             break
                 app_log.info(service_resources_list)
                 app_log.info("Finishing(L2): Updating the resources list.")
-                to_update_lmaster = LMaster.query.outerjoin(Parameter, Parameter.parameter_lmaster == LMaster.lmaster_id).filter(Parameter.service_id == data_from_db['service_id']).one_or_none()
-                res_update = Resource.query.outerjoin(Service, Service.service_id == Resource.service_id).filter(
-                    Resource.service_id == data_from_db['service_id'], Resource.resource_region == update_resource_region).one_or_none()
+                service_lmaster = LMaster.query.outerjoin(Parameter, Parameter.parameter_id == LMaster.parameter_id).outerjoin(
+                    Service, Service.service_id == Parameter.service_id).filter(Service.service_id == data_from_db['service_id']).one_or_none()
                 app_log.info(
                     "Starting(L2): Adding the L2 service master allocation pools.")
                 service_l2allocation_pool_schema = L2AllocationPoolSchema()
@@ -1352,7 +1362,7 @@ def verticalUpdateService(global_id, service):
                         print(alloc_list[i])
                         print(alloc_list[i+1])
                         app_log.info(
-                            "Here we are selecting the allocation pools, the object is: " + str(object_region))
+                            "Here we are selecting the allocation pools, the object is: " + str(object_alloc))
                         construct_alloc_pool = {
                             'l2allocationpool_first_ip': alloc_list[i],
                             'l2allocationpool_last_ip': alloc_list[i+1],
@@ -1360,7 +1370,7 @@ def verticalUpdateService(global_id, service):
                         }
                         new_l2allocation_pool_params = service_l2allocation_pool_schema.load(
                             construct_alloc_pool, session=db.session).data
-                        to_update_lmaster.lmaster_l2allocationpools.append(
+                        service_lmaster.lmaster_l2allocationpools.append(
                             new_l2allocation_pool_params)
                 db.session.commit()
                 app_log.info(
@@ -1757,9 +1767,14 @@ def horizontalCreateService(service):
     if service_type == 'L2':
         app_log.info(
             "Starting: Updating the DHCP pool ranges for the local deployment.")
-        body = {'subnet': {'allocation_pools': [{'start': service_params['parameter_allocation_pool'].split(
-                "-", 1)[0], 'end': service_params['parameter_allocation_pool'].split("-", 1)[1]}]}}
-
+        local_allocation_polls = service_params['parameter_allocation_pool'].split(';')
+        local_allocation_polls.pop()
+        local_allocs_list = []
+        for element in local_allocation_polls:
+            alloc_struct = {'start': element.split("-", 1)[0], 'end': element.split("-", 1)[1]
+                }
+            local_allocs_list.append(alloc_struct)
+        body = {'subnet': {'allocation_pools': local_allocs_list}}
         network_temp = net_adap.get(
             '/v2.0/networks/' + local_resource).json()['network']
         subnet_id = network_temp['subnets'][0]
