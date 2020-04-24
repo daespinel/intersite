@@ -966,7 +966,6 @@ def verticalUpdateService(global_id, service):
                     "Finishing(L3): Doing IP range validation for L3 service.")
 
             if(service_type == 'L2'):
-                # TODO do the L2 service update
                 app_log.info('Starting: L2 extension service to be done among the resources: ' +
                              (' ' .join(str(value['resource_region']) for value in service_resources_list)))
 
@@ -1023,7 +1022,7 @@ def verticalUpdateService(global_id, service):
                         end = ipaddress.IPv4Address(
                             pool_dict['l2allocationpool_last_ip'])
                         if ip_address >= initial and ip_address <= end:
-                            print('address inside allocation pool')
+                            app_log.info('address inside allocation pool')
                             condition = 1
                             break
                     return condition, initial, end
@@ -1039,6 +1038,11 @@ def verticalUpdateService(global_id, service):
                 ips_cidr_available = copy.deepcopy(ips_cidr_total)
                 already_used_pools = data_from_db['service_params'][0][
                     'parameter_lmaster'][0]['lmaster_l2allocationpools']
+                #TODO do a query for this part instead of calling the data stored locally
+                used_alloc_pools = L2AllocationPool.query.outerjoin(LMaster, LMaster.lmaster_id == L2AllocationPool.lmaster_id).outerjoin(Parameter, Parameter.parameter_id == LMaster.parameter_id).outerjoin(
+                            Service, Service.service_id == Parameter.service_id).filter(Service.service_id == data_from_db['service_id']).all()
+                l2allocationpool_schema = L2AllocationPoolSchema(many=True)
+                already_used_pools = service_schema.dump(used_alloc_pools).data
                 sorted_already_used_pools = sorted(already_used_pools, key=lambda k: int(
                     ipaddress.IPv4Address(k['l2allocationpool_first_ip'])))
                 #sorted_already_used_pools = sorted(already_used_pools, key=itemgetter('l2allocationpool_first_ip'))
@@ -1222,28 +1226,26 @@ def verticalUpdateService(global_id, service):
             app_log.info("Finishing: Updating the service schema")
 
         remote_resources_ids = []
-        app_log.info('For DEBUG!!!!!!!')
-        app_log.info(service_resources_list)
-        app_log.info(list_resources_add)
-        app_log.info(list_resources_remove)
+        app_log.info('List of resources and uuids: ')
+        app_log.info('New list of resources update: ' + str(service_resources_list))
+        app_log.info('Resources to add: ' + str(list_resources_add))
+        app_log.info('Resources to delete: ' + str(list_resources_remove))
         # Sending remote inter-site create requests to the distant nodes
 
         def parallel_horizontal_put_request(method, obj, alloc_pool):
-
             app_log = logging.getLogger()
             starting_time = time.time()
             app_log.info(
                 'Starting parallel horizontal put request thread at time:  %s', starting_time)
+            app_log.info('The informations of this thread are: ' + str(obj) + ' ' + str(method))
             if obj['resource_region'] != local_region_name:
                 remote_inter_instance = service_remote_inter_endpoints[obj['resource_region']].strip(
                     '9696/')
                 remote_inter_instance = remote_inter_instance + '7575/api/intersite-horizontal'
                 headers = {'Content-Type': 'application/json',
                            'Accept': 'application/json'}
-                app_log.info('this is causing some troubles')
 
                 if method == 'CREATE':
-                    # TODO implement the post request, this is used for resources freshly added to the service
                     remote_params = {
                         'parameter_allocation_pool': '',
                         'parameter_local_cidr': '',
@@ -1262,6 +1264,7 @@ def verticalUpdateService(global_id, service):
 
                     r = requests.post(remote_inter_instance, data=json.dumps(
                         remote_service), headers=headers)
+                    app_log.info('Remote answer: ' + str(r.json()))
 
                     if service_type == 'L2':
                         remote_res = {'resource_region': r.json()['local_region'], 'resource_uuid': r.json()[
@@ -1275,6 +1278,8 @@ def verticalUpdateService(global_id, service):
                                       'global': data_from_db['service_global'], 'resources': [], 'post_create_refresh': 'False'}
                     r = requests.put(remote_inter_instance, data=json.dumps(
                         remote_service), headers=headers)
+                    app_log.info('Remote answer: ' + str(r.json()))
+
                 if method == 'PUT':
                     remote_inter_instance = remote_inter_instance + "/" +\
                         str(data_from_db['service_global'])
@@ -1282,6 +1287,8 @@ def verticalUpdateService(global_id, service):
                                       'global': data_from_db['service_global'], 'resources': service.get("resources", None), 'post_create_refresh': 'False'}
                     r = requests.put(remote_inter_instance, data=json.dumps(
                         remote_service), headers=headers)
+                    app_log.info('Remote answer: ' + str(r.json()))
+
                 if method == 'POST_CREATE':
                     remote_inter_instance = remote_inter_instance + "/" +\
                         str(data_from_db['service_global'])
@@ -1289,26 +1296,17 @@ def verticalUpdateService(global_id, service):
                                       'global': data_from_db['service_global'], 'resources': remote_l2_new_sites, 'post_create_refresh': 'True'}
                     r = requests.put(remote_inter_instance, data=json.dumps(
                         remote_service), headers=headers)
+                    app_log.info('Remote answer: ' + str(r.json()))
 
         # Sending remote inter-site create requests to the distant nodes
         start_horizontal_time = time.time()
         app_log.info(
             "Starting: Using threads for horizontal creation request.")
         service_resources_total_list = service_resources_list + list_resources_remove
+        app_log.info("The total list of resources is the following: " + str(service_resources_total_list))
         # resources_to_string = [(",".join((resource) for resource in (
         #    (element['resource_region'] + "," + element['resource_uuid']) for element in service_resources_list)))]
         # print(resources_to_string)
-        # TEST to
-        '''
-        to_add_l2allocation_pool = {
-            'l2allocationpool_first_ip': '10.0.0.200',
-            'l2allocationpool_last_ip': '10.0.0.210',
-            'l2allocationpool_site': 'RegionTwo'
-        }
-        l2allocation_list = {}
-        l2allocation_list['RegionTwo'] = str(to_add_l2allocation_pool['l2allocationpool_first_ip']) + '-' + str(
-            to_add_l2allocation_pool['l2allocationpool_last_ip'])
-        '''
         workers = len(service_resources_total_list)
         with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
             for obj in service_resources_total_list:
@@ -1334,7 +1332,6 @@ def verticalUpdateService(global_id, service):
         # Because of the different needed workflows, here we continue with the L2 workflow
         if service_type == 'L2':
             # TODO update the horizontalUpdate method for L2 type because the network needs to be deleted
-            # TODO Finish this
             if(list_resources_add):
                 app_log.info("Starting(L2): Updating the resources list.")
                 # For the L2 service type, update the resources compossing the service
@@ -1349,7 +1346,7 @@ def verticalUpdateService(global_id, service):
                         if list_resources_add[i]['resource_region'] == element_region:
                             list_resources_add[i]['resource_uuid'] = element_uuid
                             break
-                app_log.info(service_resources_list)
+                app_log.info("Updated list of resources: " + str(service_resources_list))
                 app_log.info("Finishing(L2): Updating the resources list.")
                 service_lmaster = LMaster.query.outerjoin(Parameter, Parameter.parameter_id == LMaster.parameter_id).outerjoin(
                     Service, Service.service_id == Parameter.service_id).filter(Service.service_id == data_from_db['service_id']).one_or_none()
@@ -1886,8 +1883,7 @@ def horizontalUpdateService(global_id, service):
                     app_log.info(
                         "Exception when contacting the network adapter: " + e.message)
 
-                local_interconnections_ids.append([obj["resource_uuid"],
-                                                               inter_temp.json()['interconnection']['id']])
+                local_interconnections_ids.append([uuid, inter_temp.json()['interconnection']['id']])
 
         if service.get("post_create_refresh") == 'True':
             app_log.info(
