@@ -1886,26 +1886,12 @@ def horizontalUpdateService(global_id, service):
                     app_log.info(
                         "Exception when contacting the network adapter: " + e.message)
 
-                local_interconnections_ids.append(
-                    inter_temp.json()['interconnection']['id'])
+                local_interconnections_ids.append([obj["resource_uuid"],
+                                                               inter_temp.json()['interconnection']['id']])
 
         if service.get("post_create_refresh") == 'True':
             app_log.info(
                 "Starting: Updating the service with post create refresh condition.")
-
-            # Taking the information of the service resources list to save it into the resource schema
-            for update_resource_region, update_resource_uuid in to_service_resources_list.items():
-
-                res_update = Resource.query.outerjoin(Service, Service.service_id == Resource.service_id).filter(
-                    Resource.service_id == data_from_db['service_id'], Resource.resource_region == update_resource_region).one_or_none()
-                res_update.resource_uuid = update_resource_uuid
-
-                res_update_schema = ResourcesSchema()
-                data_from_res = res_update_schema.dump(res_update).data
-                app_log.info(data_from_res)
-
-            app_log.info(to_service_resources_list)
-
             # Using the already parsed information to create the interconnections
             workers = len(to_service_resources_list.keys())
             start_interconnection_time = time.time()
@@ -1919,20 +1905,36 @@ def horizontalUpdateService(global_id, service):
             app_log.info('Finishing: Using threads for local interconnection create request. Time: %s',
                          (end_interconnection_time - start_interconnection_time))
 
-            # Adding the interconnections to the service
-            app_log.info(
-                "Starting: Adding the interconnections to the service.")
-            for element in local_interconnections_ids:
-                interconnexion = {
-                    'interconnexion_uuid': element
-                }
-                service_interconnections_schema = InterconnectionsSchema()
-                new_service_interconnections = service_interconnections_schema.load(
-                    interconnexion, session=db.session).data
-                service_update.service_interconnections.append(
-                    new_service_interconnections)
-            app_log.info(
-                "Finishing: Adding the interconnections to the service.")
+            app_log.info('Starting: Updating resources and interconnections.')
+            # Taking the information of the service resources list to save it into the resource schema
+            for update_resource_region, update_resource_uuid in to_service_resources_list.items():
+
+                res_update = Resource.query.outerjoin(Service, Service.service_id == Resource.service_id).filter(
+                    Resource.service_id == data_from_db['service_id'], Resource.resource_region == update_resource_region).one_or_none()
+                res_update.resource_uuid = update_resource_uuid
+
+                res_update_schema = ResourcesSchema()
+                data_from_res = res_update_schema.dump(res_update).data
+                app_log.info(data_from_res)
+
+                to_delete_object = ""
+                for interco in local_interconnections_ids:
+                    if interco[0] == uuid:
+                        interconnexion = {
+                            'interconnexion_uuid': interco[1],
+                            'resource': new_service_resources
+                        }
+                        new_service_interconnections = Interconnexion(
+                            interconnexion_uuid=str(interco[1]), resource=new_service_resources)
+                        service_update.service_interconnections.append(
+                            new_service_interconnections)
+                        to_delete_object = interco
+                        break
+                if to_delete_object != "":
+                    local_interconnections_ids.remove(to_delete_object)
+
+            app_log.info(to_service_resources_list)
+            app_log.info('Finishing: Updating resources and interconnections.')
             app_log.info(
                 "Finishing: Updating the service with post create refresh condition.")
 
