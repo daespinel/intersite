@@ -1691,7 +1691,7 @@ def horizontalCreateService(service):
 
             app_log.info(inter_temp)
             local_interconnections_ids.append(
-                inter_temp.json()['interconnection']['id'])
+                [uuid, inter_temp.json()['interconnection']['id']])
 
     # calling the interconnection service plugin to create the necessary objects
     # At this point, this is done only for the L3 routing service
@@ -1722,6 +1722,22 @@ def horizontalCreateService(service):
         new_service_resources = service_resources_schema.load(
             resource, session=db.session).data
         new_service.service_resources.append(new_service_resources)
+
+        to_delete_object = ""
+        for interco in local_interconnections_ids:
+            if interco[0] == uuid:
+                interconnexion = {
+                    'interconnexion_uuid': interco[1],
+                    'resource': new_service_resources
+                }
+                new_service_interconnections = Interconnexion(
+                    interconnexion_uuid=str(interco[1]), resource=new_service_resources)
+                new_service.service_interconnections.append(
+                    new_service_interconnections)
+                to_delete_object = interco
+                break
+        if to_delete_object != "":
+            local_interconnections_ids.remove(to_delete_object)
 
     # Adding the interconnections to the service
     for element in local_interconnections_ids:
@@ -1767,12 +1783,13 @@ def horizontalCreateService(service):
     if service_type == 'L2':
         app_log.info(
             "Starting: Updating the DHCP pool ranges for the local deployment.")
-        local_allocation_polls = service_params['parameter_allocation_pool'].split(';')
+        local_allocation_polls = service_params['parameter_allocation_pool'].split(
+            ';')
         local_allocation_polls.pop()
         local_allocs_list = []
         for element in local_allocation_polls:
             alloc_struct = {'start': element.split("-", 1)[0], 'end': element.split("-", 1)[1]
-                }
+                            }
             local_allocs_list.append(alloc_struct)
         body = {'subnet': {'allocation_pools': local_allocs_list}}
         network_temp = net_adap.get(
