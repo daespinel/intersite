@@ -1919,13 +1919,13 @@ def horizontalUpdateService(global_id, service):
 
                 to_delete_object = ""
                 for interco in local_interconnections_ids:
-                    if interco[0] == uuid:
+                    if interco[0] == update_resource_uuid:
                         interconnexion = {
                             'interconnexion_uuid': interco[1],
-                            'resource': new_service_resources
+                            'resource': res_update
                         }
                         new_service_interconnections = Interconnexion(
-                            interconnexion_uuid=str(interco[1]), resource=new_service_resources)
+                            interconnexion_uuid=str(interco[1]), resource=res_update)
                         service_update.service_interconnections.append(
                             new_service_interconnections)
                         to_delete_object = interco
