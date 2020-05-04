@@ -1037,9 +1037,10 @@ def verticalUpdateService(global_id, service):
                 already_used_pools = data_from_db['service_params'][0][
                     'parameter_lmaster'][0]['lmaster_l2allocationpools']
                 used_alloc_pools = L2AllocationPool.query.outerjoin(LMaster, LMaster.lmaster_id == L2AllocationPool.lmaster_id).outerjoin(Parameter, Parameter.parameter_id == LMaster.parameter_id).outerjoin(
-                            Service, Service.service_id == Parameter.service_id).filter(Service.service_id == data_from_db['service_id']).all()
+                    Service, Service.service_id == Parameter.service_id).filter(Service.service_id == data_from_db['service_id']).all()
                 l2allocationpool_schema = L2AllocationPoolSchema(many=True)
-                already_used_pools = l2allocationpool_schema.dump(used_alloc_pools).data
+                already_used_pools = l2allocationpool_schema.dump(
+                    used_alloc_pools).data
                 sorted_already_used_pools = sorted(already_used_pools, key=lambda k: int(
                     ipaddress.IPv4Address(k['l2allocationpool_first_ip'])))
                 #sorted_already_used_pools = sorted(already_used_pools, key=itemgetter('l2allocationpool_first_ip'))
@@ -1224,7 +1225,8 @@ def verticalUpdateService(global_id, service):
 
         remote_resources_ids = []
         app_log.info('List of resources and uuids: ')
-        app_log.info('New list of resources update: ' + str(service_resources_list))
+        app_log.info('New list of resources update: ' +
+                     str(service_resources_list))
         app_log.info('Resources to add: ' + str(list_resources_add))
         app_log.info('Resources to delete: ' + str(list_resources_remove))
         # Sending remote inter-site create requests to the distant nodes
@@ -1234,7 +1236,8 @@ def verticalUpdateService(global_id, service):
             starting_time = time.time()
             app_log.info(
                 'Starting parallel horizontal put request thread at time:  %s', starting_time)
-            app_log.info('The informations of this thread are: ' + str(obj) + ' ' + str(method))
+            app_log.info('The informations of this thread are: ' +
+                         str(obj) + ' ' + str(method))
             if obj['resource_region'] != local_region_name:
                 remote_inter_instance = service_remote_inter_endpoints[obj['resource_region']].strip(
                     '9696/')
@@ -1300,7 +1303,8 @@ def verticalUpdateService(global_id, service):
         app_log.info(
             "Starting: Using threads for horizontal creation request.")
         service_resources_total_list = service_resources_list + list_resources_remove
-        app_log.info("The total list of resources is the following: " + str(service_resources_total_list))
+        app_log.info("The total list of resources is the following: " +
+                     str(service_resources_total_list))
         # resources_to_string = [(",".join((resource) for resource in (
         #    (element['resource_region'] + "," + element['resource_uuid']) for element in service_resources_list)))]
         # print(resources_to_string)
@@ -1342,7 +1346,8 @@ def verticalUpdateService(global_id, service):
                         if list_resources_add[i]['resource_region'] == element_region:
                             list_resources_add[i]['resource_uuid'] = element_uuid
                             break
-                app_log.info("Updated list of resources: " + str(service_resources_list))
+                app_log.info("Updated list of resources: " +
+                             str(service_resources_list))
                 app_log.info("Finishing(L2): Updating the resources list.")
                 service_lmaster = LMaster.query.outerjoin(Parameter, Parameter.parameter_id == LMaster.parameter_id).outerjoin(
                     Service, Service.service_id == Parameter.service_id).filter(Service.service_id == data_from_db['service_id']).one_or_none()
@@ -1879,7 +1884,8 @@ def horizontalUpdateService(global_id, service):
                     app_log.info(
                         "Exception when contacting the network adapter: " + e.message)
 
-                local_interconnections_ids.append([uuid, inter_temp.json()['interconnection']['id']])
+                local_interconnections_ids.append(
+                    [uuid, inter_temp.json()['interconnection']['id']])
 
         if service.get("post_create_refresh") == 'True':
             app_log.info(
@@ -1988,7 +1994,7 @@ def horizontalUpdateService(global_id, service):
 
             # If one of the resource is the local one, we only need to delete the entire service locally
             if(search_local_resource_delete):
-                
+
                 def parallel_inters_delete_request(inter_delete):
                     app_log = logging.getLogger()
                     starting_time = time.time()
@@ -2000,9 +2006,10 @@ def horizontalUpdateService(global_id, service):
                     except ClientException as e:
                         app_log.info(
                             "Exception when contacting the network adapter: " + e.message)
-                
+
                 # Once we do the request to Neutron, we do the query to delete the interconnexion locally
-                app_log.info('Starting: Deleting the local resource from the service')
+                app_log.info(
+                    'Starting: Deleting the local resource from the service')
                 interconnections_delete = data_from_db['service_interconnections']
                 app_log.info(
                     'Starting: Deleting local interconnections and resources.')
@@ -2017,12 +2024,14 @@ def horizontalUpdateService(global_id, service):
                              (end_interconnection_delete_time - start_interconnection_delete_time))
                 if data_from_db['service_type'] == 'L2':
                     local_resource = data_from_db['service_params'][0]['parameter_local_resource']
-                    network_del = net_adap.delete(url='/v2.0/networks/' + local_resource)
+                    network_del = net_adap.delete(
+                        url='/v2.0/networks/' + local_resource)
                 db.session.delete(service_update)
                 db.session.commit()
 
                 end_time = time.time()
-                app_log.info('Finishing: Deleting the local resource from the service')
+                app_log.info(
+                    'Finishing: Deleting the local resource from the service')
                 app_log.info(
                     "Finishing: Updating the service with default behavior.")
                 app_log.info('Finishing time: %s', end_time)

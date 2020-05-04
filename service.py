@@ -60,7 +60,6 @@ class Resource(db.Model):
                             primary_key=True)
     resource_region = db.Column(db.String(64))
     resource_uuid = db.Column(db.String(64))
-    resource_cidr = db.Column(db.String(64))
     service_id = db.Column(db.Integer, db.ForeignKey('service.service_id'))
 
 
@@ -259,7 +258,6 @@ class SResourcesSchema(ma.ModelSchema):
     service_id = fields.Int()
     resource_region = fields.Str()
     resource_uuid = fields.Str()
-    resource_cidr = fields.Str()
 
 
 class ResourcesSchema(ma.ModelSchema):
