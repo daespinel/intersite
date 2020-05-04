@@ -1328,7 +1328,6 @@ def verticalUpdateService(global_id, service):
 
         # Because of the different needed workflows, here we continue with the L2 workflow
         if service_type == 'L2':
-            # TODO update the horizontalUpdate method for L2 type because the network needs to be deleted
             if(list_resources_add):
                 app_log.info("Starting(L2): Updating the resources list.")
                 # For the L2 service type, update the resources compossing the service
@@ -2007,7 +2006,7 @@ def horizontalUpdateService(global_id, service):
                 interconnections_delete = data_from_db['service_interconnections']
                 app_log.info(
                     'Starting: Deleting local interconnections and resources.')
-                workers = len(list_resources_remove)
+                workers = len(interconnections_delete)
                 start_interconnection_delete_time = time.time()
                 with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
                     for interco in interconnections_delete:
@@ -2016,7 +2015,7 @@ def horizontalUpdateService(global_id, service):
                 end_interconnection_delete_time = time.time()
                 app_log.info('Finishing: Deleting local interconnections and resources. Time: %s',
                              (end_interconnection_delete_time - start_interconnection_delete_time))
-                if service_data['service_type'] == 'L2':
+                if data_from_db['service_type'] == 'L2':
                     local_resource = data_from_db['service_params'][0]['parameter_local_resource']
                     network_del = net_adap.delete(url='/v2.0/networks/' + local_resource)
                 db.session.delete(service_update)
