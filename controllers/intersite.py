@@ -323,7 +323,6 @@ def verticalCreateService(service):
         ips_cidr_available = 2**(32-int(main_cidr_prefix))-3
         host_per_site = math.floor(
             ips_cidr_available/len(service_resources_list))
-        # TODO change this rather static and simple division method and search a better way to divide the block
         host_per_site = math.floor(host_per_site/2)
         app_log.info("CIDR: " + str(cidr) + ", total available IPs: " + str(ips_cidr_available) +
                      " , Number of sites: " + str(len(service_resources_list)) + " , IPs per site:" + str(host_per_site))
@@ -861,7 +860,6 @@ def verticalUpdateService(global_id, service):
                             service_remote_inter_endpoints[resource_delete['resource_region']
                                                            ] = endpoint['url']
                             break
-            # TODO the keystone remote auth can be stored locally along in the resource class
             if obj['name'] == 'keystone':
                 # Storing information of Keystone of actual resource list, resources to add and resources to delete
                 for endpoint in obj['endpoints']:
@@ -1038,7 +1036,6 @@ def verticalUpdateService(global_id, service):
                 ips_cidr_available = copy.deepcopy(ips_cidr_total)
                 already_used_pools = data_from_db['service_params'][0][
                     'parameter_lmaster'][0]['lmaster_l2allocationpools']
-                #TODO do a query for this part instead of calling the data stored locally
                 used_alloc_pools = L2AllocationPool.query.outerjoin(LMaster, LMaster.lmaster_id == L2AllocationPool.lmaster_id).outerjoin(Parameter, Parameter.parameter_id == LMaster.parameter_id).outerjoin(
                             Service, Service.service_id == Parameter.service_id).filter(Service.service_id == data_from_db['service_id']).all()
                 l2allocationpool_schema = L2AllocationPoolSchema(many=True)
@@ -1992,6 +1989,7 @@ def horizontalUpdateService(global_id, service):
 
             # If one of the resource is the local one, we only need to delete the entire service locally
             if(search_local_resource_delete):
+                
                 def parallel_inters_delete_request(inter_delete):
                     app_log = logging.getLogger()
                     starting_time = time.time()
@@ -2003,8 +2001,9 @@ def horizontalUpdateService(global_id, service):
                     except ClientException as e:
                         app_log.info(
                             "Exception when contacting the network adapter: " + e.message)
-                    # Once we do the request to Neutron, we do the query to delete the interconnexion locally
-
+                
+                # Once we do the request to Neutron, we do the query to delete the interconnexion locally
+                app_log.info('Starting: Deleting the local resource from the service')
                 interconnections_delete = data_from_db['service_interconnections']
                 app_log.info(
                     'Starting: Deleting local interconnections and resources.')
@@ -2017,11 +2016,14 @@ def horizontalUpdateService(global_id, service):
                 end_interconnection_delete_time = time.time()
                 app_log.info('Finishing: Deleting local interconnections and resources. Time: %s',
                              (end_interconnection_delete_time - start_interconnection_delete_time))
-
+                if service_data['service_type'] == 'L2':
+                    local_resource = data_from_db['service_params'][0]['parameter_local_resource']
+                    network_del = net_adap.delete(url='/v2.0/networks/' + local_resource)
                 db.session.delete(service_update)
                 db.session.commit()
 
                 end_time = time.time()
+                app_log.info('Finishing: Deleting the local resource from the service')
                 app_log.info(
                     "Finishing: Updating the service with default behavior.")
                 app_log.info('Finishing time: %s', end_time)
@@ -2107,7 +2109,6 @@ def horizontalUpdateService(global_id, service):
                                     service_remote_inter_endpoints[resource_delete['resource_region']
                                                                    ] = endpoint['url']
                                     break
-                    # TODO the keystone remote auth can be stored locally along in the resource class
                     if obj['name'] == 'keystone':
                         # Storing information of Keystone of actual resource list, resources to add and resources to delete
                         for endpoint in obj['endpoints']:
