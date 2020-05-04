@@ -1039,7 +1039,7 @@ def verticalUpdateService(global_id, service):
                 used_alloc_pools = L2AllocationPool.query.outerjoin(LMaster, LMaster.lmaster_id == L2AllocationPool.lmaster_id).outerjoin(Parameter, Parameter.parameter_id == LMaster.parameter_id).outerjoin(
                             Service, Service.service_id == Parameter.service_id).filter(Service.service_id == data_from_db['service_id']).all()
                 l2allocationpool_schema = L2AllocationPoolSchema(many=True)
-                already_used_pools = service_schema.dump(used_alloc_pools).data
+                already_used_pools = l2allocationpool_schema.dump(used_alloc_pools).data
                 sorted_already_used_pools = sorted(already_used_pools, key=lambda k: int(
                     ipaddress.IPv4Address(k['l2allocationpool_first_ip'])))
                 #sorted_already_used_pools = sorted(already_used_pools, key=itemgetter('l2allocationpool_first_ip'))
