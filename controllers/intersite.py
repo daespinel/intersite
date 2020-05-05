@@ -481,7 +481,7 @@ def verticalCreateService(service):
         service_l2allocation_pool_schema = L2AllocationPoolSchema()
         for object_alloc in sorted_allocation_pools:
             app_log.info(
-                "Here we are selecting the allocation pools, the object is: " + str(object_region))
+                "Here we are selecting the allocation pools, the object is: " + str(object_alloc['l2allocationpool_site']))
             new_l2allocation_pool_params = service_l2allocation_pool_schema.load(
                 object_alloc, session=db.session).data
             new_lmaster_params.lmaster_l2allocationpools.append(
@@ -1326,6 +1326,9 @@ def verticalUpdateService(global_id, service):
                         if service_type == 'L3':
                             executor.submit(
                                 parallel_horizontal_put_request, 'PUT', obj, "")
+                        else:
+                            if service_type == 'L2':
+                                executor.submit(parallel_horizontal_put_request, 'PUT', obj, "")
         end_horizontal_time = time.time()
         app_log.info('Finishing: Using threads for horizontal creation request.. Time: %s',
                      (end_horizontal_time - start_horizontal_time))
@@ -1355,7 +1358,7 @@ def verticalUpdateService(global_id, service):
                     "Starting(L2): Adding the L2 service master allocation pools.")
                 service_l2allocation_pool_schema = L2AllocationPoolSchema()
                 for object_alloc, alloc_list in new_allocated_pools.items():
-                    print(object_alloc + str(alloc_list))
+                    app_log.info(str(object_alloc) + str(alloc_list))
                     for i in range(0, int(len(alloc_list)/2)+1, 2):
                         print(alloc_list[i])
                         print(alloc_list[i+1])
@@ -1846,6 +1849,7 @@ def horizontalUpdateService(global_id, service):
         to_service_resources_list = dict((region.strip(), uuid.strip()) for region, uuid in (
             (item.split(',')) for item in service.get("resources", None)))
 
+        app_log.info('The list of resources sent by the Master module is: ' + str(to_service_resources_list))
         local_resource = data_from_db['service_params'][0]['parameter_local_resource']
         app_log.info(
             'Finishing: extracting information from the db and the user information.')
