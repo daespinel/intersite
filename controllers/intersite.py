@@ -1826,7 +1826,7 @@ def horizontalUpdateService(global_id, service):
         app_log.info(
             'Starting: extracting information from the db and the user information.')
         service_remote_auth_endpoints = {}
-
+        service_type = data_from_db['service_type']
         auth = service_utils.get_auth_object(local_region_url)
         sess = service_utils.get_session_object(auth)
 
@@ -1881,6 +1881,7 @@ def horizontalUpdateService(global_id, service):
                     'type': SERVICE_TYPE[data_from_db['service_type']],
                     'remote_resource_id': uuid,
                 }}
+                app_log.info('The information of this interconnection is: ' +str(interconnection_data))
                 try:
                     inter_temp = net_adap.post(
                         url='/v2.0/inter/interconnections/', json=interconnection_data)
@@ -2166,7 +2167,7 @@ def horizontalUpdateService(global_id, service):
                                 'type': SERVICE_TYPE[service_type],
                                 'remote_resource_id': obj["resource_uuid"],
                             }}
-
+                            app_log.info('Interconnection info for this thread: ' + str(interconnection_data))
                             try:
                                 inter_temp = net_adap.post(
                                     url='/v2.0/inter/interconnections/', json=interconnection_data)
@@ -2177,18 +2178,19 @@ def horizontalUpdateService(global_id, service):
                             local_interconnections_ids.append([obj["resource_uuid"],
                                                                inter_temp.json()['interconnection']['id']])
 
-                    # Calling the interconnection service plugin to create the necessary objects
-                    app_log.info(
-                        "Starting(L3): Using threads for local interconnection create request.")
-                    workers = len(list_resources_add)
-                    start_interconnection_time = time.time()
-                    with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
-                        for obj in list_resources_add:
-                            executor.submit(
-                                parallel_inters_creation_request, obj)
-                    end_interconnection_time = time.time()
-                    app_log.info('Finishing(L3): Using threads for local interconnection create request. Time: %s',
-                                 (end_interconnection_time - start_interconnection_time))
+                    if service_type == 'L3':
+                        # Calling the interconnection service plugin to create the necessary objects
+                        app_log.info(
+                            "Starting(L3): Using threads for local interconnection create request.")
+                        workers = len(list_resources_add)
+                        start_interconnection_time = time.time()
+                        with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
+                            for obj in list_resources_add:
+                                executor.submit(
+                                    parallel_inters_creation_request, obj)
+                        end_interconnection_time = time.time()
+                        app_log.info('Finishing(L3): Using threads for local interconnection create request. Time: %s',
+                                    (end_interconnection_time - start_interconnection_time))
 
                     app_log.info("Starting: Updating the service schema")
                     # Adding the resources to the service
