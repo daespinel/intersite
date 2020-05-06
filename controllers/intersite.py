@@ -1826,7 +1826,7 @@ def horizontalUpdateService(global_id, service):
         app_log.info(
             'Starting: extracting information from the db and the user information.')
         service_remote_auth_endpoints = {}
-        service_type = data_from_db['service_type']
+        
         auth = service_utils.get_auth_object(local_region_url)
         sess = service_utils.get_session_object(auth)
 
@@ -1845,7 +1845,7 @@ def horizontalUpdateService(global_id, service):
 
         service_schema_temp = ServiceSchema()
         data_from_db = service_schema_temp.dump(service_update).data
-
+        service_type = data_from_db['service_type']
         to_service_resources_list = dict((region.strip(), uuid.strip()) for region, uuid in (
             (item.split(',')) for item in service.get("resources", None)))
 
