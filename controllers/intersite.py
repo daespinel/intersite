@@ -1844,8 +1844,12 @@ def horizontalUpdateService(global_id, service):
             region_name=local_region_name)
 
         service_schema_temp = ServiceSchema()
-        data_from_db = service_schema_temp.dump(service_update).data
+        data_from_db = service_schema_temp.dump().data
         service_type = data_from_db['service_type']
+        service_resources_db_objects = data_from_db['service_resources']
+        service_resources_ids_db_list = []
+        for element in service_resources_db_objects:
+            service_resources_ids_db_list.append(element['resource_uuid'])
         to_service_resources_list = dict((region.strip(), uuid.strip()) for region, uuid in (
             (item.split(',')) for item in service.get("resources", None)))
 
@@ -1902,8 +1906,9 @@ def horizontalUpdateService(global_id, service):
                 "Starting: Using threads for local interconnection create request.")
             with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
                 for region, uuid in to_service_resources_list.items():
-                    executor.submit(
-                        parallel_inters_creation_request, region, uuid)
+                    if uuid not in service_resources_ids_db_list:
+                        executor.submit(
+                            parallel_inters_creation_request, region, uuid)
             end_interconnection_time = time.time()
             app_log.info('Finishing: Using threads for local interconnection create request. Time: %s',
                          (end_interconnection_time - start_interconnection_time))
