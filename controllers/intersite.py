@@ -1844,7 +1844,7 @@ def horizontalUpdateService(global_id, service):
             region_name=local_region_name)
 
         service_schema_temp = ServiceSchema()
-        data_from_db = service_schema_temp.dump().data
+        data_from_db = service_schema_temp.dump(service_update).data
         service_type = data_from_db['service_type']
         service_resources_db_objects = data_from_db['service_resources']
         service_resources_ids_db_list = []
