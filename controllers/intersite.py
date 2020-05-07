@@ -1906,7 +1906,8 @@ def horizontalUpdateService(global_id, service):
                 "Starting: Using threads for local interconnection create request.")
             with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
                 for region, uuid in to_service_resources_list.items():
-                    if uuid not in service_resources_ids_db_list:
+                    inter_obj_test = Interconnexion.query.outerjoin(Service, Service.service_id == Interconnexion.service_id).outerjoin(Resource, Resource.resource_id == Interconnexion.resource_id).filter(Interconnexion.service_id == data_from_db['service_id'], Resource.resource_uuid == uuid).one_or_none()
+                    if inter_obj_test is None:
                         executor.submit(
                             parallel_inters_creation_request, region, uuid)
             end_interconnection_time = time.time()
