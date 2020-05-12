@@ -207,9 +207,9 @@ def verticalCreateService(service):
                     "Exception when contacting the network adapter: " + e.message)
 
             for subnetwork in subnetworks_temp['subnets']:
-                if (item == local_region_name):
-                    parameter_local_cidr_temp.append(subnetwork['cidr'])
                 if(value == subnetwork['network_id']):
+                    if (item == local_region_name):
+                        parameter_local_cidr_temp.append(subnetwork['cidr'])
                     obj = [item, value, ipaddress.ip_network(
                         subnetwork['cidr'])]
                     CIDRs.append(obj)
@@ -229,6 +229,8 @@ def verticalCreateService(service):
 
         app_log.info("Starting(L3): Doing IP range validation.")
         parameter_local_cidr = parameter_local_cidr_temp[0]
+        app_log.info("The parameter_local_cidr is: " + str(parameter_local_cidr))
+        app_log.info("The parameter_local_cidr_temp in 0 is: " + str(parameter_local_cidr_temp[0]))
         # Doing the IP range validation to avoid overlapping problems
         for a, b in itertools.combinations([item[2] for item in CIDRs], 2):
             if a.overlaps(b):
