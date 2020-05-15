@@ -41,9 +41,9 @@ class Model {
 class View {
     constructor() {
         this.table = document.querySelector(".resources_container table");
-        this.service_global = document.getElementById("service_global");
         this.service_name = document.getElementById("service_name");
         this.service_type = document.getElementById("service_type");
+        this.service_global = document.getElementById("service_global");
         this.service_params_master = document.getElementById("service_params_master");
         this.service_params_local_cidr = document.getElementById("service_params_local_cidr");
         this.service_params_allocation_pool = document.getElementById("service_params_allocation_pool");
@@ -87,10 +87,57 @@ class View {
         // Update tbody with our new content
         tbody = this.table.createTBody();
         tbody.innerHTML = html;
+        tbody.id = "tbody_resources";
     }
 
     errorMessage(msg) {
         $.notify({ message: msg }, { type: 'danger' }, { delay: 8000 });
+    }
+
+    validate(name, type, resources) {
+        var validate_name = name;
+        var validate_type = type;
+        var validate_resources = resources;
+
+        if (validate_name.length > 32) {
+            return false;
+        }
+        //console.log(validate_type);
+        if (validate_type != 'L2') {
+            if (validate_type != 'L3') {
+                return false;
+            }
+        }
+        if (validate_resources == '') {
+            return false;
+        }
+        return true;
+    }
+
+    error_handler(xhr) {
+        let error_msg = `${xhr}`;
+        //console.log(error_msg);
+        view.error(error_msg);
+    }
+
+    notification_handler(notificationThrown) {
+        let msg = `${notificationThrown}`;
+        view.notification(msg);
+        console.log(msg);
+    }
+
+    error (msg) {
+        $.notify({ message: msg }, { type: 'danger' });
+    }
+
+    notification (msg) {
+        $.notify({ message: msg }, { type: 'success' }, { delay: 8000 }, { onClosed: this.redirecting() });
+    }
+
+    redirecting (){
+        setTimeout(() => {
+            window.location = '/';
+        }, 9000);
     }
 }
 
@@ -110,6 +157,7 @@ class Controller {
         this.initializeCancelEvent();
         this.initializeAddResourceEvent();
         this.initializeDeleteResource();
+        this.initializeUpdateService();
     }
 
     async initializeTable() {
@@ -121,6 +169,7 @@ class Controller {
             this.view.errorMessage(err);
         }
     }
+
 
     initializeCancelEvent() {
         document.getElementById("cancel").addEventListener("click", async (evt) => {
@@ -148,7 +197,7 @@ class Controller {
                     <span><button id='resource_delete' type='button' class='resource_delete btn btn-danger btn-xs' title='Delete'><i class='fa fa-trash-o fa-button-no-service'></i></button></span>
                 </td>
             </tr>`;
-            $('#resources_container').append(new_res_input);
+            $('#tbody_resources').append(new_res_input);
             $('#total_chq').val(new_chq_no);
         });
     }
@@ -159,7 +208,68 @@ class Controller {
             var last_chq_no = $('#total_chq').val();
             if (last_chq_no > 3) {
                 target.remove()
+                console.log(target)
                 $('#total_chq').val(last_chq_no - 1);
+            }
+        });
+    }
+
+    initializeUpdateService() {
+        var self = this;
+        document.getElementById("update").addEventListener("click", async (evt) => {
+            var last_chq_no = $('#total_chq').val();
+            $('#update').prop('disabled', true);
+            $('#add_resource').prop('disabled', true);
+            var table = document.getElementById('resources_container');
+            var i;
+            $('#myForm :input').prop('disabled', true);
+            var resources_array = [];
+            var resource_region_str = '';
+            var resource_uuid_str = '';
+            for (i = 0; i < table.rows.length; i++) {
+                var row = table.rows[i];
+                var cells = row.cells;
+                var c;
+                for (c = 0; c < cells.length; c++) {
+                    var cell = cells[c];
+                    var inputElem = cell.children[0];
+                    var isInput = inputElem instanceof HTMLInputElement;
+                    if (isInput) {
+                        if (inputElem.id == 'service_resources1')
+                            resource_region_str = inputElem.value
+                        if (inputElem.id == 'service_resources2')
+                            resource_uuid_str = inputElem.value
+                    }
+                }
+                resources_array.push(resource_region_str + "," + resource_uuid_str)
+            }
+
+            let global = document.getElementById("service_global").value,
+                type = document.getElementById("service_type").value,
+                name = document.getElementById("service_name").value;
+
+
+            evt.preventDefault();
+            if (self.view.validate(name, type, resources_array)) {
+                try {
+                    let response = await this.model.update(global, { 'resources': resources_array });
+                    if (response['status'] == 404) {
+                        console.log(response);
+                        self.view.error_handler(response);
+                    }
+                    console.log(response);
+                    var answer_global = response['service_global'];
+                    var $output = "Service Updated: \n Service global ID: " + answer_global;
+                    //self.view.notification_handler($output);
+                    //})
+                    //.fail(function (xhr, textStatus, errorThrown) {
+                     //   self.view.error_handler(xhr, textStatus, errorThrown);
+                     //   });
+                    
+                } catch (err) {
+                    self.view.error_handler(err)
+                }
+
             }
         });
     }
