@@ -231,7 +231,7 @@ ns.controller = (function (m, v) {
 
 
         } else {
-            alert('Problem with the validation');
+            alert('Problem with the validation: check the infos');
             $('#service_name').removeAttr('disabled');
             $('#service_type').removeAttr('disabled');
             $('#create').prop('disabled', false);

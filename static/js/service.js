@@ -98,7 +98,7 @@ class View {
         var validate_name = name;
         var validate_type = type;
         var validate_resources = resources;
-
+        var i;
         if (validate_name.length > 32) {
             return false;
         }
@@ -108,15 +108,22 @@ class View {
                 return false;
             }
         }
+        console.log(validate_resources);
+        for (i = 0; i < validate_resources.length; i++) {
+            console.log(validate_resources[i]);
+            if (validate_resources[i] == ',') {
+                return false
+            }
+        }
         if (validate_resources == '') {
             return false;
         }
         return true;
     }
 
-    error_handler(xhr) {
-        let error_msg = `${xhr}`;
-        //console.log(error_msg);
+    error_handler(xhr, textStatus, errorThrown) {
+        let error_msg = `${errorThrown}: ${textStatus} - ${xhr}`;
+        console.log(error_msg);
         view.error(error_msg);
     }
 
@@ -127,16 +134,23 @@ class View {
     }
 
     error (msg) {
-        $.notify({ message: msg }, { type: 'danger' });
+        $.notify({ message: msg }, { type: 'danger' }, { delay: 8000 }, { onClosed: this.redirecting_update() });
     }
 
     notification (msg) {
-        $.notify({ message: msg }, { type: 'success' }, { delay: 8000 }, { onClosed: this.redirecting() });
+        $.notify({ message: msg }, { type: 'success' }, { delay: 8000 }, { onClosed: this.redirecting_home() });
     }
 
-    redirecting (){
+    redirecting_home (){
         setTimeout(() => {
             window.location = '/';
+        }, 9000);
+    }
+
+    redirecting_update (){
+        setTimeout(() => {
+            let global_url = document.getElementById("service_global").value;
+            window.location = '/service/' + global_url;
         }, 9000);
     }
 }
@@ -255,7 +269,7 @@ class Controller {
                     let response = await this.model.update(global, { 'resources': resources_array });
                     if (response['status'] == 404) {
                         console.log(response);
-                        self.view.error_handler(response);
+                        self.view.error_handler(response['title'], response['status'], response['detail']);
                     }
                     console.log(response);
                     var answer_global = response['service_global'];
@@ -270,6 +284,8 @@ class Controller {
                     self.view.error_handler(err)
                 }
 
+            } else {
+                alert('Problem with the validation: check the list of resources');
             }
         });
     }
