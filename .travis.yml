@@ -29,7 +29,7 @@ install:
   - python build_database.py 
 
 before_script:
-  - coverage run app.py
+  - coverage report -m app.py
 
 script:
   - echo 1
