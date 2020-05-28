@@ -1,3 +1,7 @@
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-green)](https://www.apache.org/licenses/LICENSE-2.0)
+![python](https://img.shields.io/badge/python-3.5%20%7C%203.6%20%7C%203.7-blue)
+[![Build Status](https://travis-ci.org/daespinel/intersite.svg?branch=master)](https://travis-ci.com/github/daespinel/intersite)
+
 # DIMINET DIstributed Module for Inter-site NETworking services deployement
 
 DIMINET is a a distributed/decentralized module for inter-site networking services capable to interconnect independent networking resources in an automatized and transparent manner. Layer 2 network extensions and Layer 3 routing functionss are two main implementation tasks. This first proof-of-concept of the proposed solution has been implemented besides the networking service of Open-stack, Neutron. One important planned feature of our proposed system is the generalization to other cloud services. So the collaboration between independent systems can reuse and extend based on this building block.
