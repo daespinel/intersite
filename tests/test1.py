@@ -3,7 +3,7 @@ from random import seed
 from random import randint
 from service import Service, ServiceSchema, Resource, Interconnexion, Parameter, L2Master, L2AllocationPool, ParamsSchema, ResourcesSchema, InterconnectionsSchema, L2MasterSchema, L2AllocationPoolSchema
 from config import db
-import common.utils as service_utils
+from common import utils as service_utils
 import copy
 import math
 import json

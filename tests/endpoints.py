@@ -1,13 +1,12 @@
-#!/usr/bin/python3
-
 from keystoneauth1.identity import v3
 from keystoneauth1 import session
 from keystoneclient.v3 import client as keystoneclient
+from common import utils as service_utils
 
-FIRST_REGION_NAME = "RegionOne"
-#KEYSTONE_ENDPOINT = "http://{{keystone_ip_node}}/identity/v3"
-KEYSTONE_ENDPOINT = "http://192.168.57.6/identity/v3"
-
+local_region_name = service_utils.get_region_name()
+local_region_url = service_utils.get_local_keystone()
+#local_region_name = "RegionOne"
+#local_region_url = "http://192.168.57.6/identity/v3"
 
 def get_session_object(auth_param):
     return session.Session(auth=auth_param)
@@ -44,39 +43,51 @@ def get_auth_object(keystone_endpoint, username, password, project):
     )
 
 
-region_name_list = []
-catalog_endpoints = get_keystone_catalog(
-    KEYSTONE_ENDPOINT, "admin", "secret", "demo")
-
-for obj in catalog_endpoints:
-    if obj['name'] == 'neutron':
-        for endpoint in obj['endpoints']:
-            region_name_list.append(endpoint['region'])
-
 key_client = get_keystone_client(
-    KEYSTONE_ENDPOINT, "RegionOne", "admin", "secret", "demo")
+    local_region_url, local_region_name, "admin", "secret", "demo")
 services_list = key_client.services.list()
 
+print(services_list)
 
 for i in range(len(services_list)):
+    print(services_list[i])
     if services_list[i].to_dict()['name'] == 'keystone':
-        service_id = services_list[i].to_dict()['id']
-        break
+        keystone_service_id = services_list[i].to_dict()['id']
+    if services_list[i].to_dict()['name'] == 'neutron':
+        neutron_service_id = services_list[i].to_dict()['id']
+
+print('keystone service id' + keystone_service_id)
+print('neutron service id' + neutron_service_id)
 
 new_endpoint_object = {
-    'service': service_id,
-    'url': KEYSTONE_ENDPOINT[0:-3],
+    'service': '',
+    'url': '',
     'interface': 'public',
     'region': ''
 }
 
-for region in region_name_list:
-    new_endpoint_object['region'] = region
 
-    try:
-        key_client.endpoints.create(
-            new_endpoint_object['service'], new_endpoint_object['url'], new_endpoint_object['interface'], new_endpoint_object['region'])
+with open("/opt/stack/os_list.txt") as file:
+#with open("os_list.txt") as file_os:
+    region_name_list = []
+    line = file_os.readline()
+    while line:
+        region_name, region_ip = line.split(":", 2)
+        if region_name != local_region_name:
+            try:
+                key_client.endpoints.create(
+                keystone_service_id, 'http://' + region_ip + '/identity/v3', 'public', region_name)
+            except:
+                print("Can not create the endpoint")
 
-    except:
-        print("Can not create the endpoint")
+            try:
+                key_client.endpoints.create(
+                neutron_service_id, 'http://' + region_ip + ':9696', 'public', region_name)
+            except:
+                print("Can not create the endpoint")
+        
+        line = file_os.readline()
+
+
+
 
