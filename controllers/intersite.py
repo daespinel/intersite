@@ -193,6 +193,14 @@ def verticalCreateService(service):
             app_log = logging.getLogger()
             starting_time = time.time()
             app_log.info('Starting thread at time:  %s', starting_time)
+            
+            auth_remote = get_auth_object(service_remote_auth_endpoints[item])
+            sess_remote = get_session_object(auth_remote)
+            print('Getting information from region ' + str(item))
+            
+            # Authenticate
+            auth_remote.get_access(sess_remote)
+            auth_ref = auth_remote.auth_ref
             net_adap_remote = Adapter(
                 auth=auth,
                 session=sess,
