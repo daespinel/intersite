@@ -202,8 +202,8 @@ def verticalCreateService(service):
             auth_remote.get_access(sess_remote)
             auth_ref = auth_remote.auth_ref
             net_adap_remote = Adapter(
-                auth=auth,
-                session=sess,
+                auth=auth_remote,
+                session=sess_remote,
                 service_type='network',
                 interface='public',
                 region_name=item)
