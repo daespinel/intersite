@@ -1,17 +1,17 @@
 import os
 from config import db
-from service import Service, Resource, Interconnexion, Parameter, L2AllocationPool, LMaster
+from service import Resource, SubResource, Interconnexion, Parameter, L2AllocationPool, LMaster
 
 # Data to initialize database with
 local_region_name = "RegionOne"
 
-SERVICES = [
+RESOURCES = [
     {
         "name": "Service1",
         "type": "L2",
         "global": "a842c6f0-44a2-bc21-568a56c54de0",
         "params": ["10.0.0.3-10.0.0.108", "10.0.0.0/24", "v4"],
-        "resources": [("id589", "RegionOne")],
+        "subresources": [("id589", "RegionOne")],
         "interconnections": ["z1"]
 
     },
@@ -20,7 +20,7 @@ SERVICES = [
         "type": "L3",
         "global": "02b98df2-03a8-974c-d2569f7e44e0",
         "params": ["", "20.0.0.0/24", "v4"],
-        "resources": [("id10", "RegionOne"), ("id15", "RegionTen"), ("id16", "RegionSixTen")],
+        "subresources": [("id10", "RegionOne"), ("id15", "RegionTen"), ("id16", "RegionSixTen")],
         "interconnections": ["Y1", "Y2"]
     },
     {
@@ -28,42 +28,42 @@ SERVICES = [
         "type": "L3",
         "global": "220ac9d3-58c9-d640-0369b6b58c71",
         "params": ["", "30.0.0.0/24", "v4"],
-        "resources": [("id21", "RegionOne"), ("id24", "RegionFour"), ("id25", "RegionFive"), ("id28", "RegionTwentyEight")],
+        "subresources": [("id21", "RegionOne"), ("id24", "RegionFour"), ("id25", "RegionFive"), ("id28", "RegionTwentyEight")],
         "interconnections": ["x1", "x2", "x3"]
     }
 ]
 
-SERVICES1 = [
+RESOURCES1 = [
     {
         "name": "Service1",
         "type": "L2",
         "global": "a842c6f0-44a2-bc21-568a56c54de0",
         "params": ["10.0.0.3-10.0.0.108", "10.0.0.0/24","3b8360e6-e29a-4063-a8bc-7bbd0785d08b", "v4", "RegionOne", "http://192.168.57.6:7575"],
         "l2allocs": [{"first_ip": "10.0.0.3", "last_ip": "10.0.0.108", "site": "RegionOne"}, {"first_ip": "10.0.0.109", "last_ip": "10.0.0.153", "site": "RegionTwo"}, {"first_ip": "10.0.0.110", "last_ip": "10.0.0.253", "site": "free"}],
-        "resources": [("ads360e6-e29a-4063-a8bc-7bbd0785d08b", "RegionOne",""), ("829c3a52-c7de-4430-b721-fb85b7dcf60f", "RegionTwo","z1-523513-561561")]
+        "subresources": [("ads360e6-e29a-4063-a8bc-7bbd0785d08b", "RegionOne",""), ("829c3a52-c7de-4430-b721-fb85b7dcf60f", "RegionTwo","z1-523513-561561")]
 
     }
 ]
 
-SERVICES2 = [
+RESOURCES2 = [
     {
         "name": "Service1",
         "type": "L2",
         "global": "a842c6f0-44a2-bc21-568a56c54de0",
         "params": ["10.0.0.3-10.0.0.108", "10.0.0.0/24", "v4", "RegionTwo", "http://192.168.57.6:7575"],
-        "resources": [("3b8360e6-e29a-4063-a8bc-7bbd0785d08b", "RegionOne"), ("829c3a52-c7de-4430-b721-fb85b7dcf60f", "RegionTwo")],
+        "subresources": [("3b8360e6-e29a-4063-a8bc-7bbd0785d08b", "RegionOne"), ("829c3a52-c7de-4430-b721-fb85b7dcf60f", "RegionTwo")],
         "interconnections": ["z1"]
 
     }
 ]
 
-SERVICES3 = [
+RESOURCES3 = [
     {
         "name": "Service1",
         "type": "L3",
         "global": "713ebc06-57cc-ba54-8886571b1489",
         "params": ["", "10.0.0.0/24", "v4", "", ""],
-        "resources": [("3b8360e6-e29a-4063-a8bc-7bbd0785d08b", "RegionOne"), ("3feae7ca-e66c-4006-aced-5f3a819c91f6", "RegionTwo")],
+        "subresources": [("3b8360e6-e29a-4063-a8bc-7bbd0785d08b", "RegionOne"), ("3feae7ca-e66c-4006-aced-5f3a819c91f6", "RegionTwo")],
         "interconnections": ["90f6db5c-0012-44b6-aa94-d164bdefe8db"]
 
     }
@@ -78,38 +78,38 @@ db.create_all()
 create_test = False
 
 if(create_test):
-    # Iterate over the service structure and populate the database
-    for service in SERVICES1:
-        s = Service(service_name=service['name'],
-                    service_type=service['type'],
-                    service_global=service['global'])
-        for resource in service.get("resources"):
-            resource_uuid, region_name, interconnexion_uuid = resource
-            res = Resource(resource_region=region_name, resource_uuid=resource_uuid)
+    # Iterate over the resour structure and populate the database
+    for resource in RESOURCES1:
+        s = Resource(resource_name=resour['name'],
+                    resource_type=resour['type'],
+                    resource_global=resour['global'])
+        for subresource in resource.get("subresources"):
+            subresource_uuid, region_name, interconnexion_uuid = subresource
+            res = SubResource(subresource_region=region_name, subresource_uuid=subresource_uuid)
             if region_name != local_region_name:
                 inter = Interconnexion(interconnexion_uuid=interconnexion_uuid, resource=res)
-                s.service_resources.append(res)
-                s.service_interconnections.append(inter)
+                s.resource_subresources.append(res)
+                s.resource_interconnections.append(inter)
             else:
-                s.service_resources.append(res)
+                s.resour_resources.append(res)
 
-        param_allocation, param_local_cidr, param_local_resource, param_ipv, param_master, param_master_auth = service.get(
-            "params")[0], service.get("params")[1], service.get("params")[2], service.get("params")[3], service.get("params")[4], service.get("params")[5]
+        param_allocation, param_local_cidr, param_local_resource, param_ipv, param_master, param_master_auth = resour.get(
+            "params")[0], resour.get("params")[1], resour.get("params")[2], resour.get("params")[3], resour.get("params")[4], resour.get("params")[5]
         param = Parameter(parameter_allocation_pool=param_allocation,
                         parameter_local_cidr=param_local_cidr, parameter_local_resource=param_local_resource, parameter_ipv=param_ipv, parameter_master=param_master, parameter_master_auth=param_master_auth)
         
-        if('l2allocs' in service.keys()):
+        if('l2allocs' in resour.keys()):
             lmaster = LMaster()
-            for allocationpool in service.get("l2allocs"):
+            for allocationpool in resour.get("l2allocs"):
 
                 allocation_first_ip, allocation_last_ip, allocation_site = allocationpool.get("first_ip"), allocationpool.get("last_ip"), allocationpool.get("site")
                 lmaster.lmaster_l2allocationpools.append(L2AllocationPool(l2allocationpool_first_ip=allocation_first_ip, l2allocationpool_last_ip=allocation_last_ip, l2allocationpool_site = allocation_site))
             param.parameter_lmaster.append(lmaster)
-        s.service_params.append(param)
+        s.resour_params.append(param)
         
         #
-        #for interco in service.get("interconnections"):
-        #    s.service_interconnections.append(
+        #for interco in resour.get("interconnections"):
+        #    s.resour_interconnections.append(
         #        Interconnexion(interconnexion_uuid=interco))
         
         db.session.add(s)

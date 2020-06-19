@@ -4,30 +4,30 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from marshmallow import fields
 
 
-class Service(db.Model):
-    __tablename__ = 'service'
-    service_id = db.Column(db.Integer,
+class Resource(db.Model):
+    __tablename__ = 'resource'
+    resource_id = db.Column(db.Integer,
                            primary_key=True)
-    service_name = db.Column(db.String(32))
-    service_type = db.Column(db.String(32))
-    service_global = db.Column(db.String(64))
-    service_params = db.relationship(
+    resource_name = db.Column(db.String(32))
+    resource_type = db.Column(db.String(32))
+    resource_global = db.Column(db.String(64))
+    resource_params = db.relationship(
         'Parameter',
-        backref='service',
+        backref='resource',
         cascade='all, delete, delete-orphan',
         single_parent=True,
         order_by='desc(Parameter.parameter_id)'
     )
-    service_resources = db.relationship(
-        'Resource',
-        backref='service',
+    resource_subresources = db.relationship(
+        'SubResource',
+        backref='resource',
         cascade='all, delete, delete-orphan',
         single_parent=True,
-        order_by='desc(Resource.resource_id)'
+        order_by='desc(SubResource.subresource_id)'
     )
-    service_interconnections = db.relationship(
+    resource_interconnections = db.relationship(
         'Interconnexion',
-        backref='service',
+        backref='resource',
         cascade='all, delete, delete-orphan',
         single_parent=True,
         order_by='desc(Interconnexion.interconnexion_id)'
@@ -40,7 +40,7 @@ class Parameter(db.Model):
                              primary_key=True)
     parameter_allocation_pool = db.Column(db.String(64))
     parameter_local_cidr = db.Column(db.String(64))
-    parameter_local_resource = db.Column(db.String(64))
+    parameter_local_subresource = db.Column(db.String(64))
     parameter_ipv = db.Column(db.String(64))
     parameter_master = db.Column(db.String(64))
     parameter_master_auth = db.Column(db.String(64))
@@ -51,16 +51,16 @@ class Parameter(db.Model):
         single_parent=True,
         order_by='desc(LMaster.lmaster_id)'
     )
-    service_id = db.Column(db.Integer, db.ForeignKey('service.service_id'))
+    resource_id = db.Column(db.Integer, db.ForeignKey('resource.resource_id'))
 
 
-class Resource(db.Model):
-    __tablename__ = "resource"
-    resource_id = db.Column(db.Integer,
+class SubResource(db.Model):
+    __tablename__ = "subresource"
+    subresource_id = db.Column(db.Integer,
                             primary_key=True)
-    resource_region = db.Column(db.String(64))
-    resource_uuid = db.Column(db.String(64))
-    service_id = db.Column(db.Integer, db.ForeignKey('service.service_id'))
+    subresource_region = db.Column(db.String(64))
+    subresource_uuid = db.Column(db.String(64))
+    resource_id = db.Column(db.Integer, db.ForeignKey('resource.resource_id'))
 
 
 class Interconnexion(db.Model):
@@ -68,9 +68,9 @@ class Interconnexion(db.Model):
     interconnexion_id = db.Column(db.Integer,
                                   primary_key=True)
     interconnexion_uuid = db.Column(db.String(64))
-    service_id = db.Column(db.Integer, db.ForeignKey('service.service_id'))
     resource_id = db.Column(db.Integer, db.ForeignKey('resource.resource_id'))
-    resource = db.relationship('Resource')
+    subresource_id = db.Column(db.Integer, db.ForeignKey('subresource.subresource_id'))
+    subresource = db.relationship('SubResource')
 
 class LMaster(db.Model):
     __tablename__ = "lmaster"
@@ -121,20 +121,20 @@ class L3Cidrs(db.Model):
         answer = self.l3cidrs_cidr
         return answer
 
-# Service schemas for model read and write
-# Service associated schema
-class ServiceSchema(ma.ModelSchema):
+# Resource schemas for model read and write
+# Resource associated schema
+class ResourceSchema(ma.ModelSchema):
     def __init__(self, **kwargs):
         super().__init__(strict=True, **kwargs)
 
     class Meta:
-        model = Service
+        model = Resource
         sqla_session = db.session
-    service_params = fields.Nested(
+    resource_params = fields.Nested(
         'SParamsSchema', default=[], many=True)
-    service_resources = fields.Nested(
-        'SResourcesSchema', default=[], many=True)
-    service_interconnections = fields.Nested(
+    resource_subresources = fields.Nested(
+        'SSubResourcesSchema', default=[], many=True)
+    resource_interconnections = fields.Nested(
         'SInterconnectionsSchema', default=[], many=True)
 
 # Parameter associated schemas
@@ -143,10 +143,10 @@ class SParamsSchema(ma.ModelSchema):
     This class exists to get around a recursion issue
     """
     parameter_id = fields.Int()
-    service_id = fields.Int()
+    resource_id = fields.Int()
     parameter_allocation_pool = fields.Str()
     parameter_local_cidr = fields.Str()
-    parameter_local_resource = fields.Str()
+    parameter_local_subresource = fields.Str()
     parameter_ipv = fields.Str()
     parameter_master = fields.Str()
     parameter_master_auth = fields.Str()
@@ -161,17 +161,17 @@ class ParamsSchema(ma.ModelSchema):
     class Meta:
         model = Parameter
         sqla_session = db.session
-    service = fields.Nested('ParamsServiceSchema', default=None)
+    resource = fields.Nested('ParamsResourceSchema', default=None)
     parameter_lmaster = fields.Nested('SLMasterSchema', default=[], many=False)
 
-class ParamsServiceSchema(ma.ModelSchema):
+class ParamsResourceSchema(ma.ModelSchema):
     """
     This class exists to get around a recursion issue
     """
-    service_id = fields.Int()
-    #service_name = fields.Str()
-    #service_type = fields.Str()
-    #service_global = fields.Str()
+    resource_id = fields.Int()
+    #resource_name = fields.Str()
+    #resource_type = fields.Str()
+    #resource_global = fields.Str()
 
 class SLMasterSchema(ma.ModelSchema):
     """
@@ -189,7 +189,7 @@ class LMasterParamsSchema(ma.ModelSchema):
     This class exists to get around a recursion issue
     """
     parameter_id = fields.Int()
-    service_id = fields.Int()
+    resource_id = fields.Int()
 
 class LMasterSchema(ma.ModelSchema):
     def __init__(self, **kwargs):
@@ -249,35 +249,35 @@ class L3CidrsLMasterSchema(ma.ModelSchema):
     parameter_id = fields.Int()
     lmaster_id = fields.Int()
 
-# Resources associated schemas
-class SResourcesSchema(ma.ModelSchema):
+# SubResources associated schemas
+class SSubResourcesSchema(ma.ModelSchema):
     """
     This class exists to get around a recursion issue
     """
+    subresource_id = fields.Int()
     resource_id = fields.Int()
-    service_id = fields.Int()
-    resource_region = fields.Str()
-    resource_uuid = fields.Str()
+    subresource_region = fields.Str()
+    subresource_uuid = fields.Str()
 
 
-class ResourcesSchema(ma.ModelSchema):
+class SubResourcesSchema(ma.ModelSchema):
     def __init__(self, **kwargs):
         super().__init__(strict=True, **kwargs)
 
     class Meta:
-        model = Resource
+        model = SubResource
         sqla_session = db.session
-    service = fields.Nested('ResourcesServiceSchema', default=None)
+    resource = fields.Nested('SubResourcesResourceSchema', default=None)
 
 
-class ResourcesServiceSchema(ma.ModelSchema):
+class SubResourcesResourceSchema(ma.ModelSchema):
     """
     This class exists to get around a recursion issue
     """
-    service_id = fields.Int()
-    #service_name = fields.Str()
-    #service_type = fields.Str()
-    #service_global = fields.Str()
+    resource_id = fields.Int()
+    #resource_name = fields.Str()
+    #resource_type = fields.Str()
+    #resource_global = fields.Str()
 
 # Interconnection associated schemas
 class SInterconnectionsSchema(ma.ModelSchema):
@@ -285,8 +285,8 @@ class SInterconnectionsSchema(ma.ModelSchema):
     This class exists to get around a recursion issue
     """
     interconnexion_id = fields.Int()
-    service_id = fields.Int()
     resource_id = fields.Int()
+    subresource_id = fields.Int()
     interconnexion_uuid = fields.Str()
 
 
@@ -297,18 +297,18 @@ class InterconnectionsSchema(ma.ModelSchema):
     class Meta:
         model = Interconnexion
         sqla_session = db.session
-    service = fields.Nested(
-        'InterconnectionsServiceSchema', default=None)
+    resource = fields.Nested(
+        'InterconnectionsResourceSchema', default=None)
 
 
-class InterconnectionsServiceSchema(ma.ModelSchema):
+class InterconnectionsResourceSchema(ma.ModelSchema):
     """
     This class exists to get around a recursion issue
     """
-    service_id = fields.Int()
     resource_id = fields.Int()
-    #service_name = fields.Str()
-    #service_type = fields.Str()
-    #service_global = fields.Str()
+    subresource_id = fields.Int()
+    #resource_name = fields.Str()
+    #resource_type = fields.Str()
+    #resource_global = fields.Str()
 
 

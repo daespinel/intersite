@@ -2,9 +2,9 @@
 ![python](https://img.shields.io/badge/python-3.5%20%7C%203.6%20%7C%203.7-blue)
 [![Build Status](https://travis-ci.org/daespinel/intersite.svg?branch=master)](https://travis-ci.com/github/daespinel/intersite)
 
-# DIMINET DIstributed Module for Inter-site NETworking services deployement
+# DIMINET DIstributed Module for Inter-site NETworking resources deployement
 
-DIMINET is a a distributed/decentralized module for inter-site networking services capable to interconnect independent networking resources in an automatized and transparent manner. Layer 2 network extensions and Layer 3 routing functionss are two main implementation tasks. This first proof-of-concept of the proposed solution has been implemented besides the networking service of Open-stack, Neutron. One important planned feature of our proposed system is the generalization to other cloud services. So the collaboration between independent systems can reuse and extend based on this building block.
+DIMINET is a a distributed/decentralized module for inter-site networking resources capable to interconnect independent networking resources in an automatized and transparent manner. Layer 2 network extensions and Layer 3 routing functionss are two main implementation tasks. This first proof-of-concept of the proposed solution has been implemented besides the networking service of Open-stack, Neutron. One important planned feature of our proposed system is the generalization to other cloud services. So the collaboration between independent systems can reuse and extend based on this building block.
 
 While this project is independent of Neutron networking API service, it acts as an plugin deployed on the same networking node of Neutron, such add-on service will be very useful to manage and utilize independent geo-distributed networking resources for services like network slicing.
 
@@ -44,7 +44,7 @@ username = <USER_NAME>
 password = <USER_PASSWORD>
 project = <PROJECT_NAME>
 # Keystone authentication URL
-auth utl = http://<AUTH_URL>/identity/v3
+auth url = http://<AUTH_URL>/identity/v3
 ```
 
 ## Launch
@@ -57,13 +57,13 @@ python app.py
 
 The user can access the `<HOST_IP>:7575` url to access the GUI. As the server has been implemented using Flask and Swagger frameworks, it proposes a documented API in `<HOST_IP>:7575/api/ui/` .
 
-## Proposed services
+## Proposed inter-site resources
 
-DIMINET proposes two services, each one requiring to provide different informations:
+DIMINET proposes two resources, each one requiring to provide different informations:
 
-### Layer 2 extension service
+### Layer 2 extension resource
 
-As it names indicates, this service provides an extension of a Layer 2 network (in Neutron, a network object with its subnetwork) to be extended to remote sites. The user needs to provide:
+As it names indicates, this resource provides an extension of a Layer 2 network (in Neutron, a network object with its subnetwork) to be extended to remote sites. The user needs to provide:
 
 ```bash
 # Local region name with the Neutron network uuid that will be extended
@@ -74,9 +74,9 @@ As it names indicates, this service provides an extension of a Layer 2 network (
 <REMOTE_REGION_ONE>,<REMOTE_REGION_TWO>,<REMOTE_REGION_THREE>
 ```
 
-### Layer 3 routing extension
+### Layer 3 routing resource
 
-This service provides a logical router among several existing and independent resources (networks and their subnetworks) deployed in different sites.
+This resource provides a logical router among several existing and independent resources (networks and their subnetworks) deployed in different sites.
 
 ```bash
 # Local region name with the Neutron network uuid

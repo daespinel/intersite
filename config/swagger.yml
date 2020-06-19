@@ -30,43 +30,43 @@ paths:
                 description: Name of the local region
   /intersite-vertical:
     get:
-      operationId: verticalReadAllService
+      operationId: verticalReadAllResource
       tags:
-        - services
-      summary: the inter-site Service mapping structure GET
-      description: Read the list of inter-site services
+        - resources
+      summary: the inter-site Resource mapping structure GET
+      description: Read the list of inter-site resources
       x-swagger-router-controller: controllers.intersite
       responses:
         200:
-          description: Successful read inter-site service list operation
+          description: Successful read inter-site resource list operation
           schema:
             type: array
             items:
               properties:
-                service_id:
+                resource_id:
                   type: string
-                  description: ID of the inter-site service
-                service_type:
+                  description: ID of the inter-site resource
+                resource_type:
                   type: string
-                  description: Inter-site service type (L2 or L3)
-                service_name:
+                  description: Inter-site resource type (L2 or L3)
+                resource_name:
                   type: string
-                  description: Name of the inter-site service
-                service_params:
+                  description: Name of the inter-site resource
+                resource_params:
                   type: string
-                  description: Additional params for the inter-site service
-                service_resources:
+                  description: Additional params for the inter-site resource
+                resource_subresources:
                   type: array
-                  description: Resources to federate
+                  description: SubResourcess to federate
                   items: 
                     properties:
-                      service_id:
+                      resource_id:
                         type: integer
-                      resource_region:    
+                      subresource_region:    
                         type: string
-                      resource_uuid:    
+                      subresource_uuid:    
                         type: string  
-                service_interconnections:
+                resource_interconnections:
                   type: array
                   description: Locally created interconnections
                   items:
@@ -74,34 +74,34 @@ paths:
                       interconnexion_uuid:
                         type: string
     post:
-      operationId: verticalCreateService
+      operationId: verticalCreateResource
       tags:
-        - services
-      summary: Creates an inter-site Service POST
-      description: Create an inter-site service
+        - resources
+      summary: Creates an inter-site Resource POST
+      description: Create an inter-site resource
       x-swagger-router-controller: controllers.intersite
       parameters:
-        - name: service
+        - name: resource
           in: body
-          description: data for inter-service creation
+          description: data for inter-resource creation
           required: True
           schema:
             type: object
             properties:
               type:
                 type: string
-                description: Type of inter-site service
+                description: Type of inter-site resource
               name:
                 type: string
-                description: Name of the inter-site service
-              resources:
+                description: Name of the inter-site resource
+              subresources:
                 type: array
-                description: Resources belonging to the user
+                description: SubResourcess belonging to the user
                 items:
                   type: string 
       responses:
         201:
-          description: Successful create inter-site service operation
+          description: Successful create inter-site resource operation
           schema:
             properties:
               id:
@@ -109,13 +109,13 @@ paths:
                 description: Id of the person
               type:
                 type: string
-                description: Inter-site service type
+                description: Inter-site resource type
               name:
                 type: string
-                description: Name of the inter-site service
-              resources:
+                description: Name of the inter-site resource
+              subresources:
                 type: array
-                description: Resources to federate
+                description: SubResourcess to federate
                 items: 
                   type: string  
               interconnections:
@@ -126,28 +126,28 @@ paths:
     
   /intersite-vertical/{global_id}:
     delete:
-      operationId: verticalDeleteService
+      operationId: verticalDeleteResource
       tags:
-        - services
-      summary: Deletes an inter-site Service DELETE
-      description: Deletes an inter-site service
+        - resources
+      summary: Deletes an inter-site Resource DELETE
+      description: Deletes an inter-site resource
       x-swagger-router-controller: controllers.intersite
       parameters:
         - name: global_id
           in: path
           type: string
           required: True
-          description: Id of the service to delete
+          description: Id of the resource to delete
       responses:
         200:
-          description: Successfully deleted a service from service list
+          description: Successfully deleted a resource from resource list
 
     get:
-      operationId: verticalReadOneService
+      operationId: verticalReadOneResource
       tags:
-        - services
-      summary: Read one inter-site Service GET
-      description: Read one inter-site service
+        - resources
+      summary: Read one inter-site Resource GET
+      description: Read one inter-site resource
       x-swagger-router-controller: controllers.intersite
       parameters:
         - name: global_id
@@ -156,22 +156,22 @@ paths:
           required: True
       responses:
         200:
-          description: Successfully read service from service list 
+          description: Successfully read resource from resource list 
           schema:
             properties:
               id:
                 type: string
-                description: ID of inter-site service
+                description: ID of inter-site resource
               type:
                 type: string
-                description: Type of inter-site service
+                description: Type of inter-site resource
               name:
                 type: string
-                description: Name of the inter-site service
+                description: Name of the inter-site resource
               params:
                 type: string
-                description: Additional params for the inter-site service
-              resources:
+                description: Additional params for the inter-site resource
+              subresources:
                 type: array
                 items:
                   type: string
@@ -181,45 +181,45 @@ paths:
                   type: string
 
     put:
-      operationId: verticalUpdateService
+      operationId: verticalUpdateResource
       tags:
-        - services
-      summary: Update an already deployed service
-      description: Update an already deployed service
+        - resources
+      summary: Update an already deployed resource
+      description: Update an already deployed resource
       x-swagger-router-controller: controllers.intersite
       parameters:
         - name: global_id
           in: path
-          description: Global ID of the service to update
+          description: Global ID of the resource to update
           type: string
           required: True
-        - name: service
+        - name: resource
           in: body
           schema: 
             type: object
             properties: 
-              resources:
+              subresources:
                 type: array
                 items:
                   type: string 
       responses:
         200:
-          description: Successfully update service
+          description: Successfully update resource
           schema:
             properties:
               id:
                 type: string
-                description: ID of inter-site service
+                description: ID of inter-site resource
               type:
                 type: string
-                description: Type of inter-site service
+                description: Type of inter-site resource
               name:
                 type: string
-                description: Name of the inter-site service
+                description: Name of the inter-site resource
               params:
                 type: string
-                description: Additional params for the inter-site service
-              resources:
+                description: Additional params for the inter-site resource
+              subresources:
                 type: array
                 items:
                   type: string
@@ -230,14 +230,14 @@ paths:
 
   /intersite-horizontal:
     post:
-      operationId: horizontalCreateService
+      operationId: horizontalCreateResource
       tags:
         - horizontal
-      summary: Horizontal request to create an inter-site Service POST
-      description: Horizontal request to create an inter-site Service 
+      summary: Horizontal request to create an inter-site Resource POST
+      description: Horizontal request to create an inter-site Resource 
       x-swagger-router-controller: controllers.intersite
       parameters:
-        - name: service
+        - name: resource
           in: body
           description: data for inter-site creation
           required: True
@@ -246,36 +246,36 @@ paths:
             properties:
               global:
                 type: string
-                description: First created ID of the service
+                description: First created ID of the resource
               type:
                 type: string
-                description: Type of inter-site service
+                description: Type of inter-site resource
               name:
                 type: string
-                description: Name of the inter-site service
+                description: Name of the inter-site resource
               params:
                 type: array
                 items:
                   type: string
-                description: Additional params for the inter-site service
-              resources:
+                description: Additional params for the inter-site resource
+              subresources:
                 type: array
                 items:
                   type: string 
       responses:
         201:
-          description: Successful create inter-site service operation
+          description: Successful create inter-site resource operation
           schema:
             properties:
               global_id:
                 type: string
-                description: ID of inter-site service
+                description: ID of inter-site resource
               type:
                 type: string
-                description: Type of inter-site service
-              local_resource:
+                description: Type of inter-site resource
+              local_subresource:
                 type: string
-                description: UUID of the local resource
+                description: UUID of the local subresource
               local_region:
                 type: string
                 description: Name of the local region
@@ -285,22 +285,22 @@ paths:
       tags:
         - horizontal
       summary: Horizontal request to verify remote items
-      description: Horizontal request to verify an inter-site Service 
+      description: Horizontal request to verify an inter-site Resource 
       x-swagger-router-controller: controllers.intersite
       parameters:
-        - name: resource_cidr
+        - name: subresource_cidr
           in: query
           description: data for inter-site verification
           type: string
           required: True
-        - name: service_type
+        - name: resource_type
           in: query
-          description: Service type to valite the cidr
+          description: Resource type to valite the cidr
           type: string
           required: True
         - name: global_id
           in: query
-          description: Service global ID
+          description: Resource global ID
           type: string
           required: True
         - name: verification_type
@@ -320,28 +320,28 @@ paths:
 
   /intersite-horizontal/{global_id}:
     delete:
-      operationId: horizontalDeleteService
+      operationId: horizontalDeleteResource
       tags:
         - horizontal
-      summary: Deletes an inter-site Service DELETE
-      description: Deletes an inter-site service
+      summary: Deletes an inter-site Resource DELETE
+      description: Deletes an inter-site resource
       x-swagger-router-controller: controllers.intersite
       parameters:
         - name: global_id
           in: path
           type: string
           required: True
-          description: Id of the service to delete
+          description: Id of the resource to delete
       responses:
         200:
-          description: Successfully deleted a service from service list
+          description: Successfully deleted a resource from resource list
 
     get:
       operationId: horizontalReadParameters
       tags:
         - horizontal
-      summary: Read the local cidr of an inter-site Service 
-      description: Read one inter-site service
+      summary: Read the local cidr of an inter-site Resource 
+      description: Read one inter-site resource
       x-swagger-router-controller: controllers.intersite
       parameters:
         - name: global_id
@@ -350,7 +350,7 @@ paths:
           required: True
       responses:
         200:
-          description: Successfully read remote params from service list 
+          description: Successfully read remote params from resource list 
           schema:
             properties:
               params:
@@ -358,24 +358,24 @@ paths:
                 items:
                   type: string
     put:
-      operationId: horizontalUpdateService
+      operationId: horizontalUpdateResource
       tags:
         - horizontal
-      summary: Update an already deployed service
-      description: Update an already deployed service
+      summary: Update an already deployed resource
+      description: Update an already deployed resource
       x-swagger-router-controller: controllers.intersite
       parameters:
         - name: global_id
           in: path
-          description: Global ID of the service to update
+          description: Global ID of the resource to update
           type: string
           required: True
-        - name: service
+        - name: resource
           in: body
           schema: 
             type: object
             properties: 
-              resources:
+              subresources:
                 type: array
                 items:
                   type: string 
@@ -391,22 +391,22 @@ paths:
                 type: string
       responses:
         200:
-          description: Successfully update service
+          description: Successfully update resource
           schema:
             properties:
               id:
                 type: string
-                description: ID of inter-site service
+                description: ID of inter-site resource
               type:
                 type: string
-                description: Type of inter-site service
+                description: Type of inter-site resource
               name:
                 type: string
-                description: Name of the inter-site service
+                description: Name of the inter-site resource
               params:
                 type: string
-                description: Additional params for the inter-site service
-              resources:
+                description: Additional params for the inter-site resource
+              subresources:
                 type: array
                 items:
                   type: string
