@@ -31,10 +31,10 @@ def resources(resource_global=""):
     localhost:7575/resources
     :return:        the rendered template "services.html"
     """
-    return render_template("services.html", resourc_global=resourc_global)
+    return render_template("services.html", resource_global=resource_global)
 
 
-@app.route("/resourc/<string:resource_global>")
+@app.route("/resource/<string:resource_global>")
 def resource(resource_global):
     """
     This function responds to the browser URL
