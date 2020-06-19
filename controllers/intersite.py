@@ -196,9 +196,9 @@ def verticalCreateResource(resource):
             starting_th_time = time.time()
             app_log.info('Starting thread at time:  %s', starting_th_time)
             app_log.info(resource_remote_auth_endpoints[item])
-            auth_remote = resource_utils.get_auth_object(
+            auth_remote = service_utils.get_auth_object(
                 resource_remote_auth_endpoints[item])
-            sess_remote = resource_utils.get_session_object(auth_remote)
+            sess_remote = service_utils.get_session_object(auth_remote)
             app_log.info('Getting information from region ' + str(item))
 
             # Authenticate
@@ -657,7 +657,7 @@ def verticalCreateResource(resource):
             app_log = logging.getLogger()
             starting_th_time = time.time()
             app_log.info('Starting thread at time:  %s', starting_th_time)
-            if obj != resource_utils.get_region_name():
+            if obj != service_utils.get_region_name():
                 remote_inter_instance = resource_remote_inter_endpoints[obj].strip(
                     '9696/')
                 remote_inter_instance = remote_inter_instance + \
