@@ -3,7 +3,7 @@
  * @type {{}}
  */
 class Model {
-    async readOne(service_global) {
+    async readOne(resource_global) {
         let ajax_options = {
             method: "GET",
             cache: "no-cache",
@@ -13,12 +13,12 @@ class Model {
             },
         };
         // Call the REST endpoint and wait for data
-        let response = await fetch(`/api/intersite-vertical/${service_global}`, ajax_options);
+        let response = await fetch(`/api/intersite-vertical/${resource_global}`, ajax_options);
         let data = await response.json();
         return data;
     }
 
-    async update(service_global, service) {
+    async update(resource_global, resource) {
         let ajax_options = {
             method: "PUT",
             cache: "no-cache",
@@ -26,10 +26,10 @@ class Model {
                 "Content-type": "application/json",
                 "accepts": "application/json"
             },
-            body: JSON.stringify(service)
+            body: JSON.stringify(resource)
         };
         // Call the REST endpoint and wait for data
-        let response = await fetch(`/api/intersite-vertical/${service_global}`, ajax_options);
+        let response = await fetch(`/api/intersite-vertical/${resource_global}`, ajax_options);
         let data = await response.json();
         return data;
     }
@@ -40,44 +40,44 @@ class Model {
  */
 class View {
     constructor() {
-        this.table = document.querySelector(".resources_container table");
-        this.service_name = document.getElementById("service_name");
-        this.service_type = document.getElementById("service_type");
-        this.service_global = document.getElementById("service_global");
-        this.service_params_master = document.getElementById("service_params_master");
-        this.service_params_local_cidr = document.getElementById("service_params_local_cidr");
-        this.service_params_allocation_pool = document.getElementById("service_params_allocation_pool");
+        this.table = document.querySelector(".subresources_container table");
+        this.resource_name = document.getElementById("resource_name");
+        this.resource_type = document.getElementById("resource_type");
+        this.resource_global = document.getElementById("resource_global");
+        this.resource_params_master = document.getElementById("resource_params_master");
+        this.resource_params_local_cidr = document.getElementById("resource_params_local_cidr");
+        this.resource_params_allocation_pool = document.getElementById("resource_params_allocation_pool");
         this.updateButton = document.getElementById("update");
         this.cancelButton = document.getElementById("cancel");
-        this.addResourceButton = document.getElementById("add_resource");
+        this.addSubResourceButton = document.getElementById("add_subresource");
     }
 
-    buildTable(service) {
+    buildTable(resource) {
         let tbody,
             html = "";
 
-        //Update the service data
-        this.service_global.value = service.service_global;
-        this.service_name.value = service.service_name;
-        this.service_name.type = service.service_type;
+        //Update the resource data
+        this.resource_global.value = resource.resource_global;
+        this.resource_name.value = resource.resource_name;
+        this.resource_name.type = resource.resource_type;
 
-        let service_params = service.service_params[0];
-        this.service_params_master.value = service_params.parameter_master;
-        this.service_params_local_cidr.value = service_params.parameter_local_cidr;
-        this.service_params_allocation_pool.value = service_params.parameter_allocation_pool;
+        let resource_params = resource.resource_params[0];
+        this.resource_params_master.value = resource_params.parameter_master;
+        this.resource_params_local_cidr.value = resource_params.parameter_local_cidr;
+        this.resource_params_allocation_pool.value = resource_params.parameter_allocation_pool;
 
-        // Iterate over the resources and build the table
-        service.service_resources.forEach((resource) => {
+        // Iterate over the subresources and build the table
+        resource.resource_subresources.forEach((subresource) => {
             html +=
-                `<tr data-resource_id="${resource.resource_region}" data-content="${resource.resource_uuid}">
+                `<tr data-subresource_id="${subresource.subresource_region}" data-content="${subresource.subresource_uuid}">
                 <td>
-                    <input id='service_resources1' type='text' class='service_resources form-control' value="${resource.resource_region}" disabled/>
+                    <input id='resource_subresources1' type='text' class='resource_subresources form-control' value="${subresource.subresource_region}" disabled/>
                 </td>
                 <td>
-                    <input id='service_resources2' type='text' class='service_resources form-control' value="${resource.resource_uuid}" disabled/>
+                    <input id='resource_subresources2' type='text' class='resource_subresources form-control' value="${subresource.subresource_uuid}" disabled/>
                 </td>
                 <td>
-                    <span><button id='resource_delete' type='button' class='resource_delete btn btn-danger btn-xs' title='Delete'><i class='fa fa-trash-o fa-button-no-service'></i></button></span>
+                    <span><button id='subresource_delete' type='button' class='subresource_delete btn btn-danger btn-xs' title='Delete'><i class='fa fa-trash-o fa-button-no-resource'></i></button></span>
                 </td>
             </tr>`
         });
@@ -87,17 +87,17 @@ class View {
         // Update tbody with our new content
         tbody = this.table.createTBody();
         tbody.innerHTML = html;
-        tbody.id = "tbody_resources";
+        tbody.id = "tbody_subresources";
     }
 
     errorMessage(msg) {
         $.notify({ message: msg }, { type: 'danger' }, { delay: 8000 });
     }
 
-    validate(name, type, resources) {
+    validate(name, type, subresources) {
         var validate_name = name;
         var validate_type = type;
-        var validate_resources = resources;
+        var validate_subresources = subresources;
         var i;
         if (validate_name.length > 32) {
             return false;
@@ -108,14 +108,14 @@ class View {
                 return false;
             }
         }
-        console.log(validate_resources);
-        for (i = 0; i < validate_resources.length; i++) {
-            console.log(validate_resources[i]);
-            if (validate_resources[i] == ',') {
+        console.log(validate_subresources);
+        for (i = 0; i < validate_subresources.length; i++) {
+            console.log(validate_subresources[i]);
+            if (validate_subresources[i] == ',') {
                 return false
             }
         }
-        if (validate_resources == '') {
+        if (validate_subresources == '') {
             return false;
         }
         return true;
@@ -149,8 +149,8 @@ class View {
 
     redirecting_update (){
         setTimeout(() => {
-            let global_url = document.getElementById("service_global").value;
-            window.location = '/service/' + global_url;
+            let global_url = document.getElementById("resource_global").value;
+            window.location = '/resource/' + global_url;
         }, 9000);
     }
 }
@@ -169,16 +169,16 @@ class Controller {
     async initialize() {
         await this.initializeTable();
         this.initializeCancelEvent();
-        this.initializeAddResourceEvent();
-        this.initializeDeleteResource();
-        this.initializeUpdateService();
+        this.initializeAddSubResourceEvent();
+        this.initializeDeleteSubResource();
+        this.initializeUpdateResource();
     }
 
     async initializeTable() {
         try {
-            let urlServiceGlobal = document.getElementById("url_service_global").value,
-                service = await this.model.readOne(urlServiceGlobal);
-            this.view.buildTable(service);
+            let urlResourceGlobal = document.getElementById("url_resource_global").value,
+                resource = await this.model.readOne(urlResourceGlobal);
+            this.view.buildTable(resource);
         } catch (err) {
             this.view.errorMessage(err);
         }
@@ -188,36 +188,36 @@ class Controller {
     initializeCancelEvent() {
         document.getElementById("cancel").addEventListener("click", async (evt) => {
             evt.preventDefault();
-            if (confirm("Are you sure to cancel the service update?")) {
+            if (confirm("Are you sure to cancel the resource update?")) {
                 window.location.href = "/";
             };
         });
     }
 
-    initializeAddResourceEvent() {
-        document.getElementById("add_resource").addEventListener("click", async (evt) => {
+    initializeAddSubResourceEvent() {
+        document.getElementById("add_subresource").addEventListener("click", async (evt) => {
             evt.preventDefault();
             var show_index = parseInt($('#total_chq').val());
             var new_chq_no = show_index + 1;
             var new_res_input = `
             <tr>
                 <td>
-                    <input id='service_resources1' type='text' class='service_resources form-control' placeholder='Resource Region name'/>
+                    <input id='resource_subresources1' type='text' class='resource_subresources form-control' placeholder='SubResource Region name'/>
                 </td>
                 <td>
-                    <input id='service_resources2' type='text' class='service_resources form-control' placeholder='Resource uuid'/>
+                    <input id='resource_subresources2' type='text' class='resource_subresources form-control' placeholder='SubResource uuid'/>
                 </td>
                 <td>
-                    <span><button id='resource_delete' type='button' class='resource_delete btn btn-danger btn-xs' title='Delete'><i class='fa fa-trash-o fa-button-no-service'></i></button></span>
+                    <span><button id='subresource_delete' type='button' class='subresource_delete btn btn-danger btn-xs' title='Delete'><i class='fa fa-trash-o fa-button-no-resource'></i></button></span>
                 </td>
             </tr>`;
-            $('#tbody_resources').append(new_res_input);
+            $('#tbody_subresources').append(new_res_input);
             $('#total_chq').val(new_chq_no);
         });
     }
 
-    initializeDeleteResource() {
-        $(document).on('click', '#resources_container tbody tr td button.resource_delete', function (e) {
+    initializeDeleteSubResource() {
+        $(document).on('click', '#subresources_container tbody tr td button.subresource_delete', function (e) {
             var target = $(e.target).parent().parent().parent();
             var last_chq_no = $('#total_chq').val();
             if (last_chq_no > 3) {
@@ -228,18 +228,18 @@ class Controller {
         });
     }
 
-    initializeUpdateService() {
+    initializeUpdateResource() {
         var self = this;
         document.getElementById("update").addEventListener("click", async (evt) => {
             var last_chq_no = $('#total_chq').val();
             $('#update').prop('disabled', true);
-            $('#add_resource').prop('disabled', true);
-            var table = document.getElementById('resources_container');
+            $('#add_subresource').prop('disabled', true);
+            var table = document.getElementById('subresources_container');
             var i;
             $('#myForm :input').prop('disabled', true);
-            var resources_array = [];
-            var resource_region_str = '';
-            var resource_uuid_str = '';
+            var subresources_array = [];
+            var subresource_region_str = '';
+            var subresource_uuid_str = '';
             for (i = 0; i < table.rows.length; i++) {
                 var row = table.rows[i];
                 var cells = row.cells;
@@ -249,31 +249,31 @@ class Controller {
                     var inputElem = cell.children[0];
                     var isInput = inputElem instanceof HTMLInputElement;
                     if (isInput) {
-                        if (inputElem.id == 'service_resources1')
-                            resource_region_str = inputElem.value
-                        if (inputElem.id == 'service_resources2')
-                            resource_uuid_str = inputElem.value
+                        if (inputElem.id == 'resource_subresources1')
+                            subresource_region_str = inputElem.value
+                        if (inputElem.id == 'resource_subresources2')
+                            subresource_uuid_str = inputElem.value
                     }
                 }
-                resources_array.push(resource_region_str + "," + resource_uuid_str)
+                subresources_array.push(subresource_region_str + "," + subresource_uuid_str)
             }
 
-            let global = document.getElementById("service_global").value,
-                type = document.getElementById("service_type").value,
-                name = document.getElementById("service_name").value;
+            let global = document.getElementById("resource_global").value,
+                type = document.getElementById("resource_type").value,
+                name = document.getElementById("resource_name").value;
 
 
             evt.preventDefault();
-            if (self.view.validate(name, type, resources_array)) {
+            if (self.view.validate(name, type, subresources_array)) {
                 try {
-                    let response = await this.model.update(global, { 'resources': resources_array });
+                    let response = await this.model.update(global, { 'subresources': subresources_array });
                     if (response['status'] == 404) {
                         console.log(response);
                         self.view.error_handler(response['title'], response['status'], response['detail']);
                     }
                     console.log(response);
-                    var answer_global = response['service_global'];
-                    var $output = "Service Updated: \n Service global ID: " + answer_global;
+                    var answer_global = response['resource_global'];
+                    var $output = "Resource Updated: \n Resource global ID: " + answer_global;
                     //self.view.notification_handler($output);
                     //})
                     //.fail(function (xhr, textStatus, errorThrown) {

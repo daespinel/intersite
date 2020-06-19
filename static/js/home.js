@@ -16,16 +16,16 @@ ns.model = (function () {
             };
             return $.ajax(ajax_options);
         },
-        'delete': function (service_global) {
+        'delete': function (resource_global) {
             let ajax_options = {
                 type: 'DELETE',
-                url: `/api/intersite-vertical/${service_global}`,
+                url: `/api/intersite-vertical/${resource_global}`,
                 accepts: 'application/json',
                 contentType: 'plain/text'
             };
             return $.ajax(ajax_options)
         },
-        'readOne': function(service_global){
+        'readOne': function(resource_global){
             let ajax_options = {
 
             };
@@ -58,7 +58,7 @@ ns.view = (function () {
                 html;
 
             // Create the HTML from the template and notes
-            html = template({ services: data });
+            html = template({ resources: data });
 
             // Append the rows to the table tbody
             $table.append(html);
@@ -97,14 +97,14 @@ ns.controller = (function (m, v) {
             });
     }, 100);
 
-    $(document).on('click', '#tableservices tbody tr td button.service_delete',function (e) {
+    $(document).on('click', '#tableresources tbody tr td button.resource_delete',function (e) {
         let $target = $(e.target).parent().parent(),
-            service_global = $target.data('service_global');
-        console.log(service_global)
+            resource_global = $target.data('resource_global');
+        console.log(resource_global)
         
 
-        if(confirm("Are you sure to delete the service?")){
-            model.delete(service_global)
+        if(confirm("Are you sure to delete the resource?")){
+            model.delete(resource_global)
         .done(function(data){
             notification_handler(data);
         })
@@ -114,17 +114,17 @@ ns.controller = (function (m, v) {
         };    
     });
 
-    $(document).on('click', '#tableservices tbody tr td button.service_update',function (e) {
+    $(document).on('click', '#tableresources tbody tr td button.resource_update',function (e) {
         let $target = $(e.target).parent().parent(),
-            service_global = $target.data('service_global'),
-            service_master = $target[0].childNodes[7].childNodes[7].value;
+            resource_global = $target.data('resource_global'),
+            resource_master = $target[0].childNodes[7].childNodes[7].value;
         read_name()
         .done(function (data) {
             console.log(data)
-            if(service_master == data){
-                window.location = `/service/${service_global}`;
+            if(resource_master == data){
+                window.location = `/resource/${resource_global}`;
             }else{
-                $.notify({message: "This is not the master for the service: It can not be updated here."},{type: 'danger'}, {delay:8000});
+                $.notify({message: "This is not the master for the resource: It can not be updated here."},{type: 'danger'}, {delay:8000});
             };
         })
         

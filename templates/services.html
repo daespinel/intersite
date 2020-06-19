@@ -1,5 +1,5 @@
 {% extends "parent.html" %}
-{% block title %}Services{% endblock %}
+{% block title %}Resources{% endblock %}
 {% block head %}
 {{ super() }}
 
@@ -27,7 +27,7 @@
     <![endif]-->
 {% endblock %}
 
-{% block page_name %}Inter-site service Create{% endblock %}
+{% block page_name %}Inter-site resource Create{% endblock %}
 
 {% block body %}
 
@@ -37,7 +37,7 @@
     <section class="content-header">
         <h1>
             Inter-site 
-        <small>Service create </small>
+        <small>Resource create </small>
         </h1>
     </section>
 
@@ -49,59 +49,59 @@
           <!-- general form elements -->
           <div class="box box-primary">
             <div class="box-header">
-                <h3 class="box-title">New Inter-site Service</h3>
+                <h3 class="box-title">New Inter-site Resource</h3>
             </div><!-- /.box-header -->
             <!-- form start -->
             <form role="form">
                 <div class="box-body">
                     <div class="form-group">
-                        <label class="col-md-6" for="service_name">Name</label>
-                        <input id="service_name" type="text" class="form-control" placeholder="Enter the name"/>
+                        <label class="col-md-6" for="resource_name">Name</label>
+                        <input id="resource_name" type="text" class="form-control" placeholder="Enter the name"/>
                     </div>
 
                     <div class="form-group">
-                        <label class="col-md-6" for="service_type">Type</label>
-                        <select id="service_type" name="type" class="form-control">
+                        <label class="col-md-6" for="resource_type">Type</label>
+                        <select id="resource_type" name="type" class="form-control">
                             <option value="L2">Layer 2 network extension</option>
                             <option value="L3" selected="selected">Layer 3 routing</option>
                         </select>
                     </div>
                     <input type="hidden" value="3" id="total_chq">
                     <div class="form-group" id="myForm">
-                        <label class="col-md-6" for="resources_container">Resources</label>
+                        <label class="col-md-6" for="subresources_container">SubResources</label>
                         
                         <div class="box-footer clearfix no-border col-md-6">
-                            <button id="add_resource" type="button" class="add_resource btn btn-default pull-right"><i class="fa fa-plus"></i> Add resource </button>
+                            <button id="add_subresource" type="button" class="add_subresource btn btn-default pull-right"><i class="fa fa-plus"></i> Add subresource </button>
                         </div>
-                        <table id="resources_container" class="resources_container table table-condensed  ">
+                        <table id="subresources_container" class="subresources_container table table-condensed  ">
                             <tr>
                               <td>
-                                <input id="service_resources1" name="local_res" type="text" class="service_resources form-control" placeholder="Resource Region name"/>
+                                <input id="resource_subresources1" name="local_res" type="text" class="resource_subresources form-control" placeholder="SubResource Region name"/>
                               </td>
                               <td>
-                                <input id="service_resources2" type="text" class="service_resources form-control" placeholder="Resource uuid"/>
+                                <input id="resource_subresources2" type="text" class="resource_subresources form-control" placeholder="SubResource uuid"/>
                               </td>
                               <td>
                                 <span>
-                                    <button id="resource_delete" type="button" class="resource_delete btn btn-danger btn-xs" title="Delete"><i class="fa fa-trash-o fa-button-no-service"></i></button>
+                                    <button id="subresource_delete" type="button" class="subresource_delete btn btn-danger btn-xs" title="Delete"><i class="fa fa-trash-o fa-button-no-resource"></i></button>
                                 </span>
                               </td>
                             </tr>
                             <tr>
                                 <td>
-                                    <input id="service_resources1" type="text" class="service_resources form-control" placeholder="Resource Region name"/>
+                                    <input id="resource_subresources1" type="text" class="resource_subresources form-control" placeholder="SubResource Region name"/>
                                 </td>
                                 <td>
-                                    <input id="service_resources2" type="text" class="service_resources form-control" placeholder="Resource uuid"/>
+                                    <input id="resource_subresources2" type="text" class="resource_subresources form-control" placeholder="SubResource uuid"/>
                                 </td>
                                 <td>
                                     <span>
-                                        <button id="resource_delete" type="button" class="resource_delete btn btn-danger btn-xs" title="Delete"><i class="fa fa-trash-o fa-button-no-service"></i></button>
+                                        <button id="subresource_delete" type="button" class="subresource_delete btn btn-danger btn-xs" title="Delete"><i class="fa fa-trash-o fa-button-no-resource"></i></button>
                                     </span>
                                 </td>
                             </tr>
                           </table>
-                    </div><!-- /div form-group resources -->
+                    </div><!-- /div form-group subresources -->
 
                 </div><!-- /.box-body -->
 

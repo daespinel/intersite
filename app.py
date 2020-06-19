@@ -23,27 +23,27 @@ def home():
     return render_template("home.html")
 
 
-@app.route("/services")
-@app.route("/services/<string:service_global>")
-def services(service_global=""):
+@app.route("/resources")
+@app.route("/resources/<string:resource_global>")
+def resources(resource_global=""):
     """
     This function just responds to the browser URL
-    localhost:7575/services
+    localhost:7575/resources
     :return:        the rendered template "services.html"
     """
-    return render_template("services.html", service_global=service_global)
+    return render_template("services.html", resourc_global=resourc_global)
 
 
-@app.route("/service/<string:service_global>")
-def service(service_global):
+@app.route("/resourc/<string:resource_global>")
+def resource(resource_global):
     """
     This function responds to the browser URL
-    localhost:7575/service/<person_id>
+    localhost:7575/resource/<person_id>
 
-    :param service_global:   Id of the service to show notes for
-    :return:            the rendered template "service.html"
+    :param resource_global:   Id of the resource to show notes for
+    :return:            the rendered template "resource.html"
     """
-    return render_template("service.html", service_global=service_global)
+    return render_template("service.html", resource_global=resource_global)
 
 
 # If we're running in stand alone mode, run the application

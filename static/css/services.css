@@ -21,11 +21,11 @@ label {
     margin-bottom: 5px;
 }
 
-.service_input{
+.resource_input{
     width: 450px;
 }
 
-.service_interconnections{
+.resource_interconnections{
     width: 450px;
 }
 
@@ -36,7 +36,7 @@ button {
     background-color: #eee;
 }
 
-div.services {
+div.resources {
     margin: 10px 30px 10px 30px;
     border: 2px solid darkgrey;
 }
@@ -46,14 +46,14 @@ table {
     border-collapse: collapse;
 }
 
-.services table caption {
+.resources table caption {
     font-weight: bold;
     padding: 10px 0 10px 0;
     border-bottom: 2px solid darkgrey;
     background-color: antiquewhite;
 }
 
-.services table thead {
+.resources table thead {
     padding: 10px 0 10px 0;
 }
 
@@ -108,7 +108,7 @@ tbody tr:hover {
     visibility: hidden;
 }
 */
-.fa-button-no-service {
+.fa-button-no-resource {
     pointer-events:none;
 }
 

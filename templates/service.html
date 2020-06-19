@@ -27,12 +27,12 @@
     <![endif]-->
 {% endblock %}
 
-{% block page_name %}Inter-site service Update{% endblock %}
+{% block page_name %}Inter-site resource Update{% endblock %}
 
 {% block body %}
 
 <div class="container">
-    <input id="url_service_global" type="hidden" value="{{ service_global }}" />
+    <input id="url_resource_global" type="hidden" value="{{ resource_global }}" />
 </div>
 
 <div class="content-wrapper">
@@ -58,29 +58,29 @@
             <form role="form">
                 <div class="box-body">
                     <div class="form-group">
-                        <label class="col-md-6" for="service_global">Service Global ID</label>
-                        <input id="service_global" type="text" class="form-control" disabled/>
+                        <label class="col-md-6" for="resource_global">Service Global ID</label>
+                        <input id="resource_global" type="text" class="form-control" disabled/>
                     </div>
                     <div class="form-group">
-                        <label class="col-md-6" for="service_name">Name</label>
-                        <input id="service_name" type="text" class="form-control" disabled/>
+                        <label class="col-md-6" for="resource_name">Name</label>
+                        <input id="resource_name" type="text" class="form-control" disabled/>
                     </div>
 
                     <div class="form-group">
-                        <label class="col-md-6" for="service_type">Type</label>
-                        <select id="service_type" name="type" class="form-control" disabled>
+                        <label class="col-md-6" for="resource_type">Type</label>
+                        <select id="resource_type" name="type" class="form-control" disabled>
                             <option value="L2">Layer 2 network extension</option>
                             <option value="L3" selected="selected">Layer 3 routing</option>
                         </select>
                     </div>
                     <input type="hidden" value="3" id="total_chq">
-                    <div class="form-group resources_container" id="myForm">
-                        <label class="col-md-6" for="resources_container">Resources</label>
+                    <div class="form-group subresources_container" id="myForm">
+                        <label class="col-md-6" for="subresources_container">SubResources</label>
                         
                         <div class="box-footer clearfix no-border col-md-6">
-                            <button id="add_resource" type="button" class="add_resource btn btn-default pull-right"><i class="fa fa-plus"></i> Add resource </button>
+                            <button id="add_subresource" type="button" class="add_subresource btn btn-default pull-right"><i class="fa fa-plus"></i> Add subresource </button>
                         </div>
-                        <table id="resources_container" class="resources_container table table-condensed  ">
+                        <table id="subresources_container" class="subresources_container table table-condensed  ">
                             <thead>
 
                             </thead>
@@ -88,7 +88,7 @@
 
                             </tbody>        
                         </table>
-                    </div><!-- /div form-group resources -->
+                    </div><!-- /div form-group subresources -->
 
                     <div class="form-group" id="myForm1">
                         <label class="col-md-6" for="interconnections_container">Interconnections</label>
@@ -96,14 +96,14 @@
                         <table id="interconnections_container" class="interconnections_container table table-condensed  ">
                             <!--<tr>
                               <td>
-                                <input id="service_resources1" name="local_res" type="text" class="service_resources form-control" placeholder="Resource Region name"/>
+                                <input id="resource_subresources1" name="local_res" type="text" class="resource_subresources form-control" placeholder="SubResource Region name"/>
                               </td>
                               <td>
-                                <input id="service_resources2" type="text" class="service_resources form-control" placeholder="Resource uuid"/>
+                                <input id="resource_subresources2" type="text" class="resource_subresources form-control" placeholder="SubResource uuid"/>
                               </td>
                               <td>
                                 <span>
-                                    <button id="resource_delete" type="button" class="resource_delete btn btn-danger btn-xs" title="Delete"><i class="fa fa-trash-o fa-button-no-service"></i></button>
+                                    <button id="subresource_delete" type="button" class="subresource_delete btn btn-danger btn-xs" title="Delete"><i class="fa fa-trash-o fa-button-no-resource"></i></button>
                                 </span>
                               </td>
                             </tr>-->
@@ -114,18 +114,18 @@
                         </div><!-- /.box-header -->
 
                         <div class="form-group">
-                            <label class="col-md-6" for="service_param_master">Service Master</label>
-                            <input id="service_params_master" type="text" class="form-control" disabled/>
+                            <label class="col-md-6" for="resource_param_master">Service Master</label>
+                            <input id="resource_params_master" type="text" class="form-control" disabled/>
                         </div>
 
                         <div class="form-group">
-                            <label class="col-md-6" for="service_param_local_cidr">Service Local CIDR</label>
-                            <input id="service_params_local_cidr" type="text" class="form-control" disabled/>
+                            <label class="col-md-6" for="resource_param_local_cidr">Service Local CIDR</label>
+                            <input id="resource_params_local_cidr" type="text" class="form-control" disabled/>
                         </div>
 
                         <div class="form-group">
-                            <label class="col-md-6" for="service_param_allocation_pool">Service Allocation Pool</label>
-                            <input id="service_params_allocation_pool" type="text" class="form-control" disabled/>
+                            <label class="col-md-6" for="resource_param_allocation_pool">Service Allocation Pool</label>
+                            <input id="resource_params_allocation_pool" type="text" class="form-control" disabled/>
                         </div>
 
                 </div><!-- /.box-body -->

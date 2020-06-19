@@ -2,7 +2,7 @@
 read_name()
     .done(function (data) {
         // Here we put the data into the name of the PoC
-        document.getElementById('service_resources1').placeholder = data;
+        document.getElementById('resource_subresources1').placeholder = data;
     })
 
 // Return the API
@@ -23,15 +23,15 @@ ns.model = (function () {
             };
             return $.ajax(ajax_options);
         },
-        create: function (service) {
-            //console.log(service);
+        create: function (resource) {
+            //console.log(resource);
             let ajax_options = {
                 type: 'POST',
                 url: '/api/intersite-vertical',
                 accepts: 'application/json',
                 contentType: 'application/json',
                 dataType: 'json',
-                data: JSON.stringify(service)
+                data: JSON.stringify(resource)
             };
             return $.ajax(ajax_options)
         },
@@ -54,13 +54,13 @@ ns.view = (function () {
     const NEW_RESOURCE = 0,
         EXISTING_RESOURCE = 1;
 
-    let $service_global = $('#service_global'),
-        $service_name = $('#service_name'),
-        $service_type = $('#service_type'),
-        $service_params = $('#service_params'),
-        $service_resources1 = $('#service_resources1'),
-        $service_resources2 = $('#service_resources2'),
-        $service_interconnections = $('#service_interconnections'),
+    let $resource_global = $('#resource_global'),
+        $resource_name = $('#resource_name'),
+        $resource_type = $('#resource_type'),
+        $resource_params = $('#resource_params'),
+        $resource_subresources1 = $('#resource_subresources1'),
+        $resource_subresources2 = $('#resource_subresources2'),
+        $resource_interconnections = $('#resource_interconnections'),
         $create = $('#create'),
         $reset = $('#reset');
 
@@ -69,28 +69,28 @@ ns.view = (function () {
         NEW_RESOURCE: NEW_RESOURCE,
         EXISTING_RESOURCE: EXISTING_RESOURCE,
         reset: function () {
-            $service_global.text('');
-            $service_name.val('');
-            $service_params.val('');
+            $resource_global.text('');
+            $resource_name.val('');
+            $resource_params.val('');
             $('#total_chq').val('3');
-            $service_interconnections.val('');
-            $service_type.val('L3').focus();
+            $resource_interconnections.val('');
+            $resource_type.val('L3').focus();
             $('#myForm :input').val('');
             read_name();
         },
         set_button_state: function (state) {
             if (state === NEW_RESOURCE) {
                 $create.prop('disabled', false);
-                $service_type.prop('disabled', false);
-                $service_params.prop('disabled', false);
-                $service_interconnections.prop('disabled', false);
-                $('#service_name').removeAttr('disabled');
+                $resource_type.prop('disabled', false);
+                $resource_params.prop('disabled', false);
+                $resource_interconnections.prop('disabled', false);
+                $('#resource_name').removeAttr('disabled');
                 $('#myForm :input').removeAttr('disabled');
             } else if (state === EXISTING_RESOURCE) {
                 $create.prop('disabled', true);
-                $service_type.prop('disabled', true);
-                $service_params.prop('disabled', true);
-                $service_interconnections.prop('disabled', true);
+                $resource_type.prop('disabled', true);
+                $resource_params.prop('disabled', true);
+                $resource_interconnections.prop('disabled', true);
             }
         },
         error: function (msg) {
@@ -112,14 +112,14 @@ ns.controller = (function (m, v) {
     'use strict';
     let model = m,
         view = v,
-        $url_service_global = $('#url_service_global'),
-        $service_global = $('#service_global'),
-        $service_name = $('#service_name'),
-        $service_type = $('#service_type'),
-        $service_params = $('#service_params'),
-        $service_resources1 = $('#service_resources1'),
-        $service_resources2 = $('#service_resources2'),
-        $service_interconnections = $('#service_interconnections');
+        $url_resource_global = $('#url_resource_global'),
+        $resource_global = $('#resource_global'),
+        $resource_name = $('#resource_name'),
+        $resource_type = $('#resource_type'),
+        $resource_params = $('#resource_params'),
+        $resource_subresources1 = $('#resource_subresources1'),
+        $resource_subresources2 = $('#resource_subresources2'),
+        $resource_interconnections = $('#resource_interconnections');
 
     // Get the data from the model after the controller is done initializing
     setTimeout(function () {
@@ -141,10 +141,10 @@ ns.controller = (function (m, v) {
     view.set_button_state(view.NEW_RESOURCE);
 
     // Validate input
-    function validate(name, type, resources) {
+    function validate(name, type, subresources) {
         var validate_name = name;
         var validate_type = type;
-        var validate_resources = resources;
+        var validate_subresources = subresources;
 
         if (validate_name.length > 32) {
             return false;
@@ -155,21 +155,21 @@ ns.controller = (function (m, v) {
                 return false;
             }
         }
-        if (validate_resources == '') {
+        if (validate_subresources == '') {
             return false;
         }
         return true;
     }
 
-    $('#add_resource').click(function (e) {
+    $('#add_subresource').click(function (e) {
         var show_index = parseInt($('#total_chq').val());
         var new_chq_no = show_index + 1;
-        var new_res_input = "<tr><td><input id='service_resources1' type='text' class='service_resources form-control' placeholder='Resource Region name'/></td><td><input id='service_resources2' type='text' class='service_resources form-control' placeholder='Resource uuid'/></td><td><span><button id='resource_delete' type='button' class='resource_delete btn btn-danger btn-xs' title='Delete'><i class='fa fa-trash-o fa-button-no-service'></i></button></span></td></tr>";
-        $('#resources_container').append(new_res_input);
+        var new_res_input = "<tr><td><input id='resource_subresources1' type='text' class='resource_subresources form-control' placeholder='subResource Region name'/></td><td><input id='resource_subresources2' type='text' class='resource_subresources form-control' placeholder='subResource uuid'/></td><td><span><button id='subresource_delete' type='button' class='subresource_delete btn btn-danger btn-xs' title='Delete'><i class='fa fa-trash-o fa-button-no-resource'></i></button></span></td></tr>";
+        $('#subresources_container').append(new_res_input);
         $('#total_chq').val(new_chq_no);
     });
 
-    $(document).on('click', '#resources_container tbody tr td button.resource_delete', function (e) {
+    $(document).on('click', '#subresources_container tbody tr td button.subresource_delete', function (e) {
         var target = $(e.target).parent().parent().parent();
         var last_chq_no = $('#total_chq').val();
         if (last_chq_no > 3) {
@@ -181,16 +181,16 @@ ns.controller = (function (m, v) {
     // Create our event handlers
     $('#create').click(function (e) {
         var last_chq_no = $('#total_chq').val();
-        $('#service_name').prop('disabled', true);
-        $('#service_type').prop('disabled', true);
+        $('#resource_name').prop('disabled', true);
+        $('#resource_type').prop('disabled', true);
         $('#create').prop('disabled', true);
-        $('#add_resource').prop('disabled', true);
-        var table = document.getElementById('resources_container');
+        $('#add_subresource').prop('disabled', true);
+        var table = document.getElementById('subresources_container');
         var i;
         $('#myForm :input').prop('disabled', true);
-        var resources_array = [];
-        var resource_region_str = '';
-        var resource_uuid_str = '';
+        var subresources_array = [];
+        var subresource_region_str = '';
+        var subresource_uuid_str = '';
         for (i = 0; i < table.rows.length; i++) {
             var row = table.rows[i];
             var cells = row.cells;
@@ -200,27 +200,27 @@ ns.controller = (function (m, v) {
                 var inputElem = cell.children[0];
                 var isInput = inputElem instanceof HTMLInputElement;
                 if (isInput) {
-                    if (inputElem.id == 'service_resources1')
-                        resource_region_str = inputElem.value
-                    if (inputElem.id == 'service_resources2')
-                        resource_uuid_str = inputElem.value
+                    if (inputElem.id == 'resource_subresources1')
+                        subresource_region_str = inputElem.value
+                    if (inputElem.id == 'resource_subresources2')
+                        subresource_uuid_str = inputElem.value
                 }
             }
-            resources_array.push(resource_region_str + "," + resource_uuid_str);
+            subresources_array.push(subresource_region_str + "," + subresource_uuid_str);
         }
 
-        let name = $service_name.val(),
-            type = $service_type.val();
+        let name = $resource_name.val(),
+            type = $resource_type.val();
 
         e.preventDefault();
-        if (validate(name, type, resources_array)) {
-            model.create({ 'name': name, 'type': type, 'resources': resources_array })
+        if (validate(name, type, subresources_array)) {
+            model.create({ 'name': name, 'type': type, 'subresources': subresources_array })
                 .done(function (data) {
-                    var answer_global = data['service_global'];
-                    var answer_name = data['service_name'];
-                    var answer_type = data['service_type'];
-                    var answer_params = data['service_params'][0]['parameter_allocation_pool'];
-                    var $output = "Service Created: \n Service global ID: " + answer_global + "\n Service name: " + answer_name + "\n Service type: " + answer_type + "\n Service params: " + answer_params;
+                    var answer_global = data['resource_global'];
+                    var answer_name = data['resource_name'];
+                    var answer_type = data['resource_type'];
+                    var answer_params = data['resource_params'][0]['parameter_allocation_pool'];
+                    var $output = "Resource Created: \n Resource global ID: " + answer_global + "\n Resource name: " + answer_name + "\n Resource type: " + answer_type + "\n Resource params: " + answer_params;
                     notification_handler($output);
                 })
                 .fail(function (xhr, textStatus, errorThrown) {
@@ -232,12 +232,12 @@ ns.controller = (function (m, v) {
 
         } else {
             alert('Problem with the validation: check the infos');
-            $('#service_name').removeAttr('disabled');
-            $('#service_type').removeAttr('disabled');
+            $('#resource_name').removeAttr('disabled');
+            $('#resource_type').removeAttr('disabled');
             $('#create').prop('disabled', false);
             $('#create').removeAttr('disabled');
-            $('#add_resource').prop('disabled', false);
-            $('#add_resource').removeAttr('disabled');
+            $('#add_subresource').prop('disabled', false);
+            $('#add_subresource').removeAttr('disabled');
             $('#myForm :input').prop('disabled', false);
             $('#myForm :input').removeAttr('disabled');
         }
