@@ -50,7 +50,7 @@ def main(argv):
     #print("Auth token: %s" %auth_ref.auth_token)
 
     catalog_endpoints = auth_ref.service_catalog.catalog
-    #print("Service catalog: %s" % catalog_endpoints)
+    #print("Resource catalog: %s" % catalog_endpoints)
 
     regions_list_neu = []
     regions_list_key = []
@@ -146,17 +146,17 @@ def main(argv):
                 host = regions_list[selected_index-1]
                 #print(host['region_name'])
                 configuration.host = host['neutron_url'][0:-5] + "7575/api"
-                api_instance = swagger_client.ServicesApi(
+                api_instance = swagger_client.ResourcesApi(
                     swagger_client.ApiClient(configuration))
 
-                service = swagger_client.Service()  # Service | data for inter-site creation
-                service.type = "L3"
-                service.name = "Inter-site network test " + str(i)
+                resource = swagger_client.Resource()  # Resource | data for inter-site creation
+                resource.type = "L3"
+                resource.name = "Inter-site network test " + str(i)
                 
                 condition = True
                 keys = []
                 regions = []
-                resources = []
+                subresources = []
                 
                 while (condition):
                     seed(datetime.datetime.now())
@@ -171,7 +171,7 @@ def main(argv):
                             #print(element)
                             keys.append(key)
                             regions.append(element['region_name'])
-                            resources.append(element['region_name']+","+element['net_uuid'])
+                            subresources.append(element['region_name']+","+element['net_uuid'])
                             condition = False
                             condition1 = False
                             break
@@ -191,40 +191,40 @@ def main(argv):
                             #print(element)
                             keys.append(key)
                             regions.append(element['region_name'])
-                            resources.append(element['region_name']+","+element['net_uuid'])
+                            subresources.append(element['region_name']+","+element['net_uuid'])
                             condition = False
                             condition1 = False
                             break
 
                 print(i)
-                print(resources)
+                print(subresources)
                 print(regions)
                 print(keys)
 
-                service.resources = resources
+                resource.subresources = subresources
                 api_response = ''
                 #start = time.clock()
                 start = time.time()
                 try:
-                    # Horizontal request to create an inter-site Service POST
-                    api_response = api_instance.vertical_create_service(service)
-                    #print(api_response['service_global'])
+                    # Horizontal request to create an inter-site Resource POST
+                    api_response = api_instance.vertical_create_resource(resource)
+                    #print(api_response['resource_global'])
                 except ApiException as e:
-                    print("Exception when calling VerticalApi->vertical_create_service: %s\\n" % e)
+                    print("Exception when calling VerticalApi->vertical_create_resource: %s\\n" % e)
                 
                 #end = time.clock()
                 end = time.time()
                 
-                print(api_response["service_global"])
+                print(api_response["resource_global"])
                 print(start)
                 print(end)
                 print(end-start)
                 file_results.write(str(end - start)+"\n")
 
                 try:
-                    delete_service = api_instance.vertical_delete_service(api_response['service_global'])
+                    delete_resource = api_instance.vertical_delete_resource(api_response['resource_global'])
                 except ApiException as e:
-                    print("Exception when calling VerticalApi->vertical_create_service: %s\n" % e)
+                    print("Exception when calling VerticalApi->vertical_create_resource: %s\n" % e)
 
             file_results.close()
 
@@ -237,16 +237,16 @@ def main(argv):
                 host = regions_list[selected_index-1]
                 #print(host['region_name'])
                 configuration.host = host['neutron_url'][0:-5] + "7575/api"
-                api_instance = swagger_client.ServicesApi(
+                api_instance = swagger_client.ResourcesApi(
                     swagger_client.ApiClient(configuration))
 
-                service = swagger_client.Service()  # Service | data for inter-site creation
-                service.type = "L2"
-                service.name = "Inter-site network test " + str(i)
+                resource = swagger_client.Resource()  # Resource | data for inter-site creation
+                resource.type = "L2"
+                resource.name = "Inter-site network test " + str(i)
                 
                 condition = True
                 regions = []
-                resources = []
+                subresources = []
 
                 while (condition):
                     seed(datetime.datetime.now())
@@ -258,7 +258,7 @@ def main(argv):
                         if element['region_name'] == host['region_name']:
 
                             regions.append(element['region_name'])
-                            resources.append(element['region_name']+","+element['net_uuid'])
+                            subresources.append(element['region_name']+","+element['net_uuid'])
                             condition = False
                             condition1 = False
                             break
@@ -273,33 +273,33 @@ def main(argv):
                         #print(host['region_name'])
                         if new_host['region_name'] not in regions:
                             regions.append(new_host['region_name'])
-                            resources.append(new_host['region_name']+",")
+                            subresources.append(new_host['region_name']+",")
                             condition = False
                             break
 
                 print(i)
-                print(resources)
+                print(subresources)
                 print(regions)
 
-                service.resources = resources
+                resource.subresources = subresources
                 api_response = ""
                 start = time.time()
                 try:
-                    # Horizontal request to create an inter-site Service POST
-                    api_response = api_instance.vertical_create_service(service)
-                    #print(api_response['service_global'])
+                    # Horizontal request to create an inter-site Resource POST
+                    api_response = api_instance.vertical_create_resource(resource)
+                    #print(api_response['resource_global'])
                 except ApiException as e:
-                    print("Exception when calling VerticalApi->vertical_create_service: %s\n" % e)
+                    print("Exception when calling VerticalApi->vertical_create_resource: %s\n" % e)
 
                 end = time.time()
-                print(api_response["service_global"])
+                print(api_response["resource_global"])
                 print(end-start)
                 file_results.write(str(end - start)+"\n")
 
                 try:
-                    delete_service = api_instance.vertical_delete_service(api_response['service_global'])
+                    delete_resource = api_instance.vertical_delete_resource(api_response['resource_global'])
                 except ApiException as e:
-                    print("Exception when calling VerticalApi->vertical_create_service: %s\n" % e)
+                    print("Exception when calling VerticalApi->vertical_create_resource: %s\n" % e)
 
             file_results.close()
 
