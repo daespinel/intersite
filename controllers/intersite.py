@@ -1587,7 +1587,7 @@ def verticalDeleteResource(global_id):
                 app_log.info('Starting thread at time:  %s', starting_th_time)
                 try:
                     inter_del = net_adap.delete(
-                        url='/v2.0/inter/interconnections/' + inter)
+                        url='/v2.0/inter/interconnections/' + obj)
                 except ClientException as e:
                     app_log.info(
                         "Exception when contacting the network adapter" + e.message)
@@ -1601,7 +1601,7 @@ def verticalDeleteResource(global_id):
                     executor.submit(
                         parallel_interconnection_del, obj['interconnexion_uuid'])
             app_log.info(
-                'Finishing: Using threads for horizontal delete validation request. Time: ' + str(time.time() - inter_del_time))
+                'Finishing: Using threads for local interconnection delete. Time: ' + str(time.time() - inter_del_time))
 
             # Locally deleting the resource
             db.session.delete(resource)
