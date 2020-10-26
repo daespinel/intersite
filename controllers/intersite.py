@@ -42,7 +42,7 @@ def readRegionName():
 
 def verticalReadAllResource():
     """
-    This function responds to a request for /api/intersite
+    This function responds to a GET request for /api/intersite-vertical
     with the complete lists of inter-site resources
 
     :return:        sorted list of inter-site resources
@@ -53,7 +53,7 @@ def verticalReadAllResource():
     # Serialize the data for the response
     resource_schema = ResourceSchema(many=True)
     data = resource_schema.dump(resources).data
-    #app_log.info('The data from resource schema: ' + str(data))
+    
     return data
 
 # Create a handler for our read (GET) one resource by ID
@@ -61,6 +61,12 @@ def verticalReadAllResource():
 
 
 def verticalReadOneResource(global_id):
+    """
+    This function responds to a GET request for /api/intersite-vertical/{global_id}
+    with a single inter-site resource
+
+    :return:        inter-site resource with global_id
+    """
     resource = Resource.query.filter(Resource.resource_global == global_id).outerjoin(
         SubResource).outerjoin(Interconnexion).one_or_none()
     if resource is not None:
@@ -73,6 +79,12 @@ def verticalReadOneResource(global_id):
 
 
 def verticalCreateResource(resource):
+    """
+    This function responds to a POST request for /api/intersite-vertical/
+    with a single inter-site resource creation
+
+    :return:        freshly created inter-site resource
+    """
     # Taking information from the API http POST request
     start_time = time.time()
     app_log.info('Starting time: %s', start_time)
@@ -580,6 +592,8 @@ def verticalCreateResource(resource):
                     'local_subresource']}
                 remote_subresources_ids.append(remote_res)
 
+            app_log.info('Finishing thread at time:  %s %s', time.time() - starting_th_time, obj)
+
     start_horizontal_time = time.time()
     app_log.info("Starting: Using threads for horizontal creation request.")
     workers = len(resource_subresources_list.keys())
@@ -695,6 +709,12 @@ def verticalCreateResource(resource):
 # Handler to update an existing resource
 
 def verticalUpdateResource(global_id, resource):
+    """
+    This function responds to a PUT request for /api/intersite-vertical/{global_id}
+    with a single inter-site resource update
+
+    :return:        freshly modified inter-site resource
+    """
     start_time = time.time()
     app_log.info('Starting time: %s', start_time)
     app_log.info('Starting a new resource update request.')
@@ -1500,6 +1520,12 @@ def verticalUpdateResource(global_id, resource):
 
 
 def verticalDeleteResource(global_id):
+    """
+    This function responds to a DELETE request for /api/intersite-vertical/{global_id}
+    with a single inter-site resource deletion
+
+    :return:        deleted inter-site resource with global_id
+    """
     app_log.info('Starting: Deleting a resource vertical request.')
     start_time = time.time()
     resource_remote_inter_endpoints = {}
@@ -1651,6 +1677,12 @@ def verticalDeleteResource(global_id):
 # Handler for inter-site resource creation request
 
 def horizontalCreateResource(resource):
+    """
+    This function responds to a POST request for /api/intersite-horizontal/
+    with a single inter-site resource creation
+
+    :return:        freshly created inter-site resource
+    """
     start_time = time.time()
     app_log.info('Starting time: %s', start_time)
     app_log.info('Starting a new horizontal resource creation request')
@@ -1918,6 +1950,12 @@ def horizontalCreateResource(resource):
 
 
 def horizontalUpdateResource(global_id, resource):
+    """
+    This function responds to a PUT request for /api/intersite-horizontal/{global_id}
+    with a single inter-site resource modification
+
+    :return:        freshly modified inter-site resource with global_id
+    """
     start_time = time.time()
     app_log.info('Starting time: %s', start_time)
     app_log.info('Starting a new horizontal update request')
@@ -2368,6 +2406,12 @@ def horizontalUpdateResource(global_id, resource):
 
 
 def horizontalDeleteResource(global_id):
+    """
+    This function responds to a DELETE request for /api/intersite-horizontal/{global_id}
+    with a single inter-site resource deletion
+
+    :return:        delete inter-site resource with global_id
+    """
     start_time = time.time()
     app_log.info('Starting time: %s', start_time)
     app_log.info('Starting a new horizontal delete request')
@@ -2419,6 +2463,12 @@ def horizontalDeleteResource(global_id):
 
 
 def horizontalReadParameters(global_id):
+    """
+    This function responds to a GET request for /api/intersite-horizontal/{global_id}
+    with the parameters information of an inter-site resource
+
+    :return:        parameters information of an inter-site resource with global_id
+    """
     start_time = time.time()
     app_log.info('Starting: horizontal read parameters request')
     resource = Resource.query.filter(Resource.resource_global == global_id).outerjoin(
@@ -2437,6 +2487,12 @@ def horizontalReadParameters(global_id):
 
 
 def horizontalVerification(subresource_cidr, resource_type, global_id, verification_type):
+    """
+    This function responds to a GET request for /api/intersite-horizontal/
+    with a boolean along with context information
+
+    :return:        answer to verification request 'true' or 'false' with information for context
+    """
     start_time = time.time()
     app_log.info('Starting time: %s', start_time)
     app_log.info('Starting a new horizontal verification request')
@@ -2506,7 +2562,12 @@ def checkEqualElement(iterator):
 
 
 def checkExistingResource(subresource_list):
+    """
+    This function querries the local database for a similar resource composed
+    by the given list of sub resources
 
+    :return:        boolean
+    """
     resources = Resource.query.all()
     resource_schema = ResourceSchema(many=True)
     data = resource_schema.dump(resources).data
@@ -2525,6 +2586,11 @@ def checkExistingResource(subresource_list):
 
 
 def createRandomGlobalId(stringLength=28):
+    """
+    This function creates a random Global identifier composed of four concateneted strings
+
+    :return:        global identifier
+    """
     lettersAndDigits = string.ascii_lowercase[0:5] + string.digits
     result = ''.join(random.choice(lettersAndDigits) for i in range(8))
     result1 = ''.join(random.choice(lettersAndDigits) for i in range(4))
@@ -2535,7 +2601,6 @@ def createRandomGlobalId(stringLength=28):
     return global_random_id
 
 # DEPRECATED Since the recomposition of cidrs allocation pools has been left aside, this is no longer usefull
-
 
 def reorderCidrs(list_subresources):
 

@@ -73,6 +73,7 @@ paths:
                     properties:
                       interconnexion_uuid:
                         type: string
+    
     post:
       operationId: verticalCreateResource
       tags:
