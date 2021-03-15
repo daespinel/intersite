@@ -39,6 +39,7 @@ def readRegionName():
     # app_log.info(var_temp)
     return var_temp
 
+# Handler to get the list of resources
 
 def verticalReadAllResource():
     """
@@ -77,6 +78,7 @@ def verticalReadOneResource(global_id):
     else:
         abort(404, "Resource with ID {id} not found".format(id=id))
 
+# Handler to create a resource
 
 def verticalCreateResource(resource):
     """
